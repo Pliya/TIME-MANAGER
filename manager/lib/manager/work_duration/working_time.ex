@@ -6,6 +6,8 @@ defmodule Time_manager.WorkDuration.WorkingTime do
     field :start, :naive_datetime
     field :end, :naive_datetime
     field :user_id, :id
+    belongs_to :user, Time_manager.Account.User
+
 
     timestamps(type: :utc_datetime)
   end
@@ -13,7 +15,7 @@ defmodule Time_manager.WorkDuration.WorkingTime do
   @doc false
   def changeset(working_time, attrs) do
     working_time
-    |> cast(attrs, [:start, :end])
-    |> validate_required([:start, :end])
+    |> cast(attrs, [:start, :end, :user_id])
+    |> validate_required([:start, :end, :user_id])
   end
 end

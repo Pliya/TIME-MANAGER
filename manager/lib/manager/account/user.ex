@@ -6,6 +6,8 @@ defmodule Time_manager.Account.User do
     field :username, :string
     field :email, :string
 
+    has_many :clocks, Time_manager.Attendance.Clock
+    has_many :workingtimes, Time_manager.Attendance.WorkingTime
     timestamps(type: :utc_datetime)
   end
 
@@ -14,5 +16,6 @@ defmodule Time_manager.Account.User do
     user
     |> cast(attrs, [:username, :email])
     |> validate_required([:username, :email])
+    |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/)
   end
 end
