@@ -5,7 +5,6 @@ defmodule Time_manager.WorkDuration.WorkingTime do
   schema "workingtime" do
     field :start, :naive_datetime
     field :end, :naive_datetime
-    field :user_id, :id
     belongs_to :user, Time_manager.Account.User
 
 
