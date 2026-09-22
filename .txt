@@ -1,0 +1,22 @@
+users = {
+" username ": " string - required - can 't be null " ,
+" email ": " string - required - can 't be null - X@X .X" ,
+}
+clocks = {
+" time ": " datetime - required - can 't be null " ,
+" status ": " boolean - required - true ( when clock 'in ) - can 't be null " ,
+" user ": " user - required - can 't be null "
+}
+workingtime = {
+" start ": " datetime - required - can 't be null - YYYY -MM - DD HH : mm : ss " ,
+" end ": " datetime - required - can 't be null - YYYY -MM - DD HH : mm : ss " ,
+" user ": " user - required - can 't be null "
+}
+
+
+
+mix phx.gen.json Account User users username:string email:string
+
+mix phx.gen.json Attendance Clock clocks time:utc_datetime status:boolean user_id:refererences:users
+
+mix phx.gen.json WorkDuration WorkingTime workingtime start:naive_datetime end:naive_datetime user_id:refererences:users
