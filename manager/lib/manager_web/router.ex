@@ -5,6 +5,7 @@ defmodule Time_managerWeb.Router do
     plug :accepts, ["json"]
   end
 
+
   scope "/api", Time_managerWeb do
     pipe_through :api
 
@@ -25,7 +26,7 @@ defmodule Time_managerWeb.Router do
     end
 
     scope "/clocks" do
-      get "/:userID", ClockController, :show
+      get "/:userID", ClockController, :index
       post "/:userID", ClockController, :create
     end
   end
