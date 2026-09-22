@@ -6,8 +6,8 @@ defmodule Time_managerWeb.UserController do
 
   action_fallback Time_managerWeb.FallbackController
 
-  def index(conn, _params) do
-    users = Account.list_users()
+  def index(conn, params) do
+    users = Account.list_users(params)
     render(conn, :index, users: users)
   end
 
