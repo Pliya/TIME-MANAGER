@@ -52,15 +52,17 @@ defmodule Time_manager.Attendance do
 
   """
   def create_clock(user_id) do
-    last_status = from(c in Clock,
-      where: c.user_id == ^user_id,
-      order_by: [desc: c.time],
-      limit: 1,
-      select: c.status)
-    |> Repo.one()
+    last_status =
+      from(c in Clock,
+        where: c.user_id == ^user_id,
+        order_by: [desc: c.time],
+        limit: 1,
+        select: c.status
+      )
+      |> Repo.one()
 
     new_status = last_status == true
-    
+
     %Clock{user_id: user_id, status: new_status, time: DateTime.utc_now()}
     |> Clock.changeset(%{})
     |> Repo.insert()

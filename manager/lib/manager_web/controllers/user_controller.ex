@@ -20,24 +20,37 @@ defmodule Time_managerWeb.UserController do
     end
   end
 
-  def show(conn, %{"id" => id}) do
-    user = Account.get_user!(id)
-    render(conn, :show, user: user)
-  end
+  def show(conn, %{"userID" => id}) do
+    case Account.get_user(id) do
+      nil ->
+        {:error, :not_found}
 
-  def update(conn, %{"id" => id, "user" => user_params}) do
-    user = Account.get_user!(id)
-
-    with {:ok, %User{} = user} <- Account.update_user(user, user_params) do
-      render(conn, :show, user: user)
+      user ->
+        render(conn, :show, user: user)
     end
   end
 
-  def delete(conn, %{"id" => id}) do
-    user = Account.get_user!(id)
+  def update(conn, %{"userID" => id, "user" => user_params}) do
+    case Account.get_user(id) do
+      nil ->
+        {:error, :not_found}
 
-    with {:ok, %User{}} <- Account.delete_user(user) do
-      send_resp(conn, :no_content, "")
+      user ->
+        with {:ok, %User{} = user} <- Account.update_user(user, user_params) do
+          render(conn, :show, user: user)
+        end
+    end
+  end
+
+  def delete(conn, %{"userID" => id}) do
+    case Account.get_user(id) do
+      nil ->
+        {:error, :not_found}
+
+      user ->
+        with {:ok, %User{}} <- Account.delete_user(user) do
+          send_resp(conn, :no_content, "")
+        end
     end
   end
 end

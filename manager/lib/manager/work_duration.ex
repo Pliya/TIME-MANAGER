@@ -30,13 +30,13 @@ defmodule Time_manager.WorkDuration do
 
   defp filter_by_start(query, start_time) when start_time not in [nil, ""],
     do: from(w in query, where: w.start >= ^start_time)
-  defp filter_by_start(query, _), do: query
 
+  defp filter_by_start(query, _), do: query
 
   defp filter_by_end(query, end_time) when end_time not in [nil, ""],
     do: from(w in query, where: w.end <= ^end_time)
-  defp filter_by_end(query, _), do: query
 
+  defp filter_by_end(query, _), do: query
 
   def list_workingtime do
     WorkingTime
@@ -58,17 +58,31 @@ defmodule Time_manager.WorkDuration do
       ** (Ecto.NoResultsError)
 
   """
-  def get_working_time!(id) do
-    WorkingTime
-    |> Repo.get!(id)
-    |> Repo.preload(:user)
+
+  # def get_working_time!(id) do
+  #   WorkingTime
+  #   |> Repo.get!(id)
+  #   |> Repo.preload(:user)
+  # end
+
+  # def get_working_time_for_user!(user_id, id) do
+  #   WorkingTime
+  #   |> Repo.get_by!([id: id, user_id: user_id])
+  #   |> Repo.preload(:user)
+  # end
+
+  def get_working_time(id) do
+    case Repo.get(WorkingTime, id) do
+      nil -> nil
+      working_time -> Repo.preload(working_time, :user)
+    end
   end
 
-
-  def get_working_time_for_user!(user_id, id) do
-    WorkingTime
-    |> Repo.get_by!([id: id, user_id: user_id])
-    |> Repo.preload(:user)
+  def get_working_time_for_user(user_id, id) do
+    case Repo.get_by(WorkingTime, id: id, user_id: user_id) do
+      nil -> nil
+      working_time -> Repo.preload(working_time, :user)
+    end
   end
 
   @doc """
@@ -83,15 +97,14 @@ defmodule Time_manager.WorkDuration do
 
   """
 
-
   def create_working_time(attrs \\ %{}) do
     %WorkingTime{}
     |> WorkingTime.changeset(attrs)
     |> Repo.insert()
     |> case do
-        {:ok, updated_wt} -> {:ok, Repo.preload(updated_wt, :user)}
-          error -> error
-      end
+      {:ok, updated_wt} -> {:ok, Repo.preload(updated_wt, :user)}
+      error -> error
+    end
   end
 
   @doc """
@@ -111,9 +124,9 @@ defmodule Time_manager.WorkDuration do
     |> WorkingTime.changeset(attrs)
     |> Repo.update()
     |> case do
-        {:ok, updated_wt} -> {:ok, Repo.preload(updated_wt, :user)}
-          error -> error
-      end
+      {:ok, updated_wt} -> {:ok, Repo.preload(updated_wt, :user)}
+      error -> error
+    end
   end
 
   @doc """
