@@ -10,8 +10,10 @@ defmodule Time_managerWeb.ClockController do
   def index(conn, params) do
     user_id = params["userID"] |> String.to_integer()
 
-    case Account.get_user(user_id) do
-      nil -> {:error, :not_found}
+    case Account.get_user!(user_id) do
+      nil ->
+        {:error, :not_found}
+
       _user ->
         clocks = Attendance.list_clocks(user_id)
         render(conn, :index, clocks: clocks)
