@@ -20,3 +20,43 @@ mix phx.gen.json Account User users username:string email:string
 mix phx.gen.json Attendance Clock clocks time:utc_datetime status:boolean user_id:refererences:users
 
 mix phx.gen.json WorkDuration WorkingTime workingtime start:naive_datetime end:naive_datetime user_id:refererences:users
+
+
+
+
+
+
+
+
+
+
+
+uid=3
+base="http://localhost:4000"
+
+run_test(){
+  label="$1"
+  cmd="$2"
+  outfile="$3"
+  code=$(eval "$cmd")
+  echo "$label -> HTTP $code"
+  head -n 1 "$outfile"
+  echo
+}
+
+run_test "GET /api/users?email&username" "curl -s -o /tmp/r1.txt -w '%{http_code}' '$base/api/users?email=curltest@example.com&username=curltest'" /tmp/r1.txt
+run_test "GET /api/users/:userID" "curl -s -o /tmp/r2.txt -w '%{http_code}' '$base/api/users/$uid'" /tmp/r2.txt
+run_test "PUT /api/users/:userID" "curl -s -o /tmp/r3.txt -w '%{http_code}' -X PUT '$base/api/users/$uid' -H 'Content-Type: application/json' -d '{\"user\":{\"username\":\"curltest2\",\"email\":\"curltest2@example.com\"}}'" /tmp/r3.txt
+run_test "DELETE /api/users/:userID" "curl -s -o /tmp/r4.txt -w '%{http_code}' -X DELETE '$base/api/users/$uid'" /tmp/r4.txt
+
+run_test "GET /api/workingtime/:userID?start&end" "curl -s -o /tmp/r5.txt -w '%{http_code}' '$base/api/workingtime/$uid?start=2026-09-22T00:00:00&end=2026-09-23T00:00:00'" /tmp/r5.txt
+run_test "POST /api/workingtime/:userID" "curl -s -D /tmp/w_headers.txt -o /tmp/r6.txt -w '%{http_code}' -X POST '$base/api/workingtime/$uid' -H 'Content-Type: application/json' -d '{\"working_time\":{\"start\":\"2026-09-22T08:00:00\",\"end\":\"2026-09-22T17:00:00\",\"user_id\":$uid}}'" /tmp/r6.txt
+wid=$(awk -F'/' '/^location:/ {gsub("\r", "", $0); print $NF}' /tmp/w_headers.txt | tail -n 1)
+echo "workingtime location id: $wid"
+echo
+run_test "GET /api/workingtime/:userID/:id" "curl -s -o /tmp/r7.txt -w '%{http_code}' '$base/api/workingtime/$uid/$wid'" /tmp/r7.txt
+run_test "PUT /api/workingtime/:id" "curl -s -o /tmp/r8.txt -w '%{http_code}' -X PUT '$base/api/workingtime/$wid' -H 'Content-Type: application/json' -d '{\"working_time\":{\"start\":\"2026-09-22T09:00:00\",\"end\":\"2026-09-22T18:00:00\",\"user_id\":$uid}}'" /tmp/r8.txt
+run_test "DELETE /api/workingtime/:id" "curl -s -o /tmp/r9.txt -w '%{http_code}' -X DELETE '$base/api/workingtime/$wid'" /tmp/r9.txt
+
+run_test "GET /api/clocks/:userID" "curl -s -o /tmp/r10.txt -w '%{http_code}' '$base/api/clocks/$uid'" /tmp/r10.txt
+run_test "POST /api/clocks/:userID" "curl -s -o /tmp/r11.txt -w '%{http_code}' -X POST '$base/api/clocks/$uid'" /tmp/r11.txt
