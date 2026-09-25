@@ -1,11 +1,9 @@
 <script setup>
-
+import UserComponent from './components/UserComponent.vue'
 </script>
 
 <template>
-    <router-view />
+  <UserComponent />
+
+  <router-view />
 </template>
-
-<style scoped>
-
-</style>
