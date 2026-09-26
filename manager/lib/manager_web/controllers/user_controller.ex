@@ -1,15 +1,66 @@
 defmodule Time_managerWeb.UserController do
   use Time_managerWeb, :controller
+  use OpenApiSpex.ControllerSpecs
 
   alias Time_manager.Account
   alias Time_manager.Account.User
 
   action_fallback Time_managerWeb.FallbackController
 
-  def index(conn, _params) do
-    users = Account.list_users()
+  defmodule UserResponse do
+    require OpenApiSpex
+    OpenApiSpex.schema(%{
+      title: "User",
+      description: "A platform user",
+      type: :object,
+      properties: %{
+        id: %OpenApiSpex.Schema{type: :integer},
+        username: %OpenApiSpex.Schema{type: :string},
+        email: %OpenApiSpex.Schema{type: :string}
+      },
+      required: [:id, :username, :email]
+    })
+  end
+
+  defmodule UserRequest do
+    require OpenApiSpex
+    OpenApiSpex.schema(%{
+      title: "UserRequest",
+      description: "Parameters for creating or updating a user",
+      type: :object,
+      properties: %{
+        user: %OpenApiSpex.Schema{
+          type: :object,
+          properties: %{
+            username: %OpenApiSpex.Schema{type: :string},
+            email: %OpenApiSpex.Schema{type: :string}
+          },
+          required: [:username, :email]
+        }
+      },
+      required: [:user]
+    })
+  end
+
+  tags ["Users"]
+
+  operation :index,
+    summary: "List all users",
+    responses: [
+      ok: {"List of users", "application/json", %OpenApiSpex.Schema{type: :array, items: UserResponse}}
+    ]
+
+  def index(conn, params) do
+    users = Account.list_users(params)
     render(conn, :index, users: users)
   end
+
+  operation :create,
+    summary: "Create a user",
+    request_body: {"User parameters", "application/json", UserRequest, required: true},
+    responses: [
+      created: {"Created user", "application/json", UserResponse}
+    ]
 
   def create(conn, %{"user" => user_params}) do
     with {:ok, %User{} = user} <- Account.create_user(user_params) do
@@ -20,24 +71,63 @@ defmodule Time_managerWeb.UserController do
     end
   end
 
-  def show(conn, %{"id" => id}) do
-    user = Account.get_user!(id)
-    render(conn, :show, user: user)
-  end
+  operation :show,
+    summary: "Get a user by ID",
+    parameters: [
+      userID: [in: :path, description: "User ID", type: :integer, required: true]
+    ],
+    responses: [
+      ok: {"The requested user", "application/json", UserResponse},
+      not_found: {"User not found", "application/json", %OpenApiSpex.Schema{type: :object}}
+    ]
 
-  def update(conn, %{"id" => id, "user" => user_params}) do
-    user = Account.get_user!(id)
-
-    with {:ok, %User{} = user} <- Account.update_user(user, user_params) do
-      render(conn, :show, user: user)
+  def show(conn, %{"userID" => id}) do
+    case Account.get_user(id) do
+      nil -> {:error, :not_found}
+      user -> render(conn, :show, user: user)
     end
   end
 
-  def delete(conn, %{"id" => id}) do
-    user = Account.get_user!(id)
+  operation :update,
+    summary: "Update a user",
+    parameters: [
+      userID: [in: :path, description: "User ID", type: :integer, required: true]
+    ],
+    request_body: {"Updated user parameters", "application/json", UserRequest, required: true},
+    responses: [
+      ok: {"Updated user", "application/json", UserResponse},
+      not_found: {"User not found", "application/json", %OpenApiSpex.Schema{type: :object}}
+    ]
 
-    with {:ok, %User{}} <- Account.delete_user(user) do
-      send_resp(conn, :no_content, "")
+  def update(conn, %{"userID" => id, "user" => user_params}) do
+    case Account.get_user(id) do
+      nil ->
+        {:error, :not_found}
+      user ->
+        with {:ok, %User{} = user} <- Account.update_user(user, user_params) do
+          render(conn, :show, user: user)
+        end
+    end
+  end
+
+  operation :delete,
+    summary: "Delete a user",
+    parameters: [
+      userID: [in: :path, description: "User ID", type: :integer, required: true]
+    ],
+    responses: [
+      no_content: "User deleted successfully",
+      not_found: {"User not found", "application/json", %OpenApiSpex.Schema{type: :object}}
+    ]
+
+  def delete(conn, %{"userID" => id}) do
+    case Account.get_user(id) do
+      nil ->
+        {:error, :not_found}
+      user ->
+        with {:ok, %User{}} <- Account.delete_user(user) do
+          send_resp(conn, :no_content, "")
+        end
     end
   end
 end

@@ -3,19 +3,49 @@ defmodule Time_managerWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug OpenApiSpex.Plug.PutApiSpec, module: Time_managerWeb.ApiSpec
+  end
+
+  pipeline :browser do
+    plug :accepts, ["html"]
   end
 
   scope "/api", Time_managerWeb do
     pipe_through :api
+
+    scope "/users" do
+      get "/", UserController, :index
+      post "/", UserController, :create
+      get "/:userID", UserController, :show
+      put "/:userID", UserController, :update
+      delete "/:userID", UserController, :delete
+    end
+
+    scope "/workingtime" do
+      get "/:userID/:id", WorkingTimeController, :show
+      get "/:userID", WorkingTimeController, :index
+      post "/:userID", WorkingTimeController, :create
+      put "/:id", WorkingTimeController, :update
+      delete "/:id", WorkingTimeController, :delete
+    end
+
+    scope "/clocks" do
+      get "/:userID", ClockController, :index
+      post "/:userID", ClockController, :create
+    end
   end
 
-  # Enable LiveDashboard and Swoosh mailbox preview in development
+  scope "/api" do
+    pipe_through :api
+    get "/openapi", OpenApiSpex.Plug.RenderSpec, []
+  end
+
+  scope "/swagger" do
+    pipe_through :browser
+    get "/swaggerui", OpenApiSpex.Plug.SwaggerUI, path: "/api/openapi"
+  end
+
   if Application.compile_env(:manager, :dev_routes) do
-    # If you want to use the LiveDashboard in production, you should put
-    # it behind authentication and allow only admins to access it.
-    # If your application does not have an admins-only section yet,
-    # you can use Plug.BasicAuth to set up some basic authentication
-    # as long as you are also using SSL (which you should anyway).
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do

@@ -21,6 +21,26 @@ defmodule Time_manager.Account do
     Repo.all(User)
   end
 
+  def list_users(params) do
+    query = from(u in User)
+
+    query =
+      if params["email"] do
+        where(query, [u], u.email == ^params["email"])
+      else
+        query
+      end
+
+    query =
+      if params["username"] do
+        where(query, [u], u.username == ^params["username"])
+      else
+        query
+      end
+
+    Repo.all(query)
+  end
+
   @doc """
   Gets a single user.
 
@@ -36,6 +56,8 @@ defmodule Time_manager.Account do
 
   """
   def get_user!(id), do: Repo.get!(User, id)
+
+  def get_user(id), do: Repo.get(User, id)
 
   @doc """
   Creates a user.

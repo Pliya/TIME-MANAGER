@@ -45,5 +45,6 @@ defmodule Time_managerWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
+  plug Corsica, origins: "*", allow_headers: :all, allow_methods: :all
   plug Time_managerWeb.Router
 end

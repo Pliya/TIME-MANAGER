@@ -17,8 +17,10 @@ defmodule Time_manager.Attendance do
       [%Clock{}, ...]
 
   """
-  def list_clocks do
-    Repo.all(Clock)
+  def list_clocks(user_id) do
+    Clock
+    |> where(user_id: ^user_id)
+    |> Repo.all()
   end
 
   @doc """
@@ -49,9 +51,20 @@ defmodule Time_manager.Attendance do
       {:error, %Ecto.Changeset{}}
 
   """
-  def create_clock(attrs \\ %{}) do
-    %Clock{}
-    |> Clock.changeset(attrs)
+  def create_clock(user_id) do
+    last_status =
+      from(c in Clock,
+        where: c.user_id == ^user_id,
+        order_by: [desc: c.time],
+        limit: 1,
+        select: c.status
+      )
+      |> Repo.one()
+
+    new_status = if last_status, do: false, else: true
+
+    %Clock{user_id: user_id, status: new_status, time: DateTime.utc_now() |> DateTime.truncate(:second)}
+    |> Clock.changeset(%{})
     |> Repo.insert()
   end
 
