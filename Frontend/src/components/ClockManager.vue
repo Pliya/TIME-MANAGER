@@ -1,30 +1,29 @@
-<script setup >
-    import {ref} from 'vue';
+<script setup>
+    import { ref, onMounted, watch } from 'vue';
     import axios from 'axios';
-    import { useRoute } from 'vue-router';
 
+    const props = defineProps({
+        userId: {
+            required: true
+        }
+    });
 
     const startDateTime = ref(null);
     const clockIn = ref(false);
     const error = ref("");
-    const route = useRoute();
-    const userId = route.params.userId;
-    const data = ref("");
-
+    
     async function refresh() {
         error.value = "";
         try {
-            const reponse = await axios.get(`http://localhost:4000/api/clocks/${userId}`);
+            const reponse = await axios.get(`http://localhost:4000/api/clocks/${props.userId}`);
             const clocksArray = reponse.data.data;
             if (clocksArray && clocksArray.length > 0) {
                 const lastClock = clocksArray[clocksArray.length - 1];
                 if (lastClock.status) {
                     startDateTime.value = lastClock.time;
-                    console.log("lastClock.time", startDateTime.value);
                     clockIn.value = true;
                 } else {
                     startDateTime.value = null;
-                    console.log("lastClock.time", startDateTime.value);
                     clockIn.value = false;
                 }
             } else {
@@ -34,13 +33,22 @@
         } catch (err) {
             error.value = "Erreur lors de la récupération des clocks : " + err.message;
         }
-           
     }
 
     async function clock() {
         error.value = "";
         try {
-            const reponse = await axios.post(`http://localhost:4000/api/clocks/${userId}`);
+            const date = new Date();
+            const pad = (n) => n.toString().padStart(2, '0');
+            const formattedTime = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+            
+            const payload = {
+                clock: {
+                    status: !clockIn.value,
+                    time: formattedTime
+                }
+            };
+            const reponse = await axios.post(`http://localhost:4000/api/clocks/${props.userId}`, payload);
             const newClock = reponse.data.data;
             
             if (newClock.status) {
@@ -53,9 +61,15 @@
         } catch (err) {
             error.value = "Erreur lors du clocking : " + err.message;
         }
-
     }
 
+    onMounted(() => {
+        refresh();
+    });
+
+    watch(() => props.userId, () => {
+        refresh();
+    });
 </script>
 
 
