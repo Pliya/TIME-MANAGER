@@ -1,25 +1,41 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import ClockManager from './components/ClockManager.vue'
-import ChartManager from './components/ChartManager.vue'
+import axios from 'axios'
 
 const route = useRoute()
 const userId = ref(1)
+const currentUser = ref(null)
 
-// Titre dynamique basé sur la route
-const pageTitle = computed(() => {
-  const path = route.path
-  if (path === '/working-times') return 'Mes temps de travail'
-  if (path === '/profile') return 'Profil'
-  if (path === '/clock') return 'Clock Manager'
+const page_title = computed(() => {
+  if (route.path === '/working-times') return 'Mes temps de travail'
+  if (route.path === '/profile') return 'Profil'
+  if (route.path === '/clock') return 'Clock Manager'
   return 'Accueil'
 })
+
+async function fetchCurrentUser() {
+  if (!userId.value) {
+    currentUser.value = null
+    return
+  }
+  try {
+    const { data } = await axios.get(`http://localhost:4000/api/users/${userId.value}`)
+    currentUser.value = data.data || null
+  } catch (err) {
+    console.error('Erreur chargement user topbar:', err)
+  }
+}
+
+function handleUserUpdated(updatedUser) {
+  currentUser.value = updatedUser
+}
+
+onMounted(fetchCurrentUser)
 </script>
 
 <template>
   <div class="layout">
-    <!-- ── Sidebar ── -->
     <aside class="sidebar">
       <div class="sidebar-brand">
         <div class="brand-icon">
@@ -68,61 +84,29 @@ const pageTitle = computed(() => {
       </div>
     </aside>
 
-    <!-- ── Right panel ── -->
     <div class="main-wrapper">
       <header class="topbar">
-        <h2 class="page-title">{{ pageTitle }}</h2>
+        <h2 class="page-title">{{ page_title }}</h2>
         <div class="user-badge">
-          <div class="avatar">H</div>
+          <div class="avatar">
+            {{ currentUser?.username ? currentUser.username.charAt(0).toUpperCase() : 'U' }}
+          </div>
           <div class="user-info">
-            <span class="user-name">Hilton</span>
-            <span class="user-email">hilton@gmail.com</span>
+            <span class="user-name">{{ currentUser?.username || 'Utilisateur' }}</span>
+            <span class="user-email">{{ currentUser?.email || 'email@example.com' }}</span>
           </div>
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
       </header>
 
       <main class="main-content">
-        <!-- 🏠 ACCUEIL SECTION -->
-        <div v-show="route.path === '/'" class="dashboard-grid">
-           <div class="welcome-card">
-              <div>
-                <p class="welcome-date">Aujourd'hui</p>
-                <h1 class="welcome-title">Bonjour, Hilton</h1>
-              </div>
-           </div>
-        </div>
-
-        <!-- ⏱ CLOCK MANAGER SECTION -->
-        <div v-show="route.path === '/clock'" class="dashboard-grid">
-           <p class="subtitle">Déclarez vos heures de travail en un clic.</p>
-           
-           <ClockManager :userId="userId" />
-           
-           <div class="chart-section">
-             <h3>Mes statistiques</h3>
-             <p class="chart-subtitle">Suivez votre activité et vos heures de travail.</p>
-             <ChartManager :userId="userId" />
-           </div>
-        </div>
-        
-        <!-- 📅 WORKING TIMES SECTION -->
-        <div v-show="route.path === '/working-times'" class="dashboard-grid">
-           <p class="subtitle">Gérez vos plages horaires de travail.</p>
-           <div class="placeholder-card">
-              <h3>Mes temps de travail</h3>
-              <p>Placez le composant <code>WorkingTimes.vue</code> existant ici.</p>
-           </div>
-        </div>
-
-        <!-- 👤 PROFILE SECTION -->
-        <div v-show="route.path === '/profile'" class="dashboard-grid">
-           <p class="subtitle">Gérez vos informations personnelles.</p>
-           <div class="placeholder-card">
-              <h3>Mon Profil</h3>
-              <p>Placez le composant <code>UserComponent.vue</code> existant ici.</p>
-           </div>
-        </div>
+        <router-view v-slot="{ Component }">
+          <component
+            :is="Component"
+            :userId="userId"
+            @user-updated="handleUserUpdated"
+          />
+        </router-view>
       </main>
     </div>
   </div>
@@ -136,7 +120,6 @@ const pageTitle = computed(() => {
   overflow: hidden;
 }
 
-/* ── Sidebar ── */
 .sidebar {
   width: 240px;
   min-width: 240px;
@@ -198,7 +181,6 @@ const pageTitle = computed(() => {
 
 .logout:hover { background: rgba(239,68,68,0.15); color: #fca5a5; }
 
-/* ── Main ── */
 .main-wrapper {
   flex: 1;
   min-width: 0;
@@ -243,34 +225,4 @@ const pageTitle = computed(() => {
   padding: 28px 32px;
   background: #f0f4fb;
 }
-
-/* ── Dashboard Content ── */
-.dashboard-grid {
-  display: flex; flex-direction: column; gap: 24px;
-}
-
-.welcome-card {
-  background: #1d4ed8;
-  border-radius: 12px;
-  padding: 28px 32px;
-  color: #fff;
-}
-.welcome-date { font-size: 13px; color: rgba(255,255,255,0.8); margin-bottom: 6px; }
-.welcome-title { font-size: 22px; font-weight: 700; }
-
-.subtitle { color: #8a97b5; font-size: 15px; margin-top: -8px; margin-bottom: 4px; }
-
-.chart-section {
-  margin-top: 24px;
-}
-.chart-section h3 { font-size: 18px; font-weight: 700; color: #1e2a4a; margin-bottom: 4px; }
-.chart-subtitle { color: #8a97b5; font-size: 14px; margin-bottom: 20px; }
-
-.placeholder-card {
-  background: #fff; border-radius: 12px; padding: 32px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05); text-align: center;
-}
-.placeholder-card h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
-.placeholder-card p { color: #8a97b5; font-size: 14px; }
-.placeholder-card code { background: #f0f4fb; padding: 2px 6px; border-radius: 4px; font-size: 13px; color: #2563eb; }
 </style>

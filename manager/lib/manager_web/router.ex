@@ -3,6 +3,11 @@ defmodule Time_managerWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug OpenApiSpex.Plug.PutApiSpec, module: Time_managerWeb.ApiSpec
+  end
+
+  pipeline :browser do
+    plug :accepts, ["html"]
   end
 
   scope "/api", Time_managerWeb do
@@ -28,6 +33,16 @@ defmodule Time_managerWeb.Router do
       get "/:userID", ClockController, :index
       post "/:userID", ClockController, :create
     end
+  end
+
+  scope "/api" do
+    pipe_through :api
+    get "/openapi", OpenApiSpex.Plug.RenderSpec, []
+  end
+
+  scope "/swagger" do
+    pipe_through :browser
+    get "/swaggerui", OpenApiSpex.Plug.SwaggerUI, path: "/api/openapi"
   end
 
   if Application.compile_env(:manager, :dev_routes) do
