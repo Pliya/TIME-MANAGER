@@ -11,14 +11,17 @@ import {
     BarElement,
     ArcElement,
     LineController,
-    BarController
+    BarController,
+    DoughnutController,
+    PieController
 } from 'chart.js'
 import { Chart } from 'vue-chartjs'
 
 ChartJS.register(
     Title, Tooltip, Legend,
     LineElement, PointElement, CategoryScale, LinearScale,
-    BarElement, ArcElement, LineController, BarController
+    BarElement, ArcElement, LineController, BarController,
+    DoughnutController, PieController
 )
 
 const props = defineProps({

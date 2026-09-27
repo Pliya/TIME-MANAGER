@@ -3,7 +3,11 @@ import { ref, onMounted, watch } from 'vue'
 import axios from 'axios'
 import ChartInterface from './ChartInterface.vue'
 
-const props = defineProps({ userId: { required: true } })
+const props = defineProps({
+  userId: {
+    required: true
+  }
+})
 
 const line_data = ref({ labels: [], datasets: [] })
 const bar_data = ref({ labels: [], datasets: [] })
@@ -12,13 +16,24 @@ const base_options = {
   responsive: true,
   maintainAspectRatio: false,
   layout: { padding: { top: 10, right: 15, bottom: 10, left: 10 } },
-  plugins: { legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 6 } } }
+  plugins: {
+    legend: {
+      position: 'top',
+      align: 'end',
+      labels: { usePointStyle: true, boxWidth: 6 }
+    }
+  }
 }
 
 const line_options = {
   ...base_options,
   scales: {
-    y: { min: 6, max: 22, ticks: { stepSize: 4, callback: v => v + 'h' }, grid: { color: '#f1f5f9' } },
+    y: {
+      min: 6,
+      max: 22,
+      ticks: { stepSize: 4, callback: v => v + 'h' },
+      grid: { color: '#f1f5f9' }
+    },
     x: { grid: { display: false } }
   }
 }
@@ -31,42 +46,42 @@ const bar_options = {
   }
 }
 
-async function loadCharts() {
+async function load_charts_data() {
   try {
     const { data } = await axios.get(`http://localhost:4000/api/clocks/${props.userId}`)
-    const clocks = data.data || []
+    const clocks_list = data.data || []
 
     const days_map = {}
     const hours_in = Array(24).fill(0)
     const hours_out = Array(24).fill(0)
 
-    clocks.forEach(c => {
+    clocks_list.forEach(c => {
       const d = new Date(c.time.replace(' ', 'T'))
       const key = d.toISOString().split('T')[0]
-      const hourDecimal = d.getHours() + d.getMinutes() / 60
+      const hour_decimal = d.getHours() + d.getMinutes() / 60
 
       if (!days_map[key]) {
         const label = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })
         days_map[key] = { label, in: null, out: null }
       }
-      if (c.status && !days_map[key].in) days_map[key].in = hourDecimal
-      else if (!c.status) days_map[key].out = hourDecimal
+      if (c.status && !days_map[key].in) days_map[key].in = hour_decimal
+      else if (!c.status) days_map[key].out = hour_decimal
 
       const h = d.getHours()
       c.status ? hours_in[h]++ : hours_out[h]++
     })
 
-    // 1. Line Chart (Horaires de pointage)
-    const days = Object.values(days_map).slice(-7)
+    // 1. Line Chart (Horaires de pointage sur 7 jours)
+    const days_list = Object.values(days_map).slice(-7)
     line_data.value = {
-      labels: days.map(d => d.label),
+      labels: days_list.map(d => d.label),
       datasets: [
-        { label: 'Clock In', data: days.map(d => d.in), borderColor: '#10b981', backgroundColor: '#10b981', tension: 0.2, pointRadius: 5 },
-        { label: 'Clock Out', data: days.map(d => d.out), borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.2, pointRadius: 5 }
+        { label: 'Clock In', data: days_list.map(d => d.in), borderColor: '#10b981', backgroundColor: '#10b981', tension: 0.2, pointRadius: 5 },
+        { label: 'Clock Out', data: days_list.map(d => d.out), borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.2, pointRadius: 5 }
       ]
     }
 
-    // 2. Bar Chart (Fréquence des pointages)
+    // 2. Bar Chart (Fréquence des pointages par heure)
     const active_hours = Array.from({ length: 24 }, (_, i) => i).filter(h => hours_in[h] || hours_out[h])
     bar_data.value = {
       labels: active_hours.length ? active_hours.map(h => `${String(h).padStart(2, '0')}h`) : ['-'],
@@ -80,13 +95,13 @@ async function loadCharts() {
   }
 }
 
-onMounted(loadCharts)
-watch(() => props.userId, loadCharts)
+onMounted(load_charts_data)
+watch(() => props.userId, load_charts_data)
 </script>
 
 <template>
   <div class="charts-wrapper">
-    <!-- Chart 1: Horaires de pointage -->
+    <!-- Graphique 1 : Horaires de pointage -->
     <div class="chart-card">
       <div class="chart-header">
         <div class="chart-icon">
@@ -102,7 +117,7 @@ watch(() => props.userId, loadCharts)
       </div>
     </div>
 
-    <!-- Chart 2: Fréquence des pointages -->
+    <!-- Graphique 2 : Fréquence des pointages -->
     <div class="chart-card">
       <div class="chart-header">
         <div class="chart-icon">
@@ -126,6 +141,7 @@ watch(() => props.userId, loadCharts)
   grid-template-columns: 1fr 1fr;
   gap: 20px;
 }
+
 .chart-card {
   background: #ffffff;
   border-radius: 14px;
@@ -134,13 +150,44 @@ watch(() => props.userId, loadCharts)
   border: 1px solid #f1f5f9;
   overflow: hidden;
 }
-.chart-header { display: flex; gap: 12px; margin-bottom: 16px; }
-.chart-icon { color: #6366f1; background: #eef2ff; padding: 10px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-.chart-header h3 { font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
-.chart-header p { font-size: 12.5px; color: #94a3b8; }
+
+.chart-header {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.chart-icon {
+  color: #2563eb;
+  background: #eff6ff;
+  padding: 10px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 2px;
+}
+
+.chart-header p {
+  font-size: 12.5px;
+  color: #94a3b8;
+}
+
 .chart-container {
   position: relative;
   width: 100%;
   height: 280px;
+}
+
+@media (max-width: 900px) {
+  .charts-wrapper {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

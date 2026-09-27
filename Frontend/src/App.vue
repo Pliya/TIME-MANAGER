@@ -4,34 +4,33 @@ import { useRoute } from 'vue-router'
 import axios from 'axios'
 
 const route = useRoute()
-const userId = ref(1)
-const currentUser = ref(null)
+const user_id = ref(1)
+const current_user = ref(null)
 
 const page_title = computed(() => {
-  if (route.path === '/working-times') return 'Mes temps de travail'
+  if (route.path.startsWith('/workingTimes')) return 'Working Times'
+  if (route.path.startsWith('/workingTime')) return 'Working Time'
+  if (route.path.startsWith('/charts') || route.path.startsWith('/chartManager')) return 'Chart Manager'
+  if (route.path.startsWith('/clock')) return 'Clock Manager'
   if (route.path === '/profile') return 'Profil'
-  if (route.path === '/clock') return 'Clock Manager'
-  return 'Accueil'
+  return 'Dashboard'
 })
 
-async function fetchCurrentUser() {
-  if (!userId.value) {
-    currentUser.value = null
-    return
-  }
+async function fetch_current_user() {
+  if (!user_id.value) return
   try {
-    const { data } = await axios.get(`http://localhost:4000/api/users/${userId.value}`)
-    currentUser.value = data.data || null
+    const { data } = await axios.get(`http://localhost:4000/api/users/${user_id.value}`)
+    current_user.value = data.data || null
   } catch (err) {
     console.error('Erreur chargement user topbar:', err)
   }
 }
 
-function handleUserUpdated(updatedUser) {
-  currentUser.value = updatedUser
+function handle_user_updated(updated_user) {
+  current_user.value = updated_user
 }
 
-onMounted(fetchCurrentUser)
+onMounted(fetch_current_user)
 </script>
 
 <template>
@@ -49,21 +48,28 @@ onMounted(fetchCurrentUser)
           <span class="nav-icon">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           </span>
-          <span>Accueil</span>
+          <span>Dashboard</span>
         </router-link>
 
-        <router-link to="/clock" class="nav-item" :class="{ active: route.path === '/clock' }">
+        <router-link to="/clock" class="nav-item" :class="{ active: route.path.startsWith('/clock') }">
           <span class="nav-icon">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           </span>
-          <span>Clock Manager</span>
+          <span>Clock</span>
         </router-link>
 
-        <router-link to="/working-times" class="nav-item" :class="{ active: route.path === '/working-times' }">
+        <router-link to="/charts" class="nav-item" :class="{ active: route.path.startsWith('/charts') || route.path.startsWith('/chartManager') }">
+          <span class="nav-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </span>
+          <span>Charts</span>
+        </router-link>
+
+        <router-link to="/workingTimes" class="nav-item" :class="{ active: route.path.startsWith('/workingTimes') || route.path.startsWith('/workingTime') }">
           <span class="nav-icon">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           </span>
-          <span>Mes temps de travail</span>
+          <span>Working Times</span>
         </router-link>
 
         <router-link to="/profile" class="nav-item" :class="{ active: route.path === '/profile' }">
@@ -89,11 +95,11 @@ onMounted(fetchCurrentUser)
         <h2 class="page-title">{{ page_title }}</h2>
         <div class="user-badge">
           <div class="avatar">
-            {{ currentUser?.username ? currentUser.username.charAt(0).toUpperCase() : 'U' }}
+            {{ current_user?.username ? current_user.username.charAt(0).toUpperCase() : 'H' }}
           </div>
           <div class="user-info">
-            <span class="user-name">{{ currentUser?.username || 'Utilisateur' }}</span>
-            <span class="user-email">{{ currentUser?.email || 'email@example.com' }}</span>
+            <span class="user-name">{{ current_user?.username || 'Hilton' }}</span>
+            <span class="user-email">{{ current_user?.email || 'hilton@email.com' }}</span>
           </div>
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
@@ -103,8 +109,8 @@ onMounted(fetchCurrentUser)
         <router-view v-slot="{ Component }">
           <component
             :is="Component"
-            :userId="userId"
-            @user-updated="handleUserUpdated"
+            :userId="user_id"
+            @user-updated="handle_user_updated"
           />
         </router-view>
       </main>

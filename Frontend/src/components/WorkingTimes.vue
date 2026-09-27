@@ -15,6 +15,7 @@
           <p class="subtitle">View and manage your working times. You can also create new working times manually.</p>
         </div>
       </div>
+      <router-link to="/workingTime" class="add-btn">+ Add Working Time</router-link>
     </header>
 
     <div v-if="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
@@ -427,22 +428,20 @@ defineExpose({
   margin: 0 auto;
 }
 
-.header { display: flex; justify-content: space-between; align-items: center; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
 .header-title { display: flex; align-items: center; gap: 12px; }
 .header-badge {
   width: 44px; height: 44px; border-radius: 10px;
   background: #eff6ff; color: #2563eb;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.header h2 { margin: 0; color: #1e293b; font-size: 22px; }
+.header h2 { margin: 0; color: #1e293b; font-size: 22px; font-weight: 700; }
 .subtitle { margin: 3px 0 0; color: #64748b; font-size: 13.5px; }
-.btn-refresh {
-  display: flex; align-items: center; gap: 8px;
-  background: white; border: 1px solid #cbd5e1; border-radius: 8px;
-  padding: 8px 14px; font-weight: 600; font-size: 13px; color: #475569;
-  cursor: pointer; transition: all 0.15s;
+.add-btn {
+  padding: 10px 18px; background: #2563eb; color: #ffffff; text-decoration: none;
+  font-size: 14px; font-weight: 600; border-radius: 8px; transition: background 0.15s;
 }
-.btn-refresh:hover { background: #f8fafc; color: #1e293b; border-color: #94a3b8; }
+.add-btn:hover { background: #1d4ed8; }
 
 /* KPIs */
 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
