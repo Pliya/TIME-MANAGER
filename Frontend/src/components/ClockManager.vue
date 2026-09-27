@@ -97,7 +97,7 @@ const last_working_times = computed(() => {
         })
       }
     }
-    if (result.length >= 5) break
+    if (result.length >= 8) break
   }
   return result
 })
@@ -191,28 +191,32 @@ const last_working_times = computed(() => {
 <style scoped>
 .clock-manager-grid {
   display: grid;
-  grid-template-columns: 340px 1fr;
+  grid-template-columns: 380px 1fr;
   gap: 24px;
+  min-height: calc(100vh - 120px);
+  box-sizing: border-box;
 }
 
 /* --- Card Cadran --- */
 .dial-card {
   background: #ffffff;
-  border-radius: 14px;
-  padding: 32px 24px;
+  border-radius: 16px;
+  padding: 48px 32px;
   border: 1px solid #f1f5f9;
-  box-shadow: 0 2px 8px rgba(30,42,74,0.04);
+  box-shadow: 0 4px 16px rgba(30,42,74,0.04);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .circle-container {
   position: relative;
-  width: 220px;
-  height: 220px;
-  margin-bottom: 24px;
+  width: 270px;
+  height: 270px;
+  margin-bottom: 36px;
 }
 
 .circle-svg {
@@ -224,13 +228,13 @@ const last_working_times = computed(() => {
 .circle-bg {
   fill: none;
   stroke: #f1f5f9;
-  stroke-width: 12;
+  stroke-width: 10;
 }
 
 .circle-progress {
   fill: none;
   stroke: #cbd5e1;
-  stroke-width: 12;
+  stroke-width: 10;
   stroke-dasharray: 534;
   stroke-dashoffset: 130;
   stroke-linecap: round;
@@ -254,13 +258,13 @@ const last_working_times = computed(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: 14px;
   color: #64748b;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .status-dot-inner {
-  width: 8px; height: 8px;
+  width: 9px; height: 9px;
   border-radius: 50%;
   background: #94a3b8;
 }
@@ -270,13 +274,13 @@ const last_working_times = computed(() => {
 }
 
 .since-text {
-  font-size: 12px;
+  font-size: 13px;
   color: #94a3b8;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .timer-display {
-  font-size: 24px;
+  font-size: 32px;
   font-weight: 700;
   color: #0f172a;
   letter-spacing: -0.02em;
@@ -284,11 +288,11 @@ const last_working_times = computed(() => {
 
 .action-btn {
   width: 100%;
-  max-width: 200px;
-  padding: 12px 24px;
-  border-radius: 10px;
+  max-width: 240px;
+  padding: 14px 28px;
+  border-radius: 12px;
   border: none;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: #fff;
   cursor: pointer;
@@ -297,48 +301,60 @@ const last_working_times = computed(() => {
 
 .btn-clock-in {
   background: #2563eb;
-  box-shadow: 0 4px 12px rgba(37,99,235,0.25);
+  box-shadow: 0 4px 14px rgba(37,99,235,0.3);
 }
 
 .btn-clock-out {
   background: #ef4444;
-  box-shadow: 0 4px 12px rgba(239,68,68,0.25);
+  box-shadow: 0 4px 14px rgba(239,68,68,0.3);
 }
 
-.action-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.action-btn:hover { opacity: 0.92; transform: translateY(-1px); }
 
 /* --- Colonne Droite --- */
 .details-col {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
+  height: 100%;
 }
 
-.session-card, .last-times-card {
+.session-card {
   background: #ffffff;
-  border-radius: 14px;
-  padding: 24px 28px;
+  border-radius: 16px;
+  padding: 28px 32px;
   border: 1px solid #f1f5f9;
-  box-shadow: 0 2px 8px rgba(30,42,74,0.04);
+  box-shadow: 0 4px 16px rgba(30,42,74,0.04);
+}
+
+.last-times-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 28px 32px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 4px 16px rgba(30,42,74,0.04);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .card-subtitle {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: #1e293b;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .session-rows {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .session-row {
   display: flex;
   justify-content: space-between;
-  font-size: 13.5px;
+  font-size: 14px;
 }
 
 .session-row .label { color: #64748b; }
@@ -351,7 +367,7 @@ const last_working_times = computed(() => {
 }
 
 .status-text .dot {
-  width: 7px; height: 7px;
+  width: 8px; height: 8px;
   border-radius: 50%;
   background: #94a3b8;
 }
@@ -362,23 +378,30 @@ const last_working_times = computed(() => {
 .times-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13.5px;
+  font-size: 14px;
 }
 
 .times-table th {
   text-align: left;
   color: #64748b;
   font-weight: 600;
-  padding-bottom: 12px;
+  padding-bottom: 14px;
   border-bottom: 1px solid #f1f5f9;
 }
 
 .times-table td {
-  padding: 12px 0;
+  padding: 16px 0;
   color: #334155;
   border-bottom: 1px solid #f8fafc;
 }
 
 .times-table tr:last-child td { border-bottom: none; }
-.empty { text-align: center; color: #94a3b8; padding: 20px 0; }
+.empty { text-align: center; color: #94a3b8; padding: 30px 0; }
+
+@media (max-width: 960px) {
+  .clock-manager-grid {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+}
 </style>
