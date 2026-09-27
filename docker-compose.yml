@@ -1,0 +1,62 @@
+services:
+
+  db:
+    image: postgres:16
+
+    container_name: time_manager_db
+
+    environment:
+      POSTGRES_USER: ${PGUSER}
+      POSTGRES_PASSWORD: ${PGPASSWORD}
+      POSTGRES_DB: ${PGDATABASE}
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${PGUSER} -d ${PGDATABASE}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+  backend:
+    build:
+      context: ./manager
+      dockerfile: Dockerfile
+
+    container_name: time_manager_backend
+
+    env_file:
+      - .env
+
+    ports:
+      - "4000:4000"
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+
+    container_name: time_manager_frontend
+
+    ports:
+      - "5174:5173"
+
+    depends_on:
+      - backend
+
+
+
+volumes:
+  postgres_data:
