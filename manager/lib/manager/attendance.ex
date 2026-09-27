@@ -61,9 +61,9 @@ defmodule Time_manager.Attendance do
       )
       |> Repo.one()
 
-    new_status = last_status == true
+    new_status = if last_status, do: false, else: true
 
-    %Clock{user_id: user_id, status: new_status, time: DateTime.utc_now()}
+    %Clock{user_id: user_id, status: new_status, time: DateTime.utc_now() |> DateTime.truncate(:second)}
     |> Clock.changeset(%{})
     |> Repo.insert()
   end
