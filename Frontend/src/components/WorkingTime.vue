@@ -1,26 +1,12 @@
 <template>
   <div class="wt-card">
     <div class="wt-card-header">
-      <div class="header-icon-title">
-        <div class="header-icon">
-          <svg v-if="!isEditMode" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="8" x2="12" y2="16"/>
-            <line x1="8" y1="12" x2="16" y2="12"/>
-          </svg>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-        </div>
         <h4 class="wt-card-title">
           {{ isEditMode ? `Modifier la plage #${workingTimeId}` : 'Create a Working Time' }}
         </h4>
-      </div>
       <button v-if="isEditMode" type="button" @click="cancelEdit" class="btn-close-edit" title="Annuler le mode édition">✕</button>
     </div>
 
-    <!-- Alertes avec bouton fermeture et auto-disparition -->
     <div v-if="successMessage" class="alert alert-success">
       <span>{{ successMessage }}</span>
       <button type="button" @click="clearMessages" class="alert-close" title="Fermer">✕</button>
@@ -124,7 +110,6 @@ const successMessage = ref('')
 
 const isEditMode = computed(() => !!workingTimeId.value)
 
-// Calcul en temps réel de la durée
 const durationPreview = computed(() => {
   if (!start.value || !end.value) return null
   const s = new Date(start.value).getTime()
@@ -174,7 +159,6 @@ function clearMessages() {
   }
 }
 
-// Fait disparaître automatiquement le message après 2.5 secondes
 function autoClearMessage() {
   if (timer) clearTimeout(timer)
   timer = setTimeout(() => {
@@ -220,7 +204,6 @@ async function createWorkingTime() {
     if (error.response && error.response.status === 422) {
       errorMessage.value = 'Erreur : La date de fin doit être après la date de début.'
     } else {
-      // Secours local si le backend Phoenix n'est pas encore lancé
       const localRecord = {
         id: Date.now(),
         start: toApiFormat(start.value),
@@ -255,7 +238,6 @@ async function updateWorkingTime() {
     if (error.response && error.response.status === 422) {
       errorMessage.value = 'Erreur : La date de fin doit être après la date de début.'
     } else {
-      // Secours local si le backend Phoenix n'est pas encore lancé
       const localUpdated = {
         id: workingTimeId.value,
         start: toApiFormat(start.value),
@@ -377,19 +359,8 @@ defineExpose({
   gap: 10px;
 }
 
-.header-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: #eff6ff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .wt-card-title {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 18px;
   color: #1e293b;
   margin: 0;
 }

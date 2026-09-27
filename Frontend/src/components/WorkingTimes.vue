@@ -1,79 +1,69 @@
 <template>
   <div class="working-times-container">
-    <header class="header">
-      <div class="header-title">
-        <div class="header-badge">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-            <line x1="16" y1="2" x2="16" y2="6"/>
-            <line x1="8" y1="2" x2="8" y2="6"/>
-            <line x1="3" y1="10" x2="21" y2="10"/>
-          </svg>
-        </div>
-        <div>
-          <h2>Working Times</h2>
-          <p class="subtitle">View and manage your working times. You can also create new working times manually.</p>
-        </div>
-      </div>
-    </header>
 
     <div v-if="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
 
-    <section class="stats-grid">
-      <div class="kpi-card">
-        <div class="kpi-icon-box green">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-          </svg>
-        </div>
-        <div class="kpi-content">
-          <span class="kpi-label">Total Hours</span>
-          <span class="kpi-value">{{ stats.totalHours }}</span>
-          <span class="kpi-trend text-green">↑ Total cumulé</span>
-        </div>
-      </div>
+	<section class="stats-grid">
+	<div class="kpi-card">
+		<div class="kpi-icon icon-green">
+		<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+			<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+		</svg>
+		</div>
+		<div class="kpi-info">
+		<span class="kpi-label">Total Hours</span>
+		<div class="kpi-value-row">
+			<span class="kpi-value">{{ stats.totalHours }}</span>
+			<span class="kpi-sub">Total cumulé</span>
+		</div>
+		</div>
+	</div>
 
-      <div class="kpi-card">
-        <div class="kpi-icon-box blue">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-            <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-          </svg>
-        </div>
-        <div class="kpi-content">
-          <span class="kpi-label">Days Worked</span>
-          <span class="kpi-value">{{ stats.daysWorked }}</span>
-          <span class="kpi-trend text-blue">↑ Jours travaillés</span>
-        </div>
-      </div>
+	<div class="kpi-card">
+		<div class="kpi-icon icon-blue">
+		<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+			<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+		</svg>
+		</div>
+		<div class="kpi-info">
+		<span class="kpi-label">Days Worked</span>
+		<div class="kpi-value-row">
+			<span class="kpi-value">{{ stats.daysWorked }}</span>
+			<span class="kpi-sub">Jours travaillés</span>
+		</div>
+		</div>
+	</div>
 
-      <div class="kpi-card">
-        <div class="kpi-icon-box purple">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-          </svg>
-        </div>
-        <div class="kpi-content">
-          <span class="kpi-label">Regular Hours</span>
-          <span class="kpi-value">{{ stats.avgHours }}</span>
-          <span class="kpi-trend text-purple">↑ Moyenne / jour</span>
-        </div>
-      </div>
+	<div class="kpi-card">
+		<div class="kpi-icon icon-sky">
+		<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+			<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+		</svg>
+		</div>
+		<div class="kpi-info">
+		<span class="kpi-label">Regular Hours</span>
+		<div class="kpi-value-row">
+			<span class="kpi-value">{{ stats.avgHours }}</span>
+			<span class="kpi-sub">Moyenne / jour</span>
+		</div>
+		</div>
+	</div>
 
-      <div class="kpi-card">
-        <div class="kpi-icon-box orange">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-            <polyline points="22 4 12 14.01 9 11.01"/>
-          </svg>
-        </div>
-        <div class="kpi-content">
-          <span class="kpi-label">Plages Enregistrées</span>
-          <span class="kpi-value">{{ stats.totalEntries }}</span>
-          <span class="kpi-trend text-orange">↑ Sessions déclarées</span>
-        </div>
-      </div>
-    </section>
+	<div class="kpi-card">
+		<div class="kpi-icon icon-indigo">
+		<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+			<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+		</svg>
+		</div>
+		<div class="kpi-info">
+		<span class="kpi-label">Plages Enregistrées</span>
+		<div class="kpi-value-row">
+			<span class="kpi-value">{{ stats.totalEntries }}</span>
+			<span class="kpi-sub">Sessions déclarées</span>
+		</div>
+		</div>
+	</div>
+	</section>
 
     <div class="middle-grid">
       <div class="form-col">
@@ -87,15 +77,7 @@
 
       <div class="tip-col">
         <div class="tip-card">
-          <div class="tip-header">
-            <div class="tip-icon-box">
-              <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"/>
-                <line x1="10" y1="22" x2="14" y2="22"/>
-              </svg>
-            </div>
             <h3>Astuce & Organisation</h3>
-          </div>
           <p class="tip-text">
             Sélectionnez une date, une heure de début et de fin, puis cliquez sur <strong>+ Créer</strong>.
           </p>
@@ -417,7 +399,7 @@ defineExpose({
 
 
 <style scoped>
-/* APRÈS — pleine largeur, comme le Dashboard */
+
 .working-times-container {
   display: flex;
   flex-direction: column;
@@ -444,38 +426,49 @@ defineExpose({
 
 /* KPIs */
 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
 .kpi-card {
-  display: flex; align-items: center; gap: 16px;
-  background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
-  padding: 20px 22px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px 20px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 4px 16px rgba(30,42,74,0.04);
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
-.kpi-icon-box {
-  width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+
+.kpi-icon {
+  width: 48px; height: 48px;
+  border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
-  background: var(--bg); color: var(--fg);
+  flex-shrink: 0;
 }
-.kpi-icon-box.green  { --bg: #dcfce7; --fg: #16a34a; }
-.kpi-icon-box.blue   { --bg: #dbeafe; --fg: #2563eb; }
-.kpi-icon-box.purple { --bg: #ede9fe; --fg: #7c3aed; }
-.kpi-icon-box.orange { --bg: #fef3c7; --fg: #d97706; }
 
-.kpi-content { display: flex; flex-direction: column; }
-.kpi-label { font-size: 12px; font-weight: 600; color: #64748b; }
-.kpi-value { font-size: 20px; font-weight: 700; color: #0f172a; line-height: 1.2; }
-.kpi-trend { font-size: 11px; font-weight: 500; margin-top: 2px; }
-.text-green  { color: #16a34a; }
-.text-blue, .target-val.blue   { color: #2563eb; }
-.text-purple, .target-val.purple { color: #7c3aed; }
-.text-orange { color: #d97706; }
+.icon-blue { background: #eff6ff; color: #2563eb; }
+.icon-sky { background: #f0f9ff; color: #0284c7; }
+.icon-indigo { background: #eef2ff; color: #4f46e5; }
+.icon-green { background: #ecfdf5; color: #10b981; }
 
-.middle-grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 20px; align-items: stretch; }
-.form-col, .tip-col { width: 100%; }
+.kpi-info { display: flex; flex-direction: column; gap: 4px; }
+.kpi-label { font-size: 13px; color: #64748b; font-weight: 500; }
+.kpi-value-row { display: flex; align-items: baseline; gap: 8px; }
+.kpi-value { font-size: 22px; font-weight: 700; color: #0f172a; }
+.kpi-sub { font-size: 11.5px; color: #94a3b8; }
+
+.middle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: stretch; }
+.tip-col { width: 100%; }
 
 .tip-card {
   height: 100%; box-sizing: border-box;
   display: flex; flex-direction: column; justify-content: space-between;
-  background: white; border: 1px solid #e2e8f0; border-radius: 12px;
-  padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  background: white; border: 1px solid #e2e8f0; border-radius: 14px;
+  padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);
 }
 .tip-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .tip-icon-box {
@@ -494,7 +487,6 @@ defineExpose({
 .target-label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: #64748b; }
 .target-val { font-size: 14px; font-weight: 700; margin-top: 4px; }
 
-/* Tableau */
 .table-card {
   width: 100%; box-sizing: border-box;
   background: white; border: 1px solid #e2e8f0; border-radius: 12px;
