@@ -50,7 +50,7 @@
 
       <div class="wt-actions">
         <button type="submit" class="btn btn-primary btn-submit">
-          {{ isEditMode ? '✓ Enregistrer les modifications' : '+ Create' }}
+          {{ isEditMode ? 'Enregistrer les modifications' : '+ Create' }}
         </button>
 
         <div v-if="isEditMode" class="edit-secondary-actions">
@@ -194,7 +194,7 @@ async function createWorkingTime() {
 
   try {
     const response = await axios.post(`${API_URL}/workingtime/${userId.value}`, payload)
-    successMessage.value = '✓ Temps de travail créé avec succès.'
+    successMessage.value = 'Temps de travail créé avec succès.'
     const newRecord = response.data.data || response.data
     resetForm()
     emit('refresh-list', newRecord)
@@ -210,7 +210,7 @@ async function createWorkingTime() {
         end: toApiFormat(end.value),
         user_id: userId.value
       }
-      successMessage.value = '✓ Temps de travail créé !'
+      successMessage.value = 'Temps de travail créé !'
       resetForm()
       emit('refresh-list', localRecord)
       autoClearMessage()
@@ -228,7 +228,7 @@ async function updateWorkingTime() {
   }
   try {
     const response = await axios.put(`${API_URL}/workingtime/${workingTimeId.value}`, payload)
-    successMessage.value = '✓ Modification effectuée avec succès.'
+    successMessage.value = 'Modification effectuée avec succès.'
     const updatedRecord = response.data.data || response.data
     resetForm()
     emit('refresh-list', updatedRecord)
@@ -244,7 +244,7 @@ async function updateWorkingTime() {
         end: toApiFormat(end.value),
         user_id: userId.value
       }
-      successMessage.value = '✓ Modification effectuée avec succès !'
+      successMessage.value = 'Modification effectuée avec succès !'
       resetForm()
       emit('refresh-list', localUpdated)
       autoClearMessage()
@@ -257,7 +257,7 @@ async function deleteWorkingTime() {
   clearMessages()
   try {
     await axios.delete(`${API_URL}/workingtime/${idToDelete}`)
-    successMessage.value = '✓ Temps de travail supprimé avec succès.'
+    successMessage.value = 'Temps de travail supprimé avec succès.'
     resetForm()
     emit('refresh-list', { deletedId: idToDelete })
     autoClearMessage()

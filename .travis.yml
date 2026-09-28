@@ -1,0 +1,4 @@
+language: minimal
+
+script:
+  - echo "Hello depuis Travis CI"
