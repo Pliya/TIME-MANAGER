@@ -94,18 +94,18 @@ const lastSessions = computed(() =>
 
 <template>
   <div class="space-y-6">
-    <p v-if="error" class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{{ error }}</p>
+    <p v-if="error" class="rounded-xl bg-red-50 px-3 py-3 sm:px-4 text-sm text-red-600">{{ error }}</p>
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
       <div class="space-y-6">
-        <div class="flex flex-col items-center rounded-2xl bg-white p-8">
+        <div class="flex flex-col items-center rounded-2xl bg-white p-6 sm:p-8">
           <span
             class="rounded-full px-3 py-1 text-sm font-medium"
             :class="isClockedIn ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-500'"
           >
             {{ isClockedIn ? 'En cours' : 'Arrêté' }}
           </span>
-          <p class="mt-8 text-7xl font-bold tracking-tight tabular-nums">{{ elapsed }}</p>
+          <p class="mt-6 text-5xl font-bold tracking-tight tabular-nums sm:mt-8 sm:text-7xl">{{ elapsed }}</p>
           <p class="mt-2 text-sm text-neutral-400">
             {{ startedAt ? `Depuis ${formatTime(startedAt)}` : 'Aucune session en cours' }}
           </p>
@@ -145,27 +145,29 @@ const lastSessions = computed(() =>
 
       <div class="rounded-2xl bg-white p-6 xl:col-span-2">
         <p class="mb-4 font-medium">Dernières sessions</p>
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="bg-neutral-50 text-left text-neutral-500">
-              <th class="rounded-l-lg px-4 py-3 font-medium">Date</th>
-              <th class="px-4 py-3 font-medium">Arrivée</th>
-              <th class="px-4 py-3 font-medium">Départ</th>
-              <th class="rounded-r-lg px-4 py-3 font-medium">Durée</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="session in lastSessions" :key="session.id" class="border-b border-neutral-100 last:border-0">
-              <td class="px-4 py-3 font-medium">{{ session.date }}</td>
-              <td class="px-4 py-3">{{ session.start }}</td>
-              <td class="px-4 py-3">{{ session.end }}</td>
-              <td class="px-4 py-3">{{ session.duration }}</td>
-            </tr>
-            <tr v-if="lastSessions.length === 0">
-              <td colspan="4" class="px-4 py-8 text-center text-neutral-400">Aucune session enregistrée.</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-max text-sm">
+            <thead>
+              <tr class="bg-neutral-50 text-left text-neutral-500">
+                <th class="rounded-l-lg px-3 py-3 sm:px-4 font-medium">Date</th>
+                <th class="px-3 py-3 sm:px-4 font-medium">Arrivée</th>
+                <th class="px-3 py-3 sm:px-4 font-medium">Départ</th>
+                <th class="rounded-r-lg px-3 py-3 sm:px-4 font-medium">Durée</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="session in lastSessions" :key="session.id" class="border-b border-neutral-100 last:border-0">
+                <td class="px-3 py-3 sm:px-4 font-medium">{{ session.date }}</td>
+                <td class="px-3 py-3 sm:px-4">{{ session.start }}</td>
+                <td class="px-3 py-3 sm:px-4">{{ session.end }}</td>
+                <td class="px-3 py-3 sm:px-4">{{ session.duration }}</td>
+              </tr>
+              <tr v-if="lastSessions.length === 0">
+                <td colspan="4" class="px-4 py-8 text-center text-neutral-400">Aucune session enregistrée.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>

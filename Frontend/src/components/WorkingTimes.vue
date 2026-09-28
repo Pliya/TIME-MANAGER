@@ -55,9 +55,9 @@ const stats = computed(() => summarize(sessions.value))
 
 <template>
   <div class="space-y-6">
-    <p v-if="error" class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{{ error }}</p>
+    <p v-if="error" class="rounded-xl bg-red-50 px-3 py-3 sm:px-4 text-sm text-red-600">{{ error }}</p>
 
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="grid grid-cols-2 gap-4 lg:gap-6 xl:grid-cols-4">
       <StatCard label="Heures totales" :value="stats.total" hint="Depuis le début" :icon="Clock" />
       <StatCard label="Jours travaillés" :value="stats.days" hint="Depuis le début" :icon="CalendarCheck" />
       <StatCard label="Moyenne par jour" :value="stats.average" hint="Depuis le début" :icon="TrendingUp" />
@@ -87,14 +87,14 @@ const stats = computed(() => summarize(sessions.value))
           </div>
         </div>
 
-        <div class="max-h-[28rem] overflow-y-auto">
-          <table class="w-full text-sm">
+        <div class="max-h-[28rem] overflow-auto">
+          <table class="w-full min-w-max text-sm">
             <thead class="sticky top-0 z-10">
               <tr class="bg-neutral-50 text-left text-neutral-500">
-                <th class="rounded-l-lg px-4 py-3 font-medium">Date</th>
-                <th class="px-4 py-3 font-medium">Horaires</th>
-                <th class="px-4 py-3 font-medium">Durée</th>
-                <th class="rounded-r-lg px-4 py-3"></th>
+                <th class="rounded-l-lg px-3 py-3 sm:px-4 font-medium">Date</th>
+                <th class="px-3 py-3 sm:px-4 font-medium">Horaires</th>
+                <th class="px-3 py-3 sm:px-4 font-medium">Durée</th>
+                <th class="rounded-r-lg px-3 py-3 sm:px-4"></th>
               </tr>
             </thead>
             <tbody>
@@ -104,14 +104,14 @@ const stats = computed(() => summarize(sessions.value))
                 class="border-b border-neutral-100 last:border-0"
                 :class="{ 'bg-neutral-100': selectedId === session.id }"
               >
-                <td class="px-4 py-3 font-medium">{{ formatDay(session.start) }}</td>
-                <td class="px-4 py-3 text-neutral-500">{{ formatTime(session.start) }} - {{ formatTime(session.end) }}</td>
-                <td class="px-4 py-3">
+                <td class="px-3 py-3 sm:px-4 font-medium">{{ formatDay(session.start) }}</td>
+                <td class="px-3 py-3 sm:px-4 text-neutral-500">{{ formatTime(session.start) }} - {{ formatTime(session.end) }}</td>
+                <td class="px-3 py-3 sm:px-4">
                   <span class="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-900">
                     {{ formatDuration(session.end - session.start) }}
                   </span>
                 </td>
-                <td class="px-4 py-3">
+                <td class="px-3 py-3 sm:px-4">
                   <div class="flex justify-end gap-1">
                     <button class="rounded-lg p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900" @click="selectedId = session.id">
                       <Pencil class="h-4 w-4" />

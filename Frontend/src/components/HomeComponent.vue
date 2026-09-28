@@ -94,9 +94,9 @@ const recentSessions = computed(() => {
 
 <template>
   <div class="space-y-6">
-    <p v-if="error" class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{{ error }}</p>
+    <p v-if="error" class="rounded-xl bg-red-50 px-3 py-3 sm:px-4 text-sm text-red-600">{{ error }}</p>
 
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="grid grid-cols-2 gap-4 lg:gap-6 xl:grid-cols-4">
       <StatCard label="Heures cette semaine" :value="stats.total" hint="Depuis lundi" :icon="Clock" />
       <StatCard label="Jours travaillés" :value="stats.days" hint="Cette semaine" :icon="CalendarCheck" />
       <StatCard label="Moyenne par jour" :value="stats.average" hint="Cette semaine" :icon="TrendingUp" />
@@ -138,34 +138,36 @@ const recentSessions = computed(() => {
         <p class="font-medium">Sessions récentes</p>
         <router-link to="/workingTimes" class="text-sm font-medium text-neutral-900 hover:underline">Voir tout</router-link>
       </div>
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="bg-neutral-50 text-left text-neutral-500">
-            <th class="rounded-l-lg px-4 py-3 font-medium">Date</th>
-            <th class="px-4 py-3 font-medium">Arrivée</th>
-            <th class="px-4 py-3 font-medium">Départ</th>
-            <th class="rounded-r-lg px-4 py-3 font-medium">Durée</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="session in recentSessions" :key="session.id" class="border-b border-neutral-100 last:border-0">
-            <td class="px-4 py-3 font-medium">{{ session.date }}</td>
-            <td class="px-4 py-3">{{ session.start }}</td>
-            <td class="px-4 py-3">{{ session.end }}</td>
-            <td class="px-4 py-3">
-              <div class="flex items-center gap-3">
-                <div class="h-2 w-32 rounded-full bg-neutral-200">
-                  <div class="h-2 rounded-full bg-neutral-900" :style="{ width: `${session.percent}%` }"></div>
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-max text-sm">
+          <thead>
+            <tr class="bg-neutral-50 text-left text-neutral-500">
+              <th class="rounded-l-lg px-3 py-3 sm:px-4 font-medium">Date</th>
+              <th class="px-3 py-3 sm:px-4 font-medium">Arrivée</th>
+              <th class="px-3 py-3 sm:px-4 font-medium">Départ</th>
+              <th class="rounded-r-lg px-3 py-3 sm:px-4 font-medium">Durée</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="session in recentSessions" :key="session.id" class="border-b border-neutral-100 last:border-0">
+              <td class="px-3 py-3 sm:px-4 font-medium">{{ session.date }}</td>
+              <td class="px-3 py-3 sm:px-4">{{ session.start }}</td>
+              <td class="px-3 py-3 sm:px-4">{{ session.end }}</td>
+              <td class="px-3 py-3 sm:px-4">
+                <div class="flex items-center gap-3">
+                  <div class="hidden h-2 w-32 rounded-full bg-neutral-200 sm:block">
+                    <div class="h-2 rounded-full bg-neutral-900" :style="{ width: `${session.percent}%` }"></div>
+                  </div>
+                  <span>{{ session.duration }}</span>
                 </div>
-                <span>{{ session.duration }}</span>
-              </div>
-            </td>
-          </tr>
-          <tr v-if="recentSessions.length === 0">
-            <td colspan="4" class="px-4 py-8 text-center text-neutral-400">Aucune session enregistrée.</td>
-          </tr>
-        </tbody>
-      </table>
+              </td>
+            </tr>
+            <tr v-if="recentSessions.length === 0">
+              <td colspan="4" class="px-4 py-8 text-center text-neutral-400">Aucune session enregistrée.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </template>

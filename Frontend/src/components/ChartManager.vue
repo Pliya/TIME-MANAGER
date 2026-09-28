@@ -41,7 +41,7 @@ function options({ legend = 'top', suffix = '', max, stepSize } = {}) {
 const pieOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  plugins: { legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 8 } } },
+  plugins: { legend: { position: window.innerWidth < 640 ? 'bottom' : 'right', labels: { usePointStyle: true, boxWidth: 8 } } },
 }
 
 const clockTimesChart = computed(() => {
