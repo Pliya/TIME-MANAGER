@@ -1,11 +1,13 @@
-# OS
 .DS_Store
 Thumbs.db
 
-# Editors
 .vscode/*
 !.vscode/extensions.json
 .idea
 
 </> gitignore
 .env
+
+travis_deploy_key*
+key.b64
+test_key

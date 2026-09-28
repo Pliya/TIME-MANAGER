@@ -26,5 +26,5 @@ jobs:
         - echo "" >> ~/.ssh/id_rsa
         - chmod 600 ~/.ssh/id_rsa
         - echo -e "Host *\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
-        - scp docker-compose.prod.yml $SERVER_USER@$SERVER_HOST:~/app/docker-compose.yml
-        - ssh $SERVER_USER@$SERVER_HOST "cd ~/app && docker compose pull && docker compose up -d"
+        - scp docker-compose.prod.yml $SERVER_USER@$SERVER_HOST:~/time-manager/docker-compose.yml
+        - ssh $SERVER_USER@$SERVER_HOST "cd ~/time-manager && docker compose pull && docker compose up -d"
