@@ -1,42 +1,38 @@
-FROM node:22-alpine
 
-# ==========================================
-# Dossier de travail
-# ==========================================
+
+FROM node:22-alpine AS deps
 
 WORKDIR /app
 
-
-# ==========================================
-# Copier les fichiers de dépendances
-# ==========================================
-
 COPY package.json package-lock.json ./
-
-
-# ==========================================
-# Installer les dépendances
-# ==========================================
 
 RUN npm ci
 
 
-# ==========================================
-# Copier le projet
-# ==========================================
+
+FROM deps AS dev
 
 COPY . .
 
-
-# ==========================================
-# Port Vite
-# ==========================================
-
 EXPOSE 5173
 
-
-# ==========================================
-# Démarrer Vite
-# ==========================================
-
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+
+
+
+FROM deps AS build
+
+ARG VITE_API_URL=http://92.4.131.118:4000/api
+ENV VITE_API_URL=${VITE_API_URL}
+
+COPY . .
+
+RUN npm run build
+
+
+FROM nginx:1.27-alpine AS prod
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+
+EXPOSE 80

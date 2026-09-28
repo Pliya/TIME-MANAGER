@@ -5,14 +5,8 @@ defmodule Time_managerWeb.UserControllerTest do
 
   alias Time_manager.Account.User
 
-  @create_attrs %{
-    username: "some username",
-    email: "some email"
-  }
-  @update_attrs %{
-    username: "some updated username",
-    email: "some updated email"
-  }
+  @create_attrs %{username: "some username", email: "some@email.com"}
+  @update_attrs %{username: "some updated username", email: "updated@email.com"}
   @invalid_attrs %{username: nil, email: nil}
 
   setup %{conn: conn} do
@@ -23,6 +17,15 @@ defmodule Time_managerWeb.UserControllerTest do
     test "lists all users", %{conn: conn} do
       conn = get(conn, ~p"/api/users")
       assert json_response(conn, 200)["data"] == []
+    end
+
+    test "filters by email and username", %{conn: conn} do
+      user = user_fixture(%{username: "alice"})
+      user_fixture(%{username: "bob"})
+
+      conn = get(conn, ~p"/api/users?#{[email: user.email, username: "alice"]}")
+      assert [%{"id" => id}] = json_response(conn, 200)["data"]
+      assert id == user.id
     end
   end
 
@@ -35,7 +38,7 @@ defmodule Time_managerWeb.UserControllerTest do
 
       assert %{
                "id" => ^id,
-               "email" => "some email",
+               "email" => "some@email.com",
                "username" => "some username"
              } = json_response(conn, 200)["data"]
     end
@@ -43,6 +46,13 @@ defmodule Time_managerWeb.UserControllerTest do
     test "renders errors when data is invalid", %{conn: conn} do
       conn = post(conn, ~p"/api/users", user: @invalid_attrs)
       assert json_response(conn, 422)["errors"] != %{}
+    end
+  end
+
+  describe "show user" do
+    test "renders 404 when the user does not exist", %{conn: conn} do
+      conn = get(conn, ~p"/api/users/-1")
+      assert json_response(conn, 404)
     end
   end
 
@@ -57,7 +67,7 @@ defmodule Time_managerWeb.UserControllerTest do
 
       assert %{
                "id" => ^id,
-               "email" => "some updated email",
+               "email" => "updated@email.com",
                "username" => "some updated username"
              } = json_response(conn, 200)["data"]
     end
@@ -75,14 +85,20 @@ defmodule Time_managerWeb.UserControllerTest do
       conn = delete(conn, ~p"/api/users/#{user}")
       assert response(conn, 204)
 
-      assert_error_sent 404, fn ->
-        get(conn, ~p"/api/users/#{user}")
-      end
+      conn = get(conn, ~p"/api/users/#{user}")
+      assert json_response(conn, 404)
+    end
+
+    test "deletes a user that has clocks and working times", %{conn: conn, user: user} do
+      Time_manager.AttendanceFixtures.clock_fixture(user.id)
+      Time_manager.WorkDurationFixtures.working_time_fixture(user.id)
+
+      conn = delete(conn, ~p"/api/users/#{user}")
+      assert response(conn, 204)
     end
   end
 
   defp create_user(_) do
-    user = user_fixture()
-    %{user: user}
+    %{user: user_fixture()}
   end
 end

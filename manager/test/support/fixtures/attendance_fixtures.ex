@@ -5,17 +5,10 @@ defmodule Time_manager.AttendanceFixtures do
   """
 
   @doc """
-  Generate a clock.
+  Generate a clock for the given user (toggles in/out like the API).
   """
-  def clock_fixture(attrs \\ %{}) do
-    {:ok, clock} =
-      attrs
-      |> Enum.into(%{
-        status: true,
-        time: ~U[2026-09-21 08:32:00Z]
-      })
-      |> Time_manager.Attendance.create_clock()
-
+  def clock_fixture(user_id) do
+    {:ok, clock} = Time_manager.Attendance.create_clock(user_id)
     clock
   end
 end
