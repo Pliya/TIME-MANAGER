@@ -30,15 +30,15 @@ async function loadSessions() {
 
 watch(() => props.userId, loadSessions, { immediate: true })
 
-const stats = computed(() => summarize(sessions.value))
+const weekSessions = computed(() => sessions.value.filter(s => s.start >= startOfWeek()))
+
+const stats = computed(() => summarize(weekSessions.value))
 
 const lastSession = computed(() => sessions.value.at(-1))
 
 const weekHours = computed(() => {
   const hours = [0, 0, 0, 0, 0, 0, 0]
-  sessions.value
-    .filter(s => s.start >= startOfWeek())
-    .forEach(s => { hours[weekdayIndex(s.start)] += hoursBetween(s.start, s.end) })
+  weekSessions.value.forEach(s => { hours[weekdayIndex(s.start)] += hoursBetween(s.start, s.end) })
   const today = weekdayIndex(new Date())
   return hours.map((h, day) => (day <= today ? Number(h.toFixed(1)) : null))
 })
@@ -97,9 +97,9 @@ const recentSessions = computed(() => {
     <p v-if="error" class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{{ error }}</p>
 
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-      <StatCard label="Heures totales" :value="stats.total" hint="Toutes les sessions" :icon="Clock" />
-      <StatCard label="Jours travaillés" :value="stats.days" hint="Jours avec au moins une session" :icon="CalendarCheck" />
-      <StatCard label="Moyenne par jour" :value="stats.average" hint="Temps moyen journalier" :icon="TrendingUp" />
+      <StatCard label="Heures cette semaine" :value="stats.total" hint="Depuis lundi" :icon="Clock" />
+      <StatCard label="Jours travaillés" :value="stats.days" hint="Cette semaine" :icon="CalendarCheck" />
+      <StatCard label="Moyenne par jour" :value="stats.average" hint="Cette semaine" :icon="TrendingUp" />
       <StatCard
         label="Dernière session"
         :value="lastSession ? formatTime(lastSession.end) : '--:--'"

@@ -58,10 +58,10 @@ const stats = computed(() => summarize(sessions.value))
     <p v-if="error" class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{{ error }}</p>
 
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-      <StatCard label="Heures totales" :value="stats.total" :icon="Clock" />
-      <StatCard label="Jours travaillés" :value="stats.days" :icon="CalendarCheck" />
-      <StatCard label="Moyenne par jour" :value="stats.average" :icon="TrendingUp" />
-      <StatCard label="Sessions" :value="stats.count" :icon="CalendarDays" />
+      <StatCard label="Heures totales" :value="stats.total" hint="Depuis le début" :icon="Clock" />
+      <StatCard label="Jours travaillés" :value="stats.days" hint="Depuis le début" :icon="CalendarCheck" />
+      <StatCard label="Moyenne par jour" :value="stats.average" hint="Depuis le début" :icon="TrendingUp" />
+      <StatCard label="Sessions" :value="stats.count" hint="Depuis le début" :icon="CalendarDays" />
     </div>
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
