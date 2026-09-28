@@ -33,11 +33,25 @@ defmodule Time_manager.AttendanceTest do
     end
 
     test "create_clock/1 toggles between clock-in and clock-out", %{user: user} do
-      # Pointages dans la même seconde : on force des heures distinctes pour l'ordre
-      {:ok, first} = Attendance.create_clock(user.id)
-      Attendance.update_clock(first, %{time: DateTime.add(first.time, -60)})
+      clock_in_an_hour_ago(user.id)
 
       assert {:ok, %Clock{status: false}} = Attendance.create_clock(user.id)
+    end
+
+    test "clocking in alone does not create a working time", %{user: user} do
+      {:ok, _} = Attendance.create_clock(user.id)
+
+      assert Time_manager.WorkDuration.list_working_times_for_user(user.id) == []
+    end
+
+    test "clocking out creates a working time from the clock-in to the clock-out", %{user: user} do
+      clock_in = clock_in_an_hour_ago(user.id)
+
+      {:ok, clock_out} = Attendance.create_clock(user.id)
+
+      assert [working_time] = Time_manager.WorkDuration.list_working_times_for_user(user.id)
+      assert working_time.start == clock_in.time
+      assert working_time.end == clock_out.time
     end
 
     test "update_clock/2 with invalid data returns error changeset", %{user: user} do
@@ -56,5 +70,11 @@ defmodule Time_manager.AttendanceTest do
       clock = clock_fixture(user.id)
       assert %Ecto.Changeset{} = Attendance.change_clock(clock)
     end
+  end
+
+  defp clock_in_an_hour_ago(user_id) do
+    {:ok, clock} = Attendance.create_clock(user_id)
+    {:ok, clock} = Attendance.update_clock(clock, %{time: DateTime.add(clock.time, -3600)})
+    clock
   end
 end

@@ -111,7 +111,7 @@ watch(editedId, load, { immediate: true })
   <div class="w-full max-w-xl rounded-2xl bg-white p-6">
     <div class="mb-6 flex items-center justify-between">
       <p class="font-medium">{{ editedId ? `Modifier la session #${editedId}` : 'Nouvelle session' }}</p>
-      <button v-if="editedId" class="text-gray-400 hover:text-gray-600" @click="cancel">
+      <button v-if="editedId" class="text-neutral-400 hover:text-neutral-600" @click="cancel">
         <X class="h-5 w-5" />
       </button>
     </div>
@@ -121,28 +121,28 @@ watch(editedId, load, { immediate: true })
 
     <form class="space-y-4" @submit.prevent="save">
       <label class="block">
-        <span class="text-sm text-gray-500">Début</span>
-        <input v-model="start" type="datetime-local" required class="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-violet-500 focus:outline-none" />
+        <span class="text-sm text-neutral-500">Début</span>
+        <input v-model="start" type="datetime-local" required class="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 focus:border-neutral-900 focus:outline-none" />
       </label>
 
       <label class="block">
-        <span class="text-sm text-gray-500">Fin</span>
-        <input v-model="end" type="datetime-local" required class="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-violet-500 focus:outline-none" />
+        <span class="text-sm text-neutral-500">Fin</span>
+        <input v-model="end" type="datetime-local" required class="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 focus:border-neutral-900 focus:outline-none" />
       </label>
 
-      <p v-if="duration" class="text-sm text-gray-500">Durée : <span class="font-medium text-gray-900">{{ duration }}</span></p>
+      <p v-if="duration" class="text-sm text-neutral-500">Durée : <span class="font-medium text-neutral-900">{{ duration }}</span></p>
 
       <div class="flex flex-wrap gap-2">
-        <button type="button" class="rounded-lg bg-gray-100 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200" @click="setToday(9, 17)">Aujourd'hui 9h - 17h</button>
-        <button type="button" class="rounded-lg bg-gray-100 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200" @click="setToday(8, 16)">Aujourd'hui 8h - 16h</button>
+        <button type="button" class="rounded-lg bg-neutral-100 px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-200" @click="setToday(9, 17)">Aujourd'hui 9h - 17h</button>
+        <button type="button" class="rounded-lg bg-neutral-100 px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-200" @click="setToday(8, 16)">Aujourd'hui 8h - 16h</button>
       </div>
 
-      <button type="submit" class="w-full rounded-xl bg-violet-600 py-2.5 font-semibold text-white hover:bg-violet-700">
+      <button type="submit" class="w-full rounded-xl bg-neutral-900 py-2.5 font-semibold text-white hover:bg-neutral-700">
         {{ editedId ? 'Enregistrer' : 'Créer' }}
       </button>
 
       <div v-if="editedId" class="flex gap-2">
-        <button type="button" class="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium hover:bg-gray-50" @click="cancel">Annuler</button>
+        <button type="button" class="flex-1 rounded-xl border border-neutral-200 py-2.5 text-sm font-medium hover:bg-neutral-50" @click="cancel">Annuler</button>
         <button type="button" class="flex-1 rounded-xl bg-red-50 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100" @click="remove">Supprimer</button>
       </div>
     </form>

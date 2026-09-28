@@ -95,26 +95,26 @@ watch(() => props.userId, loadUser, { immediate: true })
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
       <div v-if="user" class="rounded-2xl bg-white p-6">
         <div class="mb-6 flex items-center gap-4">
-          <div class="flex h-14 w-14 items-center justify-center rounded-full bg-violet-100 text-xl font-semibold text-violet-700">
+          <div class="flex h-14 w-14 items-center justify-center rounded-full bg-neutral-200 text-xl font-semibold text-neutral-900">
             {{ user.username.charAt(0).toUpperCase() }}
           </div>
           <div>
             <p class="text-lg font-semibold">{{ user.username }}</p>
-            <p class="text-sm text-gray-400">{{ user.email }} · ID {{ user.id }}</p>
+            <p class="text-sm text-neutral-400">{{ user.email }} · ID {{ user.id }}</p>
           </div>
         </div>
 
         <form class="space-y-4" @submit.prevent="updateUser">
           <label class="block">
-            <span class="text-sm text-gray-500">Nom d'utilisateur</span>
-            <input v-model.trim="editUsername" required class="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-violet-500 focus:outline-none" />
+            <span class="text-sm text-neutral-500">Nom d'utilisateur</span>
+            <input v-model.trim="editUsername" required class="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 focus:border-neutral-900 focus:outline-none" />
           </label>
           <label class="block">
-            <span class="text-sm text-gray-500">Email</span>
-            <input v-model.trim="editEmail" type="email" required class="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-violet-500 focus:outline-none" />
+            <span class="text-sm text-neutral-500">Email</span>
+            <input v-model.trim="editEmail" type="email" required class="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 focus:border-neutral-900 focus:outline-none" />
           </label>
           <div class="flex gap-2">
-            <button type="submit" :disabled="loading" class="flex-1 rounded-xl bg-violet-600 py-2.5 font-semibold text-white hover:bg-violet-700 disabled:opacity-50">Enregistrer</button>
+            <button type="submit" :disabled="loading" class="flex-1 rounded-xl bg-neutral-900 py-2.5 font-semibold text-white hover:bg-neutral-700 disabled:opacity-50">Enregistrer</button>
             <button type="button" :disabled="loading" class="rounded-xl bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100 disabled:opacity-50" @click="deleteUser">Supprimer</button>
           </div>
         </form>
@@ -124,14 +124,14 @@ watch(() => props.userId, loadUser, { immediate: true })
         <p class="mb-6 font-medium">Créer un utilisateur</p>
         <form class="space-y-4" @submit.prevent="createUser">
           <label class="block">
-            <span class="text-sm text-gray-500">Nom d'utilisateur</span>
-            <input v-model.trim="newUsername" required class="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-violet-500 focus:outline-none" />
+            <span class="text-sm text-neutral-500">Nom d'utilisateur</span>
+            <input v-model.trim="newUsername" required class="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 focus:border-neutral-900 focus:outline-none" />
           </label>
           <label class="block">
-            <span class="text-sm text-gray-500">Email</span>
-            <input v-model.trim="newEmail" type="email" required placeholder="exemple@email.com" class="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-violet-500 focus:outline-none" />
+            <span class="text-sm text-neutral-500">Email</span>
+            <input v-model.trim="newEmail" type="email" required placeholder="exemple@email.com" class="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 focus:border-neutral-900 focus:outline-none" />
           </label>
-          <button type="submit" :disabled="loading" class="w-full rounded-xl bg-violet-600 py-2.5 font-semibold text-white hover:bg-violet-700 disabled:opacity-50">Créer</button>
+          <button type="submit" :disabled="loading" class="w-full rounded-xl bg-neutral-900 py-2.5 font-semibold text-white hover:bg-neutral-700 disabled:opacity-50">Créer</button>
         </form>
       </div>
     </div>

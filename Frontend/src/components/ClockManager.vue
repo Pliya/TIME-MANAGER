@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, onActivated } from 'vue'
 import api from '@/api'
 import { clocksToSessions, localDateKey, formatTime, formatDuration, pad, toDate } from '@/utils/date'
 
@@ -8,6 +8,8 @@ const props = defineProps({ userId: { type: Number, required: true } })
 const clocks = ref([])
 const now = ref(new Date())
 const error = ref('')
+const loaded = ref(false)
+const busy = ref(false)
 let timer = null
 
 async function loadClocks() {
@@ -17,21 +19,31 @@ async function loadClocks() {
     error.value = ''
   } catch {
     error.value = 'Impossible de charger les pointages.'
+  } finally {
+    loaded.value = true
   }
 }
 
 async function toggleClock() {
+  busy.value = true
   try {
     await api.post(`/clocks/${props.userId}`)
     await loadClocks()
   } catch {
     error.value = "Le pointage n'a pas pu être enregistré."
+  } finally {
+    busy.value = false
   }
 }
 
 onMounted(() => { timer = setInterval(() => { now.value = new Date() }, 1000) })
 onUnmounted(() => clearInterval(timer))
-watch(() => props.userId, loadClocks, { immediate: true })
+onActivated(loadClocks)
+watch(() => props.userId, () => {
+  loaded.value = false
+  clocks.value = []
+  loadClocks()
+})
 
 const lastClock = computed(() => {
   const sorted = [...clocks.value].sort((a, b) => toDate(a.time) - toDate(b.time))
@@ -66,17 +78,26 @@ const lastSessions = computed(() =>
       <div class="flex flex-col items-center rounded-2xl bg-white p-8">
         <span
           class="rounded-full px-3 py-1 text-sm font-medium"
-          :class="isClockedIn ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'"
+          :class="isClockedIn ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-500'"
         >
           {{ isClockedIn ? 'En cours' : 'Arrêté' }}
         </span>
-        <p class="mt-8 text-5xl font-semibold tabular-nums">{{ elapsed }}</p>
-        <p class="mt-2 text-sm text-gray-400">
+        <p class="mt-8 text-7xl font-bold tracking-tight tabular-nums">{{ elapsed }}</p>
+        <p class="mt-2 text-sm text-neutral-400">
           {{ startedAt ? `Depuis ${formatTime(startedAt)}` : 'Aucune session en cours' }}
         </p>
         <button
-          class="mt-8 w-full rounded-xl py-3 font-semibold text-white"
-          :class="isClockedIn ? 'bg-red-500 hover:bg-red-600' : 'bg-violet-600 hover:bg-violet-700'"
+          v-if="!loaded"
+          disabled
+          class="mt-8 w-full rounded-full bg-neutral-100 py-3 font-semibold text-neutral-400"
+        >
+          Chargement...
+        </button>
+        <button
+          v-else
+          :disabled="busy"
+          class="mt-8 w-full rounded-full py-3 font-semibold disabled:opacity-50"
+          :class="isClockedIn ? 'border-2 border-neutral-900 bg-white text-neutral-900 hover:bg-neutral-100' : 'bg-neutral-900 text-white hover:bg-neutral-700'"
           @click="toggleClock"
         >
           {{ isClockedIn ? 'Pointer la sortie' : "Pointer l'arrivée" }}
@@ -87,7 +108,7 @@ const lastSessions = computed(() =>
         <p class="mb-4 font-medium">Dernières sessions</p>
         <table class="w-full text-sm">
           <thead>
-            <tr class="bg-gray-50 text-left text-gray-500">
+            <tr class="bg-neutral-50 text-left text-neutral-500">
               <th class="rounded-l-lg px-4 py-3 font-medium">Date</th>
               <th class="px-4 py-3 font-medium">Arrivée</th>
               <th class="px-4 py-3 font-medium">Départ</th>
@@ -95,14 +116,14 @@ const lastSessions = computed(() =>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="session in lastSessions" :key="session.id" class="border-b border-gray-100 last:border-0">
+            <tr v-for="session in lastSessions" :key="session.id" class="border-b border-neutral-100 last:border-0">
               <td class="px-4 py-3 font-medium">{{ session.date }}</td>
               <td class="px-4 py-3">{{ session.start }}</td>
               <td class="px-4 py-3">{{ session.end }}</td>
               <td class="px-4 py-3">{{ session.duration }}</td>
             </tr>
             <tr v-if="lastSessions.length === 0">
-              <td colspan="4" class="px-4 py-8 text-center text-gray-400">Aucune session enregistrée.</td>
+              <td colspan="4" class="px-4 py-8 text-center text-neutral-400">Aucune session enregistrée.</td>
             </tr>
           </tbody>
         </table>

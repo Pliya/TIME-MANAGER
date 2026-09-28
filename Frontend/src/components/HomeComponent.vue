@@ -4,10 +4,10 @@ import { Clock, CalendarCheck, TrendingUp, History } from 'lucide-vue-next'
 import api from '@/api'
 import StatCard from './StatCard.vue'
 import ChartInterface from './ChartInterface.vue'
-import { VIOLET, chartOptions } from '@/utils/charts'
+import { DARK, chartOptions } from '@/utils/charts'
 import {
   WEEK_DAYS, clocksToSessions, workingTimesToSessions, localDateKey, formatTime,
-  formatDuration, hoursBetween, weekdayIndex, startOfWeek, toDate,
+  formatDuration, formatDecimalHours, hoursBetween, weekdayIndex, startOfWeek, toDate,
 } from '@/utils/date'
 
 const props = defineProps({ userId: { type: Number, required: true } })
@@ -15,7 +15,7 @@ const props = defineProps({ userId: { type: Number, required: true } })
 const clocks = ref([])
 const workingTimes = ref([])
 
-const HEATMAP_HOURS = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+const HEATMAP_SLOTS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22]
 
 async function loadData() {
   const [clocksRes, workingTimesRes] = await Promise.all([
@@ -61,8 +61,8 @@ const weekChart = computed(() => ({
   datasets: [{
     label: 'Heures',
     data: weekHours.value,
-    borderColor: VIOLET,
-    backgroundColor: VIOLET,
+    borderColor: DARK,
+    backgroundColor: DARK,
     borderWidth: 3,
     tension: 0.35,
     pointRadius: 4,
@@ -71,11 +71,10 @@ const weekChart = computed(() => ({
 }))
 
 const heatmap = computed(() => {
-  const counts = HEATMAP_HOURS.map(() => [0, 0, 0, 0, 0, 0, 0])
+  const counts = HEATMAP_SLOTS.map(() => [0, 0, 0, 0, 0, 0, 0])
   clocks.value.filter(c => c.status).forEach(c => {
     const date = toDate(c.time)
-    const row = HEATMAP_HOURS.indexOf(date.getHours())
-    if (row !== -1) counts[row][weekdayIndex(date)]++
+    counts[Math.floor(date.getHours() / 2)][weekdayIndex(date)]++
   })
   return counts
 })
@@ -83,14 +82,15 @@ const heatmap = computed(() => {
 const peakHour = computed(() => {
   const totals = heatmap.value.map(row => row.reduce((a, b) => a + b, 0))
   const max = Math.max(...totals)
-  return max ? `${HEATMAP_HOURS[totals.indexOf(max)]}h` : '--'
+  const slot = HEATMAP_SLOTS[totals.indexOf(max)]
+  return max ? `${slot}h - ${slot + 2}h` : '--'
 })
 
 function heatColor(count) {
-  if (count >= 3) return 'bg-violet-500'
-  if (count === 2) return 'bg-violet-300'
-  if (count === 1) return 'bg-violet-200'
-  return 'bg-violet-50'
+  if (count >= 3) return 'bg-neutral-900'
+  if (count === 2) return 'bg-neutral-500'
+  if (count === 1) return 'bg-neutral-300'
+  return 'bg-neutral-100'
 }
 
 const recentSessions = computed(() => {
@@ -120,19 +120,19 @@ const recentSessions = computed(() => {
       <div class="rounded-2xl bg-white p-6 xl:col-span-2">
         <p class="font-medium">Heures de la semaine</p>
         <p class="mt-4 text-3xl font-semibold">{{ weekTotal }} h</p>
-        <p class="text-sm text-gray-400">travaillées depuis lundi</p>
+        <p class="text-sm text-neutral-400">travaillées depuis lundi</p>
         <div class="mt-6 h-64">
-          <ChartInterface type="line" :chart-data="weekChart" :chart-options="chartOptions({ suffix: 'h' })" />
+          <ChartInterface type="line" :chart-data="weekChart" :chart-options="chartOptions({ suffix: 'h', max: 24, stepSize: 4, formatValue: formatDecimalHours })" />
         </div>
       </div>
 
       <div class="rounded-2xl bg-white p-6">
         <p class="font-medium">Heures d'arrivée</p>
         <p class="mt-4 text-3xl font-semibold">{{ peakHour }}</p>
-        <p class="text-sm text-gray-400">heure d'arrivée la plus fréquente</p>
-        <div class="mt-6 grid grid-cols-[2.5rem_repeat(7,1fr)] gap-1 text-xs text-gray-400">
+        <p class="text-sm text-neutral-400">créneau d'arrivée le plus fréquent</p>
+        <div class="mt-6 grid grid-cols-[2.5rem_repeat(7,1fr)] gap-1 text-xs text-neutral-400">
           <template v-for="(row, index) in heatmap" :key="index">
-            <span class="flex items-center">{{ HEATMAP_HOURS[index] }}h</span>
+            <span class="flex items-center">{{ HEATMAP_SLOTS[index] }}h</span>
             <div v-for="(count, day) in row" :key="day" class="h-5 rounded" :class="heatColor(count)"></div>
           </template>
           <span></span>
@@ -144,11 +144,11 @@ const recentSessions = computed(() => {
     <div class="rounded-2xl bg-white p-6">
       <div class="mb-4 flex items-center justify-between">
         <p class="font-medium">Sessions récentes</p>
-        <router-link to="/workingTimes" class="text-sm font-medium text-violet-600 hover:underline">Voir tout</router-link>
+        <router-link to="/workingTimes" class="text-sm font-medium text-neutral-900 hover:underline">Voir tout</router-link>
       </div>
       <table class="w-full text-sm">
         <thead>
-          <tr class="bg-gray-50 text-left text-gray-500">
+          <tr class="bg-neutral-50 text-left text-neutral-500">
             <th class="rounded-l-lg px-4 py-3 font-medium">Date</th>
             <th class="px-4 py-3 font-medium">Arrivée</th>
             <th class="px-4 py-3 font-medium">Départ</th>
@@ -156,21 +156,21 @@ const recentSessions = computed(() => {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="session in recentSessions" :key="session.id" class="border-b border-gray-100 last:border-0">
+          <tr v-for="session in recentSessions" :key="session.id" class="border-b border-neutral-100 last:border-0">
             <td class="px-4 py-3 font-medium">{{ session.date }}</td>
             <td class="px-4 py-3">{{ session.start }}</td>
             <td class="px-4 py-3">{{ session.end }}</td>
             <td class="px-4 py-3">
               <div class="flex items-center gap-3">
-                <div class="h-2 w-32 rounded-full bg-violet-100">
-                  <div class="h-2 rounded-full bg-violet-500" :style="{ width: `${session.percent}%` }"></div>
+                <div class="h-2 w-32 rounded-full bg-neutral-200">
+                  <div class="h-2 rounded-full bg-neutral-900" :style="{ width: `${session.percent}%` }"></div>
                 </div>
                 <span>{{ session.duration }}</span>
               </div>
             </td>
           </tr>
           <tr v-if="recentSessions.length === 0">
-            <td colspan="4" class="px-4 py-8 text-center text-gray-400">Aucune session enregistrée.</td>
+            <td colspan="4" class="px-4 py-8 text-center text-neutral-400">Aucune session enregistrée.</td>
           </tr>
         </tbody>
       </table>
