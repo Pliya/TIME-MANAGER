@@ -1,10 +1,14 @@
 <script setup>
 import { ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '@/api'
+import { loggedUserId, logout } from '@/session'
 
 const props = defineProps({ userId: { type: Number, required: true } })
 
 const emit = defineEmits(['user-updated'])
+
+const router = useRouter()
 
 const user = ref(null)
 const editUsername = ref('')
@@ -62,8 +66,7 @@ async function loadUser() {
 
 function createUser() {
   return run(async () => {
-    const { data } = await api.post('/users', { user: { username: newUsername.value, email: newEmail.value } })
-    setUser(data.data)
+    await api.post('/users', { user: { username: newUsername.value, email: newEmail.value } })
     newUsername.value = ''
     newEmail.value = ''
   }, 'Utilisateur créé.')
@@ -79,8 +82,13 @@ function updateUser() {
 function deleteUser() {
   if (!confirm(`Supprimer l'utilisateur ${user.value.username} ?`)) return
   return run(async () => {
-    await api.delete(`/users/${user.value.id}`)
+    const deletedId = user.value.id
+    await api.delete(`/users/${deletedId}`)
     setUser(null)
+    if (deletedId === loggedUserId.value) {
+      logout()
+      router.push('/login')
+    }
   }, 'Utilisateur supprimé.')
 }
 

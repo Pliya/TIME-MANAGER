@@ -1,13 +1,15 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { LayoutDashboard, Clock, ChartColumn, CalendarDays, User, ChevronDown } from 'lucide-vue-next'
+import { useRoute, useRouter } from 'vue-router'
+import { LayoutDashboard, Clock, ChartColumn, CalendarDays, User, ChevronDown, LogOut } from 'lucide-vue-next'
 import api from '@/api'
+import { loggedUserId, logout } from '@/session'
 
 const route = useRoute()
+const router = useRouter()
 const currentUser = ref(null)
 
-const userId = computed(() => Number(route.params.userID) || 1)
+const userId = computed(() => Number(route.params.userID) || loggedUserId.value)
 
 const navigation = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -21,12 +23,20 @@ function isActive(path) {
   return route.path.startsWith(path)
 }
 
+function signOut() {
+  logout()
+  currentUser.value = null
+  router.push('/login')
+}
+
 async function fetchCurrentUser() {
+  if (!userId.value) return
   try {
     const { data } = await api.get(`/users/${userId.value}`)
     currentUser.value = data.data
-  } catch {
+  } catch (err) {
     currentUser.value = null
+    if (err.response?.status === 404 && userId.value === loggedUserId.value) signOut()
   }
 }
 
@@ -34,7 +44,9 @@ watch(userId, fetchCurrentUser, { immediate: true })
 </script>
 
 <template>
-  <div class="flex h-screen bg-neutral-200 font-sans text-neutral-900">
+  <router-view v-if="route.meta.public" />
+
+  <div v-else class="flex h-screen bg-neutral-200 font-sans text-neutral-900">
     <aside class="flex w-72 shrink-0 flex-col border-r border-neutral-200 bg-white px-5 py-7">
       <div class="mb-10 flex items-center gap-3 px-2">
         <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-900 text-white">
@@ -68,6 +80,14 @@ watch(userId, fetchCurrentUser, { immediate: true })
         <User class="h-6 w-6" :class="isActive('/profile') ? 'text-white' : 'text-neutral-400'" />
         Profil
       </router-link>
+
+      <button
+        class="mt-auto flex items-center gap-3 rounded-full px-4 py-3 text-base text-neutral-500 hover:bg-red-50 hover:text-red-600"
+        @click="signOut"
+      >
+        <LogOut class="h-6 w-6" />
+        Se déconnecter
+      </button>
     </aside>
 
     <div class="flex min-w-0 flex-1 flex-col">
