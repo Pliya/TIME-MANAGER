@@ -4,7 +4,7 @@ import { Clock, CalendarCheck, TrendingUp, CalendarDays, Pencil, Trash2 } from '
 import api from '@/api'
 import StatCard from './StatCard.vue'
 import WorkingTime from './WorkingTime.vue'
-import { workingTimesToSessions, localDateKey, formatDay, formatTime, formatDuration } from '@/utils/date'
+import { workingTimesToSessions, summarize, formatDay, formatTime, formatDuration } from '@/utils/date'
 
 const props = defineProps({ userId: { type: Number, required: true } })
 
@@ -50,16 +50,7 @@ const filteredSessions = computed(() =>
     .reverse(),
 )
 
-const stats = computed(() => {
-  const totalMs = sessions.value.reduce((sum, s) => sum + (s.end - s.start), 0)
-  const days = new Set(sessions.value.map(s => localDateKey(s.start))).size
-  return {
-    total: formatDuration(totalMs),
-    days,
-    average: formatDuration(days ? totalMs / days : 0),
-    count: sessions.value.length,
-  }
-})
+const stats = computed(() => summarize(sessions.value))
 </script>
 
 <template>

@@ -74,4 +74,15 @@ export function workingTimesToSessions(workingTimes) {
     .sort((a, b) => a.start - b.start)
 }
 
+export function summarize(sessions) {
+  const totalMs = sessions.reduce((sum, s) => sum + (s.end - s.start), 0)
+  const days = new Set(sessions.map(s => localDateKey(s.start))).size
+  return {
+    total: formatDuration(totalMs),
+    days,
+    average: formatDuration(days ? totalMs / days : 0),
+    count: sessions.length,
+  }
+}
+
 export const WEEK_DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
