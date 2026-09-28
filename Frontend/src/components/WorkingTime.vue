@@ -1,585 +1,150 @@
+<script setup>
+import { ref, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { X } from 'lucide-vue-next'
+import api from '@/api'
+import { pad } from '@/utils/date'
+
+const props = defineProps({
+  userId: { type: Number, required: true },
+  workingTimeId: { type: Number, default: null },
+})
+
+const emit = defineEmits(['saved', 'cancel'])
+
+const route = useRoute()
+const start = ref('')
+const end = ref('')
+const error = ref('')
+const success = ref('')
+
+const editedId = computed(() => props.workingTimeId || Number(route.params.workingTimeId) || null)
+
+const duration = computed(() => {
+  if (!start.value || !end.value) return null
+  const hours = (new Date(end.value) - new Date(start.value)) / 3600000
+  return hours > 0 ? `${hours.toFixed(1)} h` : null
+})
+
+function toApi(localValue) {
+  return new Date(localValue).toISOString().replace(/\.\d{3}Z$/, 'Z')
+}
+
+function toInput(apiValue) {
+  const d = new Date(apiValue)
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function errorMessage(err) {
+  if (!err.response) return "Impossible de contacter l'API."
+  const errors = err.response.data?.errors
+  if (err.response.status === 422 && errors) {
+    return Object.entries(errors).map(([field, messages]) => `${field} : ${[].concat(messages).join(', ')}`).join(' ; ')
+  }
+  return `Erreur ${err.response.status}.`
+}
+
+function setToday(startHour, endHour) {
+  const now = new Date()
+  const day = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+  start.value = `${day}T${pad(startHour)}:00`
+  end.value = `${day}T${pad(endHour)}:00`
+}
+
+function reset() {
+  start.value = ''
+  end.value = ''
+}
+
+async function load() {
+  error.value = ''
+  if (!editedId.value) return reset()
+  try {
+    const { data } = await api.get(`/workingtime/${props.userId}/${editedId.value}`)
+    start.value = toInput(data.data.start)
+    end.value = toInput(data.data.end)
+  } catch (err) {
+    error.value = errorMessage(err)
+  }
+}
+
+async function save() {
+  error.value = ''
+  success.value = ''
+  const payload = { working_time: { start: toApi(start.value), end: toApi(end.value) } }
+  try {
+    if (editedId.value) {
+      await api.put(`/workingtime/${editedId.value}`, payload)
+      success.value = 'Temps de travail modifié.'
+    } else {
+      await api.post(`/workingtime/${props.userId}`, payload)
+      success.value = 'Temps de travail créé.'
+    }
+    reset()
+    emit('saved')
+  } catch (err) {
+    error.value = errorMessage(err)
+  }
+}
+
+async function remove() {
+  if (!confirm('Supprimer ce temps de travail ?')) return
+  try {
+    await api.delete(`/workingtime/${editedId.value}`)
+    success.value = 'Temps de travail supprimé.'
+    reset()
+    emit('saved')
+  } catch (err) {
+    error.value = errorMessage(err)
+  }
+}
+
+function cancel() {
+  reset()
+  emit('cancel')
+}
+
+watch(editedId, load, { immediate: true })
+</script>
+
 <template>
-  <div class="wt-card">
-    <div class="wt-card-header">
-        <h4 class="wt-card-title">
-          {{ isEditMode ? `Modifier la plage #${workingTimeId}` : 'Create a Working Time' }}
-        </h4>
-      <button v-if="isEditMode" type="button" @click="cancelEdit" class="btn-close-edit" title="Annuler le mode édition">✕</button>
+  <div class="w-full max-w-xl rounded-2xl bg-white p-6">
+    <div class="mb-6 flex items-center justify-between">
+      <p class="font-medium">{{ editedId ? `Modifier la session #${editedId}` : 'Nouvelle session' }}</p>
+      <button v-if="editedId" class="text-gray-400 hover:text-gray-600" @click="cancel">
+        <X class="h-5 w-5" />
+      </button>
     </div>
 
-    <div v-if="successMessage" class="alert alert-success">
-      <span>{{ successMessage }}</span>
-      <button type="button" @click="clearMessages" class="alert-close" title="Fermer">✕</button>
-    </div>
-    <div v-if="errorMessage" class="alert alert-danger">
-      <span>{{ errorMessage }}</span>
-      <button type="button" @click="clearMessages" class="alert-close" title="Fermer">✕</button>
-    </div>
+    <p v-if="error" class="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{{ error }}</p>
+    <p v-if="success" class="mb-4 rounded-xl bg-green-50 px-4 py-3 text-sm text-green-600">{{ success }}</p>
 
-    <form @submit.prevent="onSubmit" class="wt-form">
-      <div class="wt-field">
-        <label for="wt-start">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Date & Heure de début
-        </label>
-        <div class="input-wrapper">
-          <input id="wt-start" type="datetime-local" v-model="start" @focus="clearMessages" required />
-        </div>
+    <form class="space-y-4" @submit.prevent="save">
+      <label class="block">
+        <span class="text-sm text-gray-500">Début</span>
+        <input v-model="start" type="datetime-local" required class="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-violet-500 focus:outline-none" />
+      </label>
+
+      <label class="block">
+        <span class="text-sm text-gray-500">Fin</span>
+        <input v-model="end" type="datetime-local" required class="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-violet-500 focus:outline-none" />
+      </label>
+
+      <p v-if="duration" class="text-sm text-gray-500">Durée : <span class="font-medium text-gray-900">{{ duration }}</span></p>
+
+      <div class="flex flex-wrap gap-2">
+        <button type="button" class="rounded-lg bg-gray-100 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200" @click="setToday(9, 17)">Aujourd'hui 9h - 17h</button>
+        <button type="button" class="rounded-lg bg-gray-100 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200" @click="setToday(8, 16)">Aujourd'hui 8h - 16h</button>
       </div>
 
-      <div class="wt-field">
-        <label for="wt-end">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Date & Heure de fin
-        </label>
-        <div class="input-wrapper">
-          <input id="wt-end" type="datetime-local" v-model="end" @focus="clearMessages" required />
-        </div>
-      </div>
+      <button type="submit" class="w-full rounded-xl bg-violet-600 py-2.5 font-semibold text-white hover:bg-violet-700">
+        {{ editedId ? 'Enregistrer' : 'Créer' }}
+      </button>
 
-      <div v-if="durationPreview" class="duration-badge" :class="{ 'duration-invalid': durationPreview.error }">
-        <span class="duration-icon">{{ durationPreview.error ? '' : '⏱' }}</span>
-        <span class="duration-text">{{ durationPreview.text }}</span>
-      </div>
-
-      <div class="quick-presets">
-        <span class="presets-label">Raccourcis :</span>
-        <button type="button" @click="setPresetToday(9, 17)" class="preset-btn">Aujourd'hui 8h (9h-17h)</button>
-        <button type="button" @click="setPresetToday(8, 16.5)" class="preset-btn">8h30 (8h-16h30)</button>
-      </div>
-
-      <div class="wt-actions">
-        <button type="submit" class="btn btn-primary btn-submit">
-          {{ isEditMode ? 'Enregistrer les modifications' : '+ Create' }}
-        </button>
-
-        <div v-if="isEditMode" class="edit-secondary-actions">
-          <button type="button" class="btn btn-outline" @click="cancelEdit">
-            Annuler
-          </button>
-          <button type="button" class="btn btn-danger" @click="onDelete">
-            Supprimer
-          </button>
-        </div>
+      <div v-if="editedId" class="flex gap-2">
+        <button type="button" class="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium hover:bg-gray-50" @click="cancel">Annuler</button>
+        <button type="button" class="flex-1 rounded-xl bg-red-50 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100" @click="remove">Supprimer</button>
       </div>
     </form>
   </div>
 </template>
-
-<script setup>
-import { ref, computed, watch, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import axios from 'axios'
-
-const route = useRoute()
-const API_URL = 'http://localhost:4000/api'
-
-const props = defineProps({
-  userId: {
-    type: [Number, String],
-    default: null
-  },
-  workingTimeId: {
-    type: [Number, String],
-    default: null
-  }
-})
-
-const emit = defineEmits(['refresh-list', 'cancel-edit'])
-
-const resolveUserId = () => {
-  const fromRoute = route?.params?.userid || route?.params?.userID
-  if (fromRoute) return Number(fromRoute)
-  if (props.userId) return Number(props.userId)
-  return 1
-}
-
-const resolveWorkingTimeId = () => {
-  const fromRoute = route?.params?.workingtimeid || route?.params?.workingTimeId
-  if (fromRoute) return Number(fromRoute)
-  if (props.workingTimeId) return Number(props.workingTimeId)
-  return null
-}
-
-const userId = ref(resolveUserId())
-const workingTimeId = ref(resolveWorkingTimeId())
-const start = ref(null)
-const end = ref(null)
-const errorMessage = ref('')
-const successMessage = ref('')
-
-const isEditMode = computed(() => !!workingTimeId.value)
-
-const durationPreview = computed(() => {
-  if (!start.value || !end.value) return null
-  const s = new Date(start.value).getTime()
-  const e = new Date(end.value).getTime()
-  if (isNaN(s) || isNaN(e)) return null
-  if (e <= s) {
-    return { error: true, text: 'La date de fin doit être postérieure au début' }
-  }
-  const diffHours = (e - s) / (1000 * 60 * 60)
-  return { error: false, text: `Durée calculée : ${diffHours.toFixed(1)} h` }
-})
-
-function toApiFormat(localValue) {
-  if (!localValue) return null
-  return localValue.replace('T', ' ') + ':00'
-}
-
-function toLocalInputFormat(apiValue) {
-  if (!apiValue) return null
-  const safe = apiValue.includes('T') ? apiValue : apiValue.replace(' ', 'T')
-  return safe.slice(0, 16)
-}
-
-function setPresetToday(startH, endH) {
-  const now = new Date()
-  const pad = (n) => n.toString().padStart(2, '0')
-  const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
-  
-  const startHour = Math.floor(startH)
-  const startMin = Math.round((startH - startHour) * 60)
-  const endHour = Math.floor(endH)
-  const endMin = Math.round((endH - endHour) * 60)
-
-  start.value = `${dateStr}T${pad(startHour)}:${pad(startMin)}`
-  end.value = `${dateStr}T${pad(endHour)}:${pad(endMin)}`
-  clearMessages()
-}
-
-let timer = null
-
-function clearMessages() {
-  errorMessage.value = ''
-  successMessage.value = ''
-  if (timer) {
-    clearTimeout(timer)
-    timer = null
-  }
-}
-
-function autoClearMessage() {
-  if (timer) clearTimeout(timer)
-  timer = setTimeout(() => {
-    clearMessages()
-  }, 2500)
-}
-
-async function fetchWorkingTime() {
-  if (!workingTimeId.value || !userId.value) return
-  clearMessages()
-  try {
-    const response = await axios.get(`${API_URL}/workingtime/${userId.value}/${workingTimeId.value}`)
-    const wt = response.data.data || response.data
-    start.value = toLocalInputFormat(wt.start)
-    end.value = toLocalInputFormat(wt.end)
-  } catch (error) {
-    console.error('Erreur récupération working time:', error)
-    errorMessage.value = "Impossible de récupérer ce temps de travail. Vérifiez l'ID."
-    workingTimeId.value = null
-  }
-}
-
-const getWorkingTime = fetchWorkingTime
-
-async function createWorkingTime() {
-  clearMessages()
-  const payload = {
-    working_time: {
-      start: toApiFormat(start.value),
-      end: toApiFormat(end.value),
-    },
-  }
-
-  try {
-    const response = await axios.post(`${API_URL}/workingtime/${userId.value}`, payload)
-    successMessage.value = 'Temps de travail créé avec succès.'
-    const newRecord = response.data.data || response.data
-    resetForm()
-    emit('refresh-list', newRecord)
-    autoClearMessage()
-  } catch (error) {
-    console.error('Erreur création working time:', error)
-    if (error.response && error.response.status === 422) {
-      errorMessage.value = 'Erreur : La date de fin doit être après la date de début.'
-    } else {
-      const localRecord = {
-        id: Date.now(),
-        start: toApiFormat(start.value),
-        end: toApiFormat(end.value),
-        user_id: userId.value
-      }
-      successMessage.value = 'Temps de travail créé !'
-      resetForm()
-      emit('refresh-list', localRecord)
-      autoClearMessage()
-    }
-  }
-}
-
-async function updateWorkingTime() {
-  clearMessages()
-  const payload = {
-    working_time: {
-      start: toApiFormat(start.value),
-      end: toApiFormat(end.value),
-    },
-  }
-  try {
-    const response = await axios.put(`${API_URL}/workingtime/${workingTimeId.value}`, payload)
-    successMessage.value = 'Modification effectuée avec succès.'
-    const updatedRecord = response.data.data || response.data
-    resetForm()
-    emit('refresh-list', updatedRecord)
-    autoClearMessage()
-  } catch (error) {
-    console.error('Erreur modification working time:', error)
-    if (error.response && error.response.status === 422) {
-      errorMessage.value = 'Erreur : La date de fin doit être après la date de début.'
-    } else {
-      const localUpdated = {
-        id: workingTimeId.value,
-        start: toApiFormat(start.value),
-        end: toApiFormat(end.value),
-        user_id: userId.value
-      }
-      successMessage.value = 'Modification effectuée avec succès !'
-      resetForm()
-      emit('refresh-list', localUpdated)
-      autoClearMessage()
-    }
-  }
-}
-
-async function deleteWorkingTime() {
-  const idToDelete = workingTimeId.value
-  clearMessages()
-  try {
-    await axios.delete(`${API_URL}/workingtime/${idToDelete}`)
-    successMessage.value = 'Temps de travail supprimé avec succès.'
-    resetForm()
-    emit('refresh-list', { deletedId: idToDelete })
-    autoClearMessage()
-  } catch (error) {
-    console.error('Erreur suppression working time:', error)
-    errorMessage.value = 'Erreur lors de la suppression du temps de travail.'
-  }
-}
-
-function onDelete() {
-  if (window.confirm('Supprimer définitivement ce temps de travail ?')) {
-    deleteWorkingTime()
-  }
-}
-
-function onSubmit() {
-  isEditMode.value ? updateWorkingTime() : createWorkingTime()
-}
-
-function cancelEdit() {
-  resetForm()
-  emit('cancel-edit')
-}
-
-function resetForm() {
-  start.value = null
-  end.value = null
-  workingTimeId.value = null
-}
-
-watch(
-  () => [props.workingTimeId, route?.params?.workingtimeid, route?.params?.workingTimeId],
-  ([newPropId, newRouteId, newRouteAltId]) => {
-    const target = newRouteId || newRouteAltId || newPropId || null
-    workingTimeId.value = target ? Number(target) : null
-    if (workingTimeId.value) {
-      fetchWorkingTime()
-    } else {
-      start.value = null
-      end.value = null
-    }
-  }
-)
-
-watch(
-  () => [props.userId, route?.params?.userid, route?.params?.userID],
-  ([newPropId, newRouteId, newRouteAltId]) => {
-    const target = newRouteId || newRouteAltId || newPropId
-    if (target) {
-      userId.value = Number(target)
-    }
-    resetForm()
-    clearMessages()
-    if (workingTimeId.value) {
-      fetchWorkingTime()
-    }
-  }
-)
-
-onMounted(() => {
-  if (workingTimeId.value) fetchWorkingTime()
-})
-
-defineExpose({
-  userId,
-  workingTimeId,
-  createWorkingTime,
-  updateWorkingTime,
-  deleteWorkingTime,
-  fetchWorkingTime,
-  getWorkingTime,
-  resetForm,
-  setPresetToday
-})
-</script>
-
-<style scoped>
-.wt-card {
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
-  padding: 24px;
-  border: 1px solid #e2e8f0;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  box-sizing: border-box;
-}
-
-.wt-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.header-icon-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.wt-card-title {
-  font-size: 18px;
-  color: #1e293b;
-  margin: 0;
-}
-
-.btn-close-edit {
-  background: #f1f5f9;
-  border: none;
-  color: #64748b;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-}
-.btn-close-edit:hover {
-  background: #e2e8f0;
-  color: #0f172a;
-}
-
-.wt-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.wt-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.wt-field label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #475569;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.input-wrapper input {
-  width: 100%;
-  padding: 10px 14px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #1e293b;
-  background: #f8fafc;
-  box-sizing: border-box;
-  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
-}
-
-.input-wrapper input:focus {
-  outline: none;
-  background: #ffffff;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-}
-
-.duration-badge {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  border: 1px solid #bfdbfe;
-}
-
-.duration-badge.duration-invalid {
-  background: #fef2f2;
-  color: #dc2626;
-  border-color: #fecaca;
-}
-
-.quick-presets {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.presets-label {
-  font-size: 12px;
-  color: #94a3b8;
-  font-weight: 500;
-}
-
-.preset-btn {
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  color: #475569;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 11.5px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.preset-btn:hover {
-  background: #e2e8f0;
-  color: #1e293b;
-}
-
-.wt-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.btn {
-  border: none;
-  border-radius: 8px;
-  padding: 11px 18px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.btn-submit {
-  width: 100%;
-}
-
-.btn-primary {
-  background: #2563eb;
-  color: #ffffff;
-}
-
-.btn-primary:hover {
-  background: #1d4ed8;
-}
-
-.edit-secondary-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.btn-outline {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #475569;
-}
-
-.btn-outline:hover {
-  background: #f8fafc;
-  color: #1e293b;
-}
-
-.btn-danger {
-  background: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-}
-
-.btn-danger:hover {
-  background: #fca5a5;
-  color: #991b1b;
-}
-
-@keyframes slideDownFade {
-  0% {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.alert {
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  animation: slideDownFade 0.25s ease-out;
-}
-
-.alert-close {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 13px;
-  padding: 0 4px;
-  opacity: 0.65;
-  color: inherit;
-  transition: opacity 0.15s;
-}
-.alert-close:hover {
-  opacity: 1;
-}
-
-.alert-success {
-  background: #dcfce7;
-  color: #16a34a;
-  border: 1px solid #bbf7d0;
-}
-
-.alert-danger {
-  background: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-}
-</style>

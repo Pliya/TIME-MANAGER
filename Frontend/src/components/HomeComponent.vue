@@ -1,423 +1,179 @@
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import axios from 'axios'
+import { ref, computed, watch } from 'vue'
+import { Clock, CalendarCheck, TrendingUp, History } from 'lucide-vue-next'
+import api from '@/api'
+import StatCard from './StatCard.vue'
 import ChartInterface from './ChartInterface.vue'
+import { VIOLET, chartOptions } from '@/utils/charts'
+import {
+  WEEK_DAYS, clocksToSessions, workingTimesToSessions, localDateKey, formatTime,
+  formatDuration, hoursBetween, weekdayIndex, startOfWeek, toDate,
+} from '@/utils/date'
 
-const props = defineProps({ userId: { required: true } })
-const router = useRouter()
+const props = defineProps({ userId: { type: Number, required: true } })
 
-const clocks_list = ref([])
-const working_times_list = ref([])
+const clocks = ref([])
+const workingTimes = ref([])
 
-const bar_chart_data = ref({
-  labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-  datasets: [{
-    label: 'Hours Worked',
-    data: [0, 0, 0, 0, 0, 0, 0],
-    backgroundColor: '#2563eb',
-    borderRadius: 6
-  }]
-})
+const HEATMAP_HOURS = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
 
-const bar_chart_options = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: { legend: { display: false } },
-  scales: {
-    y: {
-      beginAtZero: true,
-      max: 12,
-      ticks: { stepSize: 3, callback: v => v + 'h' },
-      grid: { color: '#f1f5f9' }
-    },
-    x: { grid: { display: false } }
-  }
+async function loadData() {
+  const [clocksRes, workingTimesRes] = await Promise.all([
+    api.get(`/clocks/${props.userId}`).catch(() => ({ data: { data: [] } })),
+    api.get(`/workingtime/${props.userId}`).catch(() => ({ data: { data: [] } })),
+  ])
+  clocks.value = clocksRes.data.data
+  workingTimes.value = workingTimesRes.data.data
 }
 
-const pad_zero = (n) => String(n).padStart(2, '0')
+watch(() => props.userId, loadData, { immediate: true })
 
-async function load_dashboard_data() {
-  try {
-    const [clocks_res, wt_res] = await Promise.all([
-      axios.get(`http://92.4.131.118/api/clocks/${props.userId}`).catch(() => ({ data: { data: [] } })),
-      axios.get(`http://92.4.131.118/api/workingtime/${props.userId}`).catch(() => ({ data: { data: [] } }))
-    ])
+const sessions = computed(() => workingTimesToSessions(workingTimes.value))
+const clockSessions = computed(() => clocksToSessions(clocks.value))
 
-    clocks_list.value = clocks_res.data?.data || clocks_res.data || []
-    working_times_list.value = wt_res.data?.data || wt_res.data || []
-
-    update_weekly_chart()
-  } catch (err) {
-    console.error('Erreur chargement dashboard:', err)
-  }
-}
-
-function update_weekly_chart() {
-  const week_labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-  const week_hours = [0, 0, 0, 0, 0, 0, 0]
-
-  const now = new Date()
-  const current_day = now.getDay()
-  const distance_to_monday = current_day === 0 ? 6 : current_day - 1
-  const monday = new Date(now)
-  monday.setDate(now.getDate() - distance_to_monday)
-  monday.setHours(0, 0, 0, 0)
-
-  working_times_list.value.forEach(wt => {
-    if (!wt.start || !wt.end) return
-    const s = new Date(wt.start.replace(' ', 'T'))
-    const e = new Date(wt.end.replace(' ', 'T'))
-    if (isNaN(s) || isNaN(e) || e <= s) return
-
-    if (s >= monday) {
-      const day_idx = s.getDay() === 0 ? 6 : s.getDay() - 1
-      const hours = (e - s) / (1000 * 60 * 60)
-      week_hours[day_idx] += hours
-    }
-  })
-
-  if (week_hours.every(h => h === 0) && clocks_list.value.length > 0) {
-    const reversed = [...clocks_list.value].reverse()
-    for (let i = 0; i < reversed.length; i++) {
-      const c = reversed[i]
-      if (!c.status) {
-        const out_d = new Date(c.time.replace(' ', 'T'))
-        const prev_in = reversed.find((item, idx) => idx > i && item.status)
-        if (prev_in) {
-          const in_d = new Date(prev_in.time.replace(' ', 'T'))
-          if (in_d >= monday) {
-            const day_idx = in_d.getDay() === 0 ? 6 : in_d.getDay() - 1
-            const hours = (out_d - in_d) / (1000 * 60 * 60)
-            week_hours[day_idx] += hours
-          }
-        }
-      }
-    }
-  }
-
-  bar_chart_data.value = {
-    labels: week_labels,
-    datasets: [{
-      label: 'Hours Worked',
-      data: week_hours.map(h => Number(h.toFixed(1))),
-      backgroundColor: '#2563eb',
-      borderRadius: 6
-    }]
-  }
-}
-
-const kpi_data = computed(() => {
-  let total_ms = 0
-  const unique_days = new Set()
-  let last_time_str = '--:--'
-  let last_date_str = 'N/A'
-
-  if (working_times_list.value.length > 0) {
-    working_times_list.value.forEach(wt => {
-      if (!wt.start || !wt.end)
-        return
-      const s = new Date(wt.start.replace(' ', 'T')).getTime()
-      const e = new Date(wt.end.replace(' ', 'T')).getTime()
-      if (!isNaN(s) && !isNaN(e) && e > s) {
-        total_ms += (e - s)
-        unique_days.add(wt.start.slice(0, 10))
-      }
-    })
-
-    const last = working_times_list.value[working_times_list.value.length - 1]
-    if (last && last.end) {
-      const d = new Date(last.end.replace(' ', 'T'))
-      if (!isNaN(d)) {
-        last_time_str = `${pad_zero(d.getHours())}:${pad_zero(d.getMinutes())}`
-        last_date_str = d.toISOString().split('T')[0]
-      }
-    }
-  } else if (clocks_list.value.length > 0) {
-    const reversed = [...clocks_list.value].reverse()
-    for (let i = 0; i < reversed.length; i++) {
-      const c = reversed[i]
-      if (!c.status) {
-        const out_d = new Date(c.time.replace(' ', 'T'))
-        const prev_in = reversed.find((item, idx) => idx > i && item.status)
-        if (prev_in) {
-          const in_d = new Date(prev_in.time.replace(' ', 'T'))
-          if (!isNaN(in_d) && !isNaN(out_d) && out_d > in_d) {
-            total_ms += (out_d - in_d)
-            unique_days.add(in_d.toISOString().split('T')[0])
-          }
-        }
-      }
-    }
-    const last_clock = clocks_list.value[clocks_list.value.length - 1]
-    if (last_clock && last_clock.time) {
-      const d = new Date(last_clock.time.replace(' ', 'T'))
-      if (!isNaN(d)) {
-        last_time_str = `${pad_zero(d.getHours())}:${pad_zero(d.getMinutes())}`
-        last_date_str = d.toISOString().split('T')[0]
-      }
-    }
-  }
-
-  const total_hours_dec = total_ms / (1000 * 60 * 60)
-  const days_count = unique_days.size
-  const avg_hours_dec = days_count > 0 ? (total_hours_dec / days_count) : 0
-
-  const total_h = Math.floor(total_hours_dec)
-  const total_m = Math.round((total_hours_dec - total_h) * 60)
-
-  const avg_h = Math.floor(avg_hours_dec)
-  const avg_m = Math.round((avg_hours_dec - avg_h) * 60)
-
+const stats = computed(() => {
+  const totalMs = sessions.value.reduce((sum, s) => sum + (s.end - s.start), 0)
+  const days = new Set(sessions.value.map(s => localDateKey(s.start))).size
+  const last = sessions.value.at(-1)
   return {
-    total_hours: `${total_h}h ${pad_zero(total_m)}m`,
-    days_worked: days_count,
-    avg_daily_hours: `${avg_h}h ${pad_zero(avg_m)}m`,
-    last_time: last_time_str,
-    last_date: last_date_str
+    total: formatDuration(totalMs),
+    days,
+    average: formatDuration(days ? totalMs / days : 0),
+    last: last ? formatTime(last.end) : '--:--',
+    lastDate: last ? localDateKey(last.end) : 'Aucune session',
   }
 })
 
-const recent_working_times = computed(() => {
-  const result = []
-  const reversed = [...clocks_list.value].reverse()
-  for (let i = 0; i < reversed.length; i++) {
-    const c = reversed[i]
-    if (!c.status) {
-      const clock_out_date = new Date(c.time.replace(' ', 'T'))
-      const prev_in = reversed.find((item, idx) => idx > i && item.status)
-      if (prev_in) {
-        const clock_in_date = new Date(prev_in.time.replace(' ', 'T'))
-        const diff_h = Math.floor((clock_out_date - clock_in_date) / 3600000)
-        const diff_m = Math.floor(((clock_out_date - clock_in_date) % 3600000) / 60000)
-        result.push({
-          id: c.id,
-          date: clock_in_date.toISOString().split('T')[0],
-          clock_in: `${pad_zero(clock_in_date.getHours())}:${pad_zero(clock_in_date.getMinutes())}`,
-          clock_out: `${pad_zero(clock_out_date.getHours())}:${pad_zero(clock_out_date.getMinutes())}`,
-          duration: `${diff_h}h ${pad_zero(diff_m)}m`
-        })
-      }
-    }
-    if (result.length >= 6)
-      break
-  }
-  return result
+const weekHours = computed(() => {
+  const hours = [0, 0, 0, 0, 0, 0, 0]
+  const monday = startOfWeek()
+  sessions.value
+    .filter(s => s.start >= monday)
+    .forEach(s => { hours[weekdayIndex(s.start)] += hoursBetween(s.start, s.end) })
+  const today = weekdayIndex(new Date())
+  return hours.map((h, day) => (day <= today ? Number(h.toFixed(1)) : null))
 })
 
-function go_to_working_times()
-{
-  router.push('/workingTimes')
+const weekTotal = computed(() => weekHours.value.reduce((a, b) => a + b, 0).toFixed(1))
+
+const weekChart = computed(() => ({
+  labels: WEEK_DAYS,
+  datasets: [{
+    label: 'Heures',
+    data: weekHours.value,
+    borderColor: VIOLET,
+    backgroundColor: VIOLET,
+    borderWidth: 3,
+    tension: 0.35,
+    pointRadius: 4,
+    pointHoverRadius: 6,
+  }],
+}))
+
+const heatmap = computed(() => {
+  const counts = HEATMAP_HOURS.map(() => [0, 0, 0, 0, 0, 0, 0])
+  clocks.value.filter(c => c.status).forEach(c => {
+    const date = toDate(c.time)
+    const row = HEATMAP_HOURS.indexOf(date.getHours())
+    if (row !== -1) counts[row][weekdayIndex(date)]++
+  })
+  return counts
+})
+
+const peakHour = computed(() => {
+  const totals = heatmap.value.map(row => row.reduce((a, b) => a + b, 0))
+  const max = Math.max(...totals)
+  return max ? `${HEATMAP_HOURS[totals.indexOf(max)]}h` : '--'
+})
+
+function heatColor(count) {
+  if (count >= 3) return 'bg-violet-500'
+  if (count === 2) return 'bg-violet-300'
+  if (count === 1) return 'bg-violet-200'
+  return 'bg-violet-50'
 }
 
-onMounted(load_dashboard_data)
-watch(() => props.userId, load_dashboard_data)
+const recentSessions = computed(() => {
+  const list = clockSessions.value.slice(-6).reverse()
+  const longest = Math.max(1, ...list.map(s => s.end - s.start))
+  return list.map(s => ({
+    id: s.id,
+    date: localDateKey(s.start),
+    start: formatTime(s.start),
+    end: formatTime(s.end),
+    duration: formatDuration(s.end - s.start),
+    percent: Math.round(((s.end - s.start) / longest) * 100),
+  }))
+})
 </script>
 
 <template>
-  <div class="dashboard-container">
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-icon icon-blue">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        </div>
-        <div class="kpi-info">
-          <span class="kpi-label">Total Working Hours</span>
-          <div class="kpi-value-row">
-            <span class="kpi-value">{{ kpi_data.total_hours }}</span>
-            <span class="kpi-sub">Total cumulé</span>
-          </div>
+  <div class="space-y-6">
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+      <StatCard label="Heures totales" :value="stats.total" hint="Toutes les sessions" :icon="Clock" />
+      <StatCard label="Jours travaillés" :value="stats.days" hint="Jours avec au moins une session" :icon="CalendarCheck" />
+      <StatCard label="Moyenne par jour" :value="stats.average" hint="Temps moyen journalier" :icon="TrendingUp" />
+      <StatCard label="Dernière session" :value="stats.last" :hint="stats.lastDate" :icon="History" />
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+      <div class="rounded-2xl bg-white p-6 xl:col-span-2">
+        <p class="font-medium">Heures de la semaine</p>
+        <p class="mt-4 text-3xl font-semibold">{{ weekTotal }} h</p>
+        <p class="text-sm text-gray-400">travaillées depuis lundi</p>
+        <div class="mt-6 h-64">
+          <ChartInterface type="line" :chart-data="weekChart" :chart-options="chartOptions({ suffix: 'h' })" />
         </div>
       </div>
 
-      <div class="kpi-card">
-        <div class="kpi-icon icon-sky">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        </div>
-        <div class="kpi-info">
-          <span class="kpi-label">Days Worked</span>
-          <div class="kpi-value-row">
-            <span class="kpi-value">{{ kpi_data.days_worked }}</span>
-            <span class="kpi-sub">Jours actifs</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-icon icon-indigo">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        </div>
-        <div class="kpi-info">
-          <span class="kpi-label">Average Daily Hours</span>
-          <div class="kpi-value-row">
-            <span class="kpi-value">{{ kpi_data.avg_daily_hours }}</span>
-            <span class="kpi-sub">Moyenne / jour</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-icon icon-green">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        </div>
-        <div class="kpi-info">
-          <span class="kpi-label">Last Working Time</span>
-          <div class="kpi-value-row">
-            <span class="kpi-value">{{ kpi_data.last_time }}</span>
-            <span class="kpi-sub">{{ kpi_data.last_date }}</span>
-          </div>
+      <div class="rounded-2xl bg-white p-6">
+        <p class="font-medium">Heures d'arrivée</p>
+        <p class="mt-4 text-3xl font-semibold">{{ peakHour }}</p>
+        <p class="text-sm text-gray-400">heure d'arrivée la plus fréquente</p>
+        <div class="mt-6 grid grid-cols-[2.5rem_repeat(7,1fr)] gap-1 text-xs text-gray-400">
+          <template v-for="(row, index) in heatmap" :key="index">
+            <span class="flex items-center">{{ HEATMAP_HOURS[index] }}h</span>
+            <div v-for="(count, day) in row" :key="day" class="h-5 rounded" :class="heatColor(count)"></div>
+          </template>
+          <span></span>
+          <span v-for="day in WEEK_DAYS" :key="day" class="text-center">{{ day }}</span>
         </div>
       </div>
     </div>
 
-    <div class="middle-grid">
-      <div class="dash-card">
-        <h3 class="card-title">Working Hours (This Week)</h3>
-        <div class="dash-chart-container">
-          <ChartInterface type="bar" :chart-data="bar_chart_data" :chart-options="bar_chart_options" />
-        </div>
+    <div class="rounded-2xl bg-white p-6">
+      <div class="mb-4 flex items-center justify-between">
+        <p class="font-medium">Sessions récentes</p>
+        <router-link to="/workingTimes" class="text-sm font-medium text-violet-600 hover:underline">Voir tout</router-link>
       </div>
-
-      <div class="dash-card">
-        <div class="card-header-flex">
-          <h3 class="card-title">Recent Working Times</h3>
-        </div>
-        <table class="recent-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Clock In</th>
-              <th>Clock Out</th>
-              <th>Duration</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in recent_working_times" :key="item.id">
-              <td>{{ item.date }}</td>
-              <td>{{ item.clock_in }}</td>
-              <td>{{ item.clock_out }}</td>
-              <td>{{ item.duration }}</td>
-            </tr>
-            <tr v-if="recent_working_times.length === 0">
-              <td colspan="4" class="empty">Aucune donnée récente.</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="view-all-link" @click="go_to_working_times">
-          View all working times →
-        </div>
-      </div>
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-gray-50 text-left text-gray-500">
+            <th class="rounded-l-lg px-4 py-3 font-medium">Date</th>
+            <th class="px-4 py-3 font-medium">Arrivée</th>
+            <th class="px-4 py-3 font-medium">Départ</th>
+            <th class="rounded-r-lg px-4 py-3 font-medium">Durée</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="session in recentSessions" :key="session.id" class="border-b border-gray-100 last:border-0">
+            <td class="px-4 py-3 font-medium">{{ session.date }}</td>
+            <td class="px-4 py-3">{{ session.start }}</td>
+            <td class="px-4 py-3">{{ session.end }}</td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-3">
+                <div class="h-2 w-32 rounded-full bg-violet-100">
+                  <div class="h-2 rounded-full bg-violet-500" :style="{ width: `${session.percent}%` }"></div>
+                </div>
+                <span>{{ session.duration }}</span>
+              </div>
+            </td>
+          </tr>
+          <tr v-if="recentSessions.length === 0">
+            <td colspan="4" class="px-4 py-8 text-center text-gray-400">Aucune session enregistrée.</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </template>
-
-<style scoped>
-.dashboard-container {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  min-height: calc(100vh - 120px);
-  box-sizing: border-box;
-}
-
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-}
-
-.kpi-card {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 24px 20px;
-  border: 1px solid #f1f5f9;
-  box-shadow: 0 4px 16px rgba(30,42,74,0.04);
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.kpi-icon {
-  width: 48px; height: 48px;
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-
-.icon-blue { background: #eff6ff; color: #2563eb; }
-.icon-sky { background: #f0f9ff; color: #0284c7; }
-.icon-indigo { background: #eef2ff; color: #4f46e5; }
-.icon-green { background: #ecfdf5; color: #10b981; }
-
-.kpi-info { display: flex; flex-direction: column; gap: 4px; }
-.kpi-label { font-size: 13px; color: #64748b; font-weight: 500; }
-.kpi-value-row { display: flex; align-items: baseline; gap: 8px; }
-.kpi-value { font-size: 22px; font-weight: 700; color: #0f172a; }
-.kpi-sub { font-size: 11.5px; color: #94a3b8; }
-
-.middle-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  flex: 1;
-}
-
-.dash-card {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 28px;
-  border: 1px solid #f1f5f9;
-  box-shadow: 0 4px 16px rgba(30,42,74,0.04);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 100%;
-  box-sizing: border-box;
-}
-
-.card-title { font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 20px; }
-
-.dash-chart-container {
-  height: 340px;
-  position: relative;
-  width: 100%;
-}
-
-.recent-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-}
-
-.recent-table th {
-  text-align: left;
-  color: #64748b;
-  font-weight: 600;
-  padding-bottom: 14px;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.recent-table td {
-  padding: 14px 0;
-  color: #334155;
-  border-bottom: 1px solid #f8fafc;
-}
-
-.view-all-link {
-  margin-top: 20px;
-  align-self: flex-end;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: #2563eb;
-  cursor: pointer;
-  transition: color 0.15s;
-}
-
-.view-all-link:hover { color: #1d4ed8; text-decoration: underline; }
-.empty { text-align: center; color: #94a3b8; padding: 30px 0; }
-
-@media (max-width: 1100px) {
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-  .middle-grid { grid-template-columns: 1fr; }
-}
-</style>
