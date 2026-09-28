@@ -22,7 +22,7 @@
 
     async function getClocks() {
         try {
-            const response = await axios.get(`http://localhost:4000/api/clocks/${props.userId}`)
+            const response = await axios.get(`http://92.4.131.118/api/clocks/${props.userId}`)
             clocks.value = response.data.data
             createChart()
         } catch (error) {

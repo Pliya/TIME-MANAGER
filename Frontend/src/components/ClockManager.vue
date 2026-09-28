@@ -32,7 +32,7 @@ function update_elapsed_time() {
 
 async function refresh_clocks() {
   try {
-    const { data } = await axios.get(`http://localhost:4000/api/clocks/${props.userId}`)
+    const { data } = await axios.get(`http://92.4.131.118/api/clocks/${props.userId}`)
     clocks_list.value = data.data || []
     const last_clock = clocks_list.value[clocks_list.value.length - 1]
     is_clocked_in.value = last_clock?.status || false
@@ -47,7 +47,7 @@ async function toggle_clock() {
   try {
     const now_date = new Date()
     const formatted_time = `${now_date.getFullYear()}-${pad_zero(now_date.getMonth() + 1)}-${pad_zero(now_date.getDate())} ${pad_zero(now_date.getHours())}:${pad_zero(now_date.getMinutes())}:${pad_zero(now_date.getSeconds())}`
-    await axios.post(`http://localhost:4000/api/clocks/${props.userId}`, {
+    await axios.post(`http://92.4.131.118/api/clocks/${props.userId}`, {
       clock: { status: !is_clocked_in.value, time: formatted_time }
     })
     await refresh_clocks()
@@ -105,7 +105,6 @@ const last_working_times = computed(() => {
 
 <template>
   <div class="clock-manager-grid">
-    <!-- GAUCHE : Cadran Circulaire -->
     <div class="dial-card">
       <div class="circle-container">
         <svg class="circle-svg" viewBox="0 0 200 200">
@@ -135,9 +134,7 @@ const last_working_times = computed(() => {
       </button>
     </div>
 
-    <!-- DROITE : Session Actuelle & Table des Derniers Pointages -->
     <div class="details-col">
-      <!-- Current Session -->
       <div class="session-card">
         <h3 class="card-subtitle">Current Session</h3>
         <div class="session-rows">
@@ -159,7 +156,6 @@ const last_working_times = computed(() => {
         </div>
       </div>
 
-      <!-- Last Working Times -->
       <div class="last-times-card">
         <h3 class="card-subtitle">Last Working Times</h3>
         <table class="times-table">
@@ -197,7 +193,6 @@ const last_working_times = computed(() => {
   box-sizing: border-box;
 }
 
-/* --- Card Cadran --- */
 .dial-card {
   background: #ffffff;
   border-radius: 16px;
@@ -311,7 +306,6 @@ const last_working_times = computed(() => {
 
 .action-btn:hover { opacity: 0.92; transform: translateY(-1px); }
 
-/* --- Colonne Droite --- */
 .details-col {
   display: flex;
   flex-direction: column;

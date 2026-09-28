@@ -424,7 +424,6 @@ defineExpose({
 }
 .btn-refresh:hover { background: #f8fafc; color: #1e293b; border-color: #94a3b8; }
 
-/* KPIs */
 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 .kpi-grid {
   display: grid;

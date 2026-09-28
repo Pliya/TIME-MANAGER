@@ -9,15 +9,12 @@ const props = defineProps({
   }
 })
 
-/* --- Data Pointages (Clocking) --- */
 const line_data = ref({ labels: [], datasets: [] })
 const clock_bar_data = ref({ labels: [], datasets: [] })
 
-/* --- Data Working Times --- */
 const wt_bar_data = ref({ labels: [], datasets: [] })
 const wt_pie_data = ref({ labels: [], datasets: [] })
 
-/* --- Options Graphiques --- */
 const base_options = {
   responsive: true,
   maintainAspectRatio: false,
@@ -76,10 +73,9 @@ const wt_pie_options = {
   }
 }
 
-/* --- Chargement des Pointages (Clocking) --- */
 async function load_clocks_data() {
   try {
-    const { data } = await axios.get(`http://localhost:4000/api/clocks/${props.userId}`)
+    const { data } = await axios.get(`http://92.4.131.118/api/clocks/${props.userId}`)
     const clocks_list = data.data || []
 
     const days_map = {}
@@ -102,7 +98,6 @@ async function load_clocks_data() {
       c.status ? hours_in[h]++ : hours_out[h]++
     })
 
-    // 1. Line Chart (Horaires de pointage)
     const days_list = Object.values(days_map).slice(-7)
     line_data.value = {
       labels: days_list.map(d => d.label),
@@ -112,7 +107,6 @@ async function load_clocks_data() {
       ]
     }
 
-    // 2. Bar Chart (Fréquence des pointages)
     const active_hours = Array.from({ length: 24 }, (_, i) => i).filter(h => hours_in[h] || hours_out[h])
     clock_bar_data.value = {
       labels: active_hours.length ? active_hours.map(h => `${String(h).padStart(2, '0')}h`) : ['-'],
@@ -126,10 +120,9 @@ async function load_clocks_data() {
   }
 }
 
-/* --- Chargement des Temps de Travail (Working Times) --- */
 async function load_working_times_data() {
   try {
-    const { data } = await axios.get(`http://localhost:4000/api/workingtime/${props.userId}`)
+    const { data } = await axios.get(`http://92.4.131.118/api/workingtime/${props.userId}`)
     const wt_list = data.data || data || []
 
     const days_durations = {}
@@ -153,7 +146,6 @@ async function load_working_times_data() {
     const default_values = [8.5, 7.75, 9.0, 8.16, 7.83]
     const values_to_use = days_keys.length ? days_keys.map(k => Number(days_durations[k].toFixed(2))) : default_values
 
-    // 3. Bar Chart Working Times (Durée travaillée par jour)
     wt_bar_data.value = {
       labels: labels_to_use,
       datasets: [
@@ -166,7 +158,6 @@ async function load_working_times_data() {
       ]
     }
 
-    // 4. Pie Chart Working Times (Répartition du temps travaillé par jour)
     const total_sum = values_to_use.reduce((a, b) => a + b, 0) || 1
     const percentages = values_to_use.map(v => Math.round((v / total_sum) * 100))
 
@@ -198,15 +189,13 @@ watch(() => props.userId, load_all_charts)
 <template>
   <div class="charts-page-container">
 
-    <!-- SECTION 1 : STATISTIQUES DES POINTAGES -->
     <div class="section-block">
       <div class="section-title">
-        <div class="section-badge">⏱️</div>
+        <div class="section-badge">⏱</div>
         <h2>Statistiques des Pointages</h2>
       </div>
 
       <div class="charts-grid">
-        <!-- Graphique 1 : Horaires de pointage -->
         <div class="chart-card">
           <div class="chart-header">
             <div class="chart-icon icon-blue">
@@ -222,7 +211,6 @@ watch(() => props.userId, load_all_charts)
           </div>
         </div>
 
-        <!-- Graphique 2 : Fréquence des pointages -->
         <div class="chart-card">
           <div class="chart-header">
             <div class="chart-icon icon-indigo">
@@ -240,15 +228,13 @@ watch(() => props.userId, load_all_charts)
       </div>
     </div>
 
-    <!-- SECTION 2 : TEMPS DE TRAVAIL (WORKING TIMES) -->
     <div class="section-block">
       <div class="section-title">
-        <div class="section-badge">📅</div>
+        <div class="section-badge"></div>
         <h2>Statistiques des Temps de Travail</h2>
       </div>
 
       <div class="charts-grid">
-        <!-- Graphique 3 : Durée travaillée par jour (Bar Chart) -->
         <div class="chart-card">
           <div class="chart-header">
             <div class="chart-icon icon-sky">
@@ -264,7 +250,6 @@ watch(() => props.userId, load_all_charts)
           </div>
         </div>
 
-        <!-- Graphique 4 : Répartition du temps travaillé par jour (Pie Chart) -->
         <div class="chart-card">
           <div class="chart-header">
             <div class="chart-icon icon-purple">

@@ -37,12 +37,11 @@ const bar_chart_options = {
 
 const pad_zero = (n) => String(n).padStart(2, '0')
 
-/* --- Chargement des Données depuis l'API --- */
 async function load_dashboard_data() {
   try {
     const [clocks_res, wt_res] = await Promise.all([
-      axios.get(`http://localhost:4000/api/clocks/${props.userId}`).catch(() => ({ data: { data: [] } })),
-      axios.get(`http://localhost:4000/api/workingtime/${props.userId}`).catch(() => ({ data: { data: [] } }))
+      axios.get(`http://92.4.131.118/api/clocks/${props.userId}`).catch(() => ({ data: { data: [] } })),
+      axios.get(`http://92.4.131.118/api/workingtime/${props.userId}`).catch(() => ({ data: { data: [] } }))
     ])
 
     clocks_list.value = clocks_res.data?.data || clocks_res.data || []
@@ -54,7 +53,6 @@ async function load_dashboard_data() {
   }
 }
 
-/* --- Mise à jour du Graphique à Barres Hebdomadaire (Données Réelles) --- */
 function update_weekly_chart() {
   const week_labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const week_hours = [0, 0, 0, 0, 0, 0, 0]
@@ -66,7 +64,6 @@ function update_weekly_chart() {
   monday.setDate(now.getDate() - distance_to_monday)
   monday.setHours(0, 0, 0, 0)
 
-  // Calcule les heures depuis working_times
   working_times_list.value.forEach(wt => {
     if (!wt.start || !wt.end) return
     const s = new Date(wt.start.replace(' ', 'T'))
@@ -80,7 +77,6 @@ function update_weekly_chart() {
     }
   })
 
-  // Si pas de working_times déclarés dans la semaine, utilise clocks
   if (week_hours.every(h => h === 0) && clocks_list.value.length > 0) {
     const reversed = [...clocks_list.value].reverse()
     for (let i = 0; i < reversed.length; i++) {
@@ -111,17 +107,16 @@ function update_weekly_chart() {
   }
 }
 
-/* --- Calcul Dynamique des KPIs Réels --- */
 const kpi_data = computed(() => {
   let total_ms = 0
   const unique_days = new Set()
   let last_time_str = '--:--'
   let last_date_str = 'N/A'
 
-  // Calcul basé sur working_times_list
   if (working_times_list.value.length > 0) {
     working_times_list.value.forEach(wt => {
-      if (!wt.start || !wt.end) return
+      if (!wt.start || !wt.end)
+        return
       const s = new Date(wt.start.replace(' ', 'T')).getTime()
       const e = new Date(wt.end.replace(' ', 'T')).getTime()
       if (!isNaN(s) && !isNaN(e) && e > s) {
@@ -139,7 +134,6 @@ const kpi_data = computed(() => {
       }
     }
   } else if (clocks_list.value.length > 0) {
-    // Fallback sur clocks_list si working_times est vide
     const reversed = [...clocks_list.value].reverse()
     for (let i = 0; i < reversed.length; i++) {
       const c = reversed[i]
@@ -184,7 +178,6 @@ const kpi_data = computed(() => {
   }
 })
 
-/* --- Liste des Sessions Récentes --- */
 const recent_working_times = computed(() => {
   const result = []
   const reversed = [...clocks_list.value].reverse()
@@ -206,12 +199,14 @@ const recent_working_times = computed(() => {
         })
       }
     }
-    if (result.length >= 6) break
+    if (result.length >= 6)
+      break
   }
   return result
 })
 
-function go_to_working_times() {
+function go_to_working_times()
+{
   router.push('/workingTimes')
 }
 
@@ -221,7 +216,6 @@ watch(() => props.userId, load_dashboard_data)
 
 <template>
   <div class="dashboard-container">
-    <!-- Top 4 KPIs dynamiques -->
     <div class="kpi-grid">
       <div class="kpi-card">
         <div class="kpi-icon icon-blue">
@@ -276,9 +270,7 @@ watch(() => props.userId, load_dashboard_data)
       </div>
     </div>
 
-    <!-- Section Centrale Pleine Hauteur : Bar Chart & Table -->
     <div class="middle-grid">
-      <!-- Working Hours (This Week) -->
       <div class="dash-card">
         <h3 class="card-title">Working Hours (This Week)</h3>
         <div class="dash-chart-container">
@@ -286,7 +278,6 @@ watch(() => props.userId, load_dashboard_data)
         </div>
       </div>
 
-      <!-- Recent Working Times -->
       <div class="dash-card">
         <div class="card-header-flex">
           <h3 class="card-title">Recent Working Times</h3>

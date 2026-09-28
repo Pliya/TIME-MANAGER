@@ -38,7 +38,7 @@
       </div>
 
       <div v-if="durationPreview" class="duration-badge" :class="{ 'duration-invalid': durationPreview.error }">
-        <span class="duration-icon">{{ durationPreview.error ? '⚠️' : '⏱️' }}</span>
+        <span class="duration-icon">{{ durationPreview.error ? '' : '⏱' }}</span>
         <span class="duration-text">{{ durationPreview.text }}</span>
       </div>
 
@@ -58,7 +58,7 @@
             Annuler
           </button>
           <button type="button" class="btn btn-danger" @click="onDelete">
-            🗑️ Supprimer
+            Supprimer
           </button>
         </div>
       </div>

@@ -3,7 +3,6 @@
 
     <h1>Gestion des utilisateurs</h1>
 
-    <!-- MESSAGES -->
     <div v-if="loading" class="message loading">
       Chargement...
     </div>
@@ -24,7 +23,6 @@
       {{ success }}
     </div>
 
-    <!-- UTILISATEUR ACTUEL -->
     <div v-if="user && !loading" class="user-info">
       <h2>Utilisateur actuel</h2>
       <div class="info-row">
@@ -43,7 +41,6 @@
 
     <hr />
 
-    <!-- CREER UN UTILISATEUR -->
     <div class="section">
       <h2>Créer un utilisateur</h2>
       <form @submit.prevent="createUser">
@@ -76,7 +73,6 @@
       </form>
     </div>
 
-    <!-- MODIFIER UN UTILISATEUR -->
     <div v-if="user" class="section">
       <hr />
       <h2>Modifier l'utilisateur</h2>
@@ -108,7 +104,6 @@
       </form>
     </div>
 
-    <!-- SUPPRIMER UN UTILISATEUR -->
     <div v-if="user" class="section">
       <hr />
       <h2>Supprimer l'utilisateur</h2>
@@ -131,21 +126,17 @@ import axios from 'axios'
 
 const emit = defineEmits(['user-updated'])
 
-/* API */
-const API_URL = 'http://localhost:4000/api/users'
+const API_URL = 'http://92.4.131.118/api/users'
 
-/* ETAT DE L'APPLICATION */
 const user = ref(null)
 const userId = ref(1)
 const loading = ref(false)
 const error = ref(null)
 const success = ref(null)
 
-/* FORMULAIRE CREATE */
 const newUsername = ref('')
 const newEmail = ref('')
 
-/* FORMULAIRE UPDATE */
 const editUsername = ref('')
 const editEmail = ref('')
 
@@ -169,11 +160,16 @@ function getApiErrors(err) {
     return "Impossible de contacter le serveur. Vérifiez que l'API Phoenix est démarrée."
   }
   const status = err.response.status
-  if (status === 400) return "La requête envoyée est invalide."
-  if (status === 401) return "Vous devez être authentifié pour effectuer cette action."
-  if (status === 403) return "Vous n'avez pas l'autorisation d'effectuer cette action."
-  if (status === 404) return "Utilisateur introuvable."
-  if (status === 409) return "Cette opération provoque un conflit avec les données existantes."
+  if (status === 400)
+    return "La requête envoyée est invalide."
+  if (status === 401)
+    return "Vous devez être authentifié pour effectuer cette action."
+  if (status === 403)
+    return "Vous n'avez pas l'autorisation d'effectuer cette action."
+  if (status === 404)
+    return "Utilisateur introuvable."
+  if (status === 409)
+    return "Cette opération provoque un conflit avec les données existantes."
   if (status === 422) {
     const errors = err.response?.data?.errors
     if (!errors) return "Les informations fournies sont invalides."
@@ -189,8 +185,10 @@ function getApiErrors(err) {
     })
     return messages.length === 0 ? "Les informations fournies sont invalides." : messages
   }
-  if (status === 429) return "Trop de requêtes. Veuillez patienter quelques instants."
-  if (status >= 500) return "Une erreur est survenue sur le serveur. Veuillez réessayer plus tard."
+  if (status === 429)
+    return "Trop de requêtes. Veuillez patienter quelques instants."
+  if (status >= 500)
+    return "Une erreur est survenue sur le serveur. Veuillez réessayer plus tard."
   return `Une erreur est survenue (HTTP ${status}).`
 }
 
