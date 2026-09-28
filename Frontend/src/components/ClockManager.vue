@@ -5,6 +5,9 @@ import { clocksToSessions, localDateKey, formatTime, formatDuration, pad, toDate
 
 const props = defineProps({ userId: { type: Number, required: true } })
 
+const DAILY_GOAL_HOURS = 7
+const DAILY_GOAL_MS = DAILY_GOAL_HOURS * 3600000
+
 const clocks = ref([])
 const now = ref(new Date())
 const error = ref('')
@@ -59,6 +62,25 @@ const elapsed = computed(() => {
   return `${pad(Math.floor(seconds / 3600))}:${pad(Math.floor((seconds % 3600) / 60))}:${pad(seconds % 60)}`
 })
 
+const todayMs = computed(() => {
+  const midnight = new Date(now.value)
+  midnight.setHours(0, 0, 0, 0)
+  const finished = clocksToSessions(clocks.value)
+    .filter(s => s.end > midnight)
+    .reduce((sum, s) => sum + (s.end - Math.max(s.start, midnight)), 0)
+  const running = startedAt.value ? now.value - Math.max(startedAt.value, midnight) : 0
+  return finished + running
+})
+
+const goalPercent = computed(() => Math.min(100, Math.round((todayMs.value / DAILY_GOAL_MS) * 100)))
+
+const goalMessage = computed(() => {
+  const remaining = DAILY_GOAL_MS - todayMs.value
+  if (remaining <= 0) return 'Objectif atteint, bravo !'
+  if (isClockedIn.value) return `Tu peux partir à ${formatTime(new Date(now.value.getTime() + remaining))}`
+  return `Encore ${formatDuration(remaining)} à faire aujourd'hui`
+})
+
 const lastSessions = computed(() =>
   clocksToSessions(clocks.value).slice(-8).reverse().map(s => ({
     id: s.id,
@@ -75,33 +97,50 @@ const lastSessions = computed(() =>
     <p v-if="error" class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{{ error }}</p>
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
-      <div class="flex flex-col items-center rounded-2xl bg-white p-8">
-        <span
-          class="rounded-full px-3 py-1 text-sm font-medium"
-          :class="isClockedIn ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-500'"
-        >
-          {{ isClockedIn ? 'En cours' : 'Arrêté' }}
-        </span>
-        <p class="mt-8 text-7xl font-bold tracking-tight tabular-nums">{{ elapsed }}</p>
-        <p class="mt-2 text-sm text-neutral-400">
-          {{ startedAt ? `Depuis ${formatTime(startedAt)}` : 'Aucune session en cours' }}
-        </p>
-        <button
-          v-if="!loaded"
-          disabled
-          class="mt-8 w-full rounded-full bg-neutral-100 py-3 font-semibold text-neutral-400"
-        >
-          Chargement...
-        </button>
-        <button
-          v-else
-          :disabled="busy"
-          class="mt-8 w-full rounded-full py-3 font-semibold disabled:opacity-50"
-          :class="isClockedIn ? 'border-2 border-neutral-900 bg-white text-neutral-900 hover:bg-neutral-100' : 'bg-neutral-900 text-white hover:bg-neutral-700'"
-          @click="toggleClock"
-        >
-          {{ isClockedIn ? 'Pointer la sortie' : "Pointer l'arrivée" }}
-        </button>
+      <div class="space-y-6">
+        <div class="flex flex-col items-center rounded-2xl bg-white p-8">
+          <span
+            class="rounded-full px-3 py-1 text-sm font-medium"
+            :class="isClockedIn ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-500'"
+          >
+            {{ isClockedIn ? 'En cours' : 'Arrêté' }}
+          </span>
+          <p class="mt-8 text-7xl font-bold tracking-tight tabular-nums">{{ elapsed }}</p>
+          <p class="mt-2 text-sm text-neutral-400">
+            {{ startedAt ? `Depuis ${formatTime(startedAt)}` : 'Aucune session en cours' }}
+          </p>
+          <button
+            v-if="!loaded"
+            disabled
+            class="mt-8 w-full rounded-full bg-neutral-100 py-3 font-semibold text-neutral-400"
+          >
+            Chargement...
+          </button>
+          <button
+            v-else
+            :disabled="busy"
+            class="mt-8 w-full rounded-full py-3 font-semibold disabled:opacity-50"
+            :class="isClockedIn ? 'border-2 border-neutral-900 bg-white text-neutral-900 hover:bg-neutral-100' : 'bg-neutral-900 text-white hover:bg-neutral-700'"
+            @click="toggleClock"
+          >
+            {{ isClockedIn ? 'Pointer la sortie' : "Pointer l'arrivée" }}
+          </button>
+        </div>
+
+        <div v-if="loaded" class="rounded-2xl bg-white p-6">
+          <div class="flex items-center justify-between">
+            <p class="font-medium">Objectif du jour</p>
+            <span class="text-sm font-medium text-neutral-400">{{ goalPercent }}%</span>
+          </div>
+          <p class="mt-4 text-3xl font-semibold">
+            {{ formatDuration(todayMs) }}
+            <span class="text-base font-normal text-neutral-400">/ {{ DAILY_GOAL_HOURS }}h</span>
+          </p>
+          <div class="mt-4 h-2 rounded-full bg-neutral-100">
+            <div class="h-2 rounded-full bg-neutral-900" :style="{ width: `${goalPercent}%` }"></div>
+          </div>
+          <p class="mt-3 text-sm text-neutral-500">{{ goalMessage }}</p>
+        </div>
       </div>
 
       <div class="rounded-2xl bg-white p-6 xl:col-span-2">

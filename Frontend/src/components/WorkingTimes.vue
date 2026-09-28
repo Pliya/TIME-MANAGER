@@ -87,45 +87,47 @@ const stats = computed(() => summarize(sessions.value))
           </div>
         </div>
 
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="bg-neutral-50 text-left text-neutral-500">
-              <th class="rounded-l-lg px-4 py-3 font-medium">Date</th>
-              <th class="px-4 py-3 font-medium">Horaires</th>
-              <th class="px-4 py-3 font-medium">Durée</th>
-              <th class="rounded-r-lg px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="session in filteredSessions"
-              :key="session.id"
-              class="border-b border-neutral-100 last:border-0"
-              :class="{ 'bg-neutral-100': selectedId === session.id }"
-            >
-              <td class="px-4 py-3 font-medium">{{ formatDay(session.start) }}</td>
-              <td class="px-4 py-3 text-neutral-500">{{ formatTime(session.start) }} - {{ formatTime(session.end) }}</td>
-              <td class="px-4 py-3">
-                <span class="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-900">
-                  {{ formatDuration(session.end - session.start) }}
-                </span>
-              </td>
-              <td class="px-4 py-3">
-                <div class="flex justify-end gap-1">
-                  <button class="rounded-lg p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900" @click="selectedId = session.id">
-                    <Pencil class="h-4 w-4" />
-                  </button>
-                  <button class="rounded-lg p-2 text-neutral-400 hover:bg-red-50 hover:text-red-600" @click="remove(session.id)">
-                    <Trash2 class="h-4 w-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="filteredSessions.length === 0">
-              <td colspan="4" class="px-4 py-8 text-center text-neutral-400">Aucune session trouvée.</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="max-h-[28rem] overflow-y-auto">
+          <table class="w-full text-sm">
+            <thead class="sticky top-0 z-10">
+              <tr class="bg-neutral-50 text-left text-neutral-500">
+                <th class="rounded-l-lg px-4 py-3 font-medium">Date</th>
+                <th class="px-4 py-3 font-medium">Horaires</th>
+                <th class="px-4 py-3 font-medium">Durée</th>
+                <th class="rounded-r-lg px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="session in filteredSessions"
+                :key="session.id"
+                class="border-b border-neutral-100 last:border-0"
+                :class="{ 'bg-neutral-100': selectedId === session.id }"
+              >
+                <td class="px-4 py-3 font-medium">{{ formatDay(session.start) }}</td>
+                <td class="px-4 py-3 text-neutral-500">{{ formatTime(session.start) }} - {{ formatTime(session.end) }}</td>
+                <td class="px-4 py-3">
+                  <span class="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-900">
+                    {{ formatDuration(session.end - session.start) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex justify-end gap-1">
+                    <button class="rounded-lg p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900" @click="selectedId = session.id">
+                      <Pencil class="h-4 w-4" />
+                    </button>
+                    <button class="rounded-lg p-2 text-neutral-400 hover:bg-red-50 hover:text-red-600" @click="remove(session.id)">
+                      <Trash2 class="h-4 w-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="filteredSessions.length === 0">
+                <td colspan="4" class="px-4 py-8 text-center text-neutral-400">Aucune session trouvée.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>

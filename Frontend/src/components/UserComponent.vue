@@ -108,7 +108,7 @@ watch(() => props.userId, loadUser, { immediate: true })
           </div>
           <div>
             <p class="text-lg font-semibold">{{ user.username }}</p>
-            <p class="text-sm text-neutral-400">{{ user.email }} · ID {{ user.id }}</p>
+            <p class="text-sm text-neutral-400">{{ user.email }}</p>
           </div>
         </div>
 
