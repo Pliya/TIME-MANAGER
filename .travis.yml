@@ -1,4 +1,19 @@
-language: minimal
+language: generic
 
-script:
-  - echo "Hello depuis Travis CI"
+services:
+  - docker
+
+stages:
+  - name: "Build & Push Image"
+
+jobs:
+  include:
+    - stage: "Build & Push Image"
+      script:
+        - echo "$dckr_pat_ZfW1LCWrImdqiJkutr8kESzuC8w" | docker login -u "$lerau" --password-stdin
+
+        - docker build -t $lerau/time-manager-backend:latest ./manager
+        - docker push $lerau/time-manager-backend:latest
+        
+        - docker build -t $lerau/time-manager-frontend:latest ./Frontend
+        - docker push $lerau/time-manager-frontend:latest
