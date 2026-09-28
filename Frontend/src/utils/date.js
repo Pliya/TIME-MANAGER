@@ -28,11 +28,6 @@ export function formatDecimalHours(hours) {
   return formatDuration(hours * 3600000)
 }
 
-export function formatDecimalTime(hours) {
-  const minutes = Math.round(hours * 60)
-  return `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`
-}
-
 export function decimalHour(date) {
   return date.getHours() + date.getMinutes() / 60
 }
