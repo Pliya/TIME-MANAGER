@@ -23,6 +23,7 @@ jobs:
       script:
         - mkdir -p ~/.ssh
         - echo "$SSH_PRIVATE_KEY" | base64 -d > ~/.ssh/id_rsa
+        - echo "" >> ~/.ssh/id_rsa
         - chmod 600 ~/.ssh/id_rsa
         - echo -e "Host *\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
         - scp docker-compose.prod.yml $SERVER_USER@$SERVER_HOST:~/app/docker-compose.yml
