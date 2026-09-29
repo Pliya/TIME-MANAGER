@@ -4,6 +4,8 @@ defmodule Time_manager.AccountFixtures do
   entities via the `Time_manager.Account` context.
   """
 
+  def unique_user_email, do: "user#{System.unique_integer([:positive])}@example.com"
+
   @doc """
   Generate a user.
   """
@@ -11,7 +13,7 @@ defmodule Time_manager.AccountFixtures do
     {:ok, user} =
       attrs
       |> Enum.into(%{
-        email: "some email",
+        email: unique_user_email(),
         username: "some username"
       })
       |> Time_manager.Account.create_user()

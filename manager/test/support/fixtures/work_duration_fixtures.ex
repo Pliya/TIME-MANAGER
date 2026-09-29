@@ -5,14 +5,15 @@ defmodule Time_manager.WorkDurationFixtures do
   """
 
   @doc """
-  Generate a working_time.
+  Generate a working_time for the given user.
   """
-  def working_time_fixture(attrs \\ %{}) do
+  def working_time_fixture(user_id, attrs \\ %{}) do
     {:ok, working_time} =
       attrs
       |> Enum.into(%{
-        end: ~N[2026-09-21 08:33:00],
-        start: ~N[2026-09-21 08:33:00]
+        start: ~U[2026-09-21 08:00:00Z],
+        end: ~U[2026-09-21 17:00:00Z],
+        user_id: user_id
       })
       |> Time_manager.WorkDuration.create_working_time()
 

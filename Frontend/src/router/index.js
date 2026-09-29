@@ -5,25 +5,28 @@ import ChartManager from '../components/ChartManager.vue'
 import WorkingTimes from '../components/WorkingTimes.vue'
 import WorkingTime from '../components/WorkingTime.vue'
 import UserComponent from '../components/UserComponent.vue'
+import LoginPage from '../components/LoginPage.vue'
+import { loggedUserId } from '../session'
 
 const routes = [
-  { path: '/', name: 'dashboard', component: HomeComponent },
-  { path: '/clock', name: 'clock', component: ClockManager },
-  { path: '/clock/:user_id', name: 'clock-user', component: ClockManager },
-  { path: '/charts', name: 'charts', component: ChartManager },
-  { path: '/chartManager', name: 'chart-manager', component: ChartManager },
-  { path: '/chartManager/:user_id', name: 'chart-manager-user', component: ChartManager },
-  { path: '/workingTimes', name: 'working-times-list', component: WorkingTimes },
-  { path: '/workingTimes/:user_id', name: 'working-times-user', component: WorkingTimes },
-  { path: '/workingTime', name: 'working-time-new', component: WorkingTime },
-  { path: '/workingTime/:user_id', name: 'working-time-create', component: WorkingTime },
-  { path: '/workingTime/:user_id/:working_time_id', name: 'working-time-edit', component: WorkingTime },
-  { path: '/profile', name: 'profile', component: UserComponent },
+  { path: '/login', component: LoginPage, meta: { title: 'Connexion', public: true } },
+  { path: '/', component: HomeComponent, meta: { title: 'Dashboard' } },
+  { path: '/clock/:userID?', component: ClockManager, meta: { title: 'Pointage' } },
+  { path: '/charts', component: ChartManager, meta: { title: 'Statistiques' } },
+  { path: '/chartManager/:userID?', component: ChartManager, meta: { title: 'Statistiques' } },
+  { path: '/workingTimes/:userID?', component: WorkingTimes, meta: { title: 'Temps de travail' } },
+  { path: '/workingTime/:userID?/:workingTimeId?', component: WorkingTime, meta: { title: 'Temps de travail' } },
+  { path: '/profile', component: UserComponent, meta: { title: 'Profil' } },
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
+})
+
+router.beforeEach(to => {
+  if (!to.meta.public && !loggedUserId.value) return '/login'
+  if (to.path === '/login' && loggedUserId.value) return '/'
 })
 
 export default router

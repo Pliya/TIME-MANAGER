@@ -1,0 +1,35 @@
+language: generic
+
+services:
+  - docker
+
+env:
+  global:
+    # URL publique de l'API, injectée dans le bundle du frontend
+    - VITE_API_URL=http://92.4.131.118:4000/api
+
+stages:
+  - name: "Build & Push Image"
+  - name: "Deploy"
+
+jobs:
+  include:
+    - stage: "Build & Push Image"
+      script:
+        - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+        
+        - docker build -t $DOCKER_USERNAME/time-manager-backend:latest ./manager
+        - docker push $DOCKER_USERNAME/time-manager-backend:latest
+        
+        - docker build --build-arg VITE_API_URL="$VITE_API_URL" -t $DOCKER_USERNAME/time-manager-frontend:latest ./Frontend
+        - docker push $DOCKER_USERNAME/time-manager-frontend:latest
+    
+    - stage: "Deploy"
+      script:
+        - mkdir -p ~/.ssh
+        - echo "$SSH_PRIVATE_KEY" | base64 -d > ~/.ssh/id_rsa
+        - echo "" >> ~/.ssh/id_rsa
+        - chmod 600 ~/.ssh/id_rsa
+        - echo -e "Host *\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+        - scp docker-compose.prod.yml $SERVER_USER@$SERVER_HOST:~/time-manager/docker-compose.yml
+        - ssh $SERVER_USER@$SERVER_HOST "cd ~/time-manager && docker compose pull && docker compose up -d"

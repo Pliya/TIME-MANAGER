@@ -59,18 +59,6 @@ defmodule Time_manager.WorkDuration do
 
   """
 
-  # def get_working_time!(id) do
-  #   WorkingTime
-  #   |> Repo.get!(id)
-  #   |> Repo.preload(:user)
-  # end
-
-  # def get_working_time_for_user!(user_id, id) do
-  #   WorkingTime
-  #   |> Repo.get_by!([id: id, user_id: user_id])
-  #   |> Repo.preload(:user)
-  # end
-
   def get_working_time(id) do
     case Repo.get(WorkingTime, id) do
       nil -> nil
