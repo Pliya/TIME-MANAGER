@@ -2,7 +2,8 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Clock } from 'lucide-vue-next'
-import api from '@/api'
+import axios from 'axios'
+import { API_URL } from '@/api'
 import { login } from '@/session'
 
 const router = useRouter()
@@ -30,13 +31,13 @@ async function submit() {
 }
 
 async function findAccount() {
-  const { data } = await api.get('/users', { params: { email: email.value } })
+  const { data } = await axios.get(`${API_URL}/users`, { params: { email: email.value } })
   if (data.data.length === 0) error.value = 'Aucun compte avec cet email.'
   return data.data[0]
 }
 
 async function createAccount() {
-  const { data } = await api.post('/users', { user: { username: username.value, email: email.value } })
+  const { data } = await axios.post(`${API_URL}/users`, { user: { username: username.value, email: email.value } })
   return data.data
 }
 </script>

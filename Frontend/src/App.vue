@@ -86,7 +86,7 @@ watch(() => route.path, () => { menuOpen.value = false })
         <UserComponent :user-id="userId" />
       </header>
 
-      <main class="flex-1 overflow-y-auto p-4 lg:p-8">
+      <main class="main-content flex-1 overflow-y-auto p-4 lg:p-8">
         <router-view v-slot="{ Component }">
           <KeepAlive include="ClockManager">
             <component :is="Component" :user-id="userId" />
