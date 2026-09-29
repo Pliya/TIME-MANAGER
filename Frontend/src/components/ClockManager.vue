@@ -9,16 +9,21 @@ const DAILY_GOAL_HOURS = 7
 const DAILY_GOAL_MS = DAILY_GOAL_HOURS * 3600000
 
 const clocks = ref([])
+const clockIn = ref(false)
+const startDateTime = ref(null)
 const now = ref(new Date())
 const error = ref('')
 const loaded = ref(false)
 const busy = ref(false)
 let timer = null
 
-async function loadClocks() {
+async function refresh() {
   try {
     const { data } = await api.get(`/clocks/${props.userId}`)
     clocks.value = data.data
+    const lastClock = [...clocks.value].sort((a, b) => toDate(a.time) - toDate(b.time)).at(-1)
+    clockIn.value = lastClock?.status === true
+    startDateTime.value = clockIn.value ? lastClock.time : null
     error.value = ''
   } catch {
     error.value = 'Impossible de charger les pointages.'
@@ -27,11 +32,11 @@ async function loadClocks() {
   }
 }
 
-async function toggleClock() {
+async function clock() {
   busy.value = true
   try {
     await api.post(`/clocks/${props.userId}`)
-    await loadClocks()
+    await refresh()
   } catch {
     error.value = "Le pointage n'a pas pu être enregistré."
   } finally {
@@ -41,20 +46,16 @@ async function toggleClock() {
 
 onMounted(() => { timer = setInterval(() => { now.value = new Date() }, 1000) })
 onUnmounted(() => clearInterval(timer))
-onActivated(loadClocks)
+onActivated(refresh)
 watch(() => props.userId, () => {
   loaded.value = false
   clocks.value = []
-  loadClocks()
+  clockIn.value = false
+  startDateTime.value = null
+  refresh()
 })
 
-const lastClock = computed(() => {
-  const sorted = [...clocks.value].sort((a, b) => toDate(a.time) - toDate(b.time))
-  return sorted.at(-1)
-})
-
-const isClockedIn = computed(() => lastClock.value?.status === true)
-const startedAt = computed(() => (isClockedIn.value ? toDate(lastClock.value.time) : null))
+const startedAt = computed(() => (startDateTime.value ? toDate(startDateTime.value) : null))
 
 const elapsed = computed(() => {
   if (!startedAt.value) return '00:00:00'
@@ -77,7 +78,7 @@ const goalPercent = computed(() => Math.min(100, Math.round((todayMs.value / DAI
 const goalMessage = computed(() => {
   const remaining = DAILY_GOAL_MS - todayMs.value
   if (remaining <= 0) return 'Objectif atteint, bravo !'
-  if (isClockedIn.value) return `Tu peux partir à ${formatTime(new Date(now.value.getTime() + remaining))}`
+  if (clockIn.value) return `Tu peux partir à ${formatTime(new Date(now.value.getTime() + remaining))}`
   return `Encore ${formatDuration(remaining)} à faire aujourd'hui`
 })
 
@@ -101,9 +102,9 @@ const lastSessions = computed(() =>
         <div class="flex flex-col items-center rounded-2xl bg-white p-6 sm:p-8">
           <span
             class="rounded-full px-3 py-1 text-sm font-medium"
-            :class="isClockedIn ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-500'"
+            :class="clockIn ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-500'"
           >
-            {{ isClockedIn ? 'En cours' : 'Arrêté' }}
+            {{ clockIn ? 'En cours' : 'Arrêté' }}
           </span>
           <p class="mt-6 text-5xl font-bold tracking-tight tabular-nums sm:mt-8 sm:text-7xl">{{ elapsed }}</p>
           <p class="mt-2 text-sm text-neutral-400">
@@ -120,10 +121,10 @@ const lastSessions = computed(() =>
             v-else
             :disabled="busy"
             class="mt-8 w-full rounded-full py-3 font-semibold disabled:opacity-50"
-            :class="isClockedIn ? 'border-2 border-neutral-900 bg-white text-neutral-900 hover:bg-neutral-100' : 'bg-neutral-900 text-white hover:bg-neutral-700'"
-            @click="toggleClock"
+            :class="clockIn ? 'border-2 border-neutral-900 bg-white text-neutral-900 hover:bg-neutral-100' : 'bg-neutral-900 text-white hover:bg-neutral-700'"
+            @click="clock"
           >
-            {{ isClockedIn ? 'Pointer la sortie' : "Pointer l'arrivée" }}
+            {{ clockIn ? 'Pointer la sortie' : "Pointer l'arrivée" }}
           </button>
         </div>
 

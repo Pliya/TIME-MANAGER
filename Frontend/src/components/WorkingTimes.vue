@@ -10,16 +10,17 @@ const props = defineProps({ userId: { type: Number, required: true } })
 
 const MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
+const userId = ref(props.userId)
 const workingTimes = ref([])
 const selectedId = ref(null)
 const error = ref('')
 const month = ref('')
 const year = ref('')
 
-async function loadWorkingTimes() {
+async function getWorkingTimes() {
   selectedId.value = null
   try {
-    const { data } = await api.get(`/workingtime/${props.userId}`)
+    const { data } = await api.get(`/workingtime/${userId.value}`)
     workingTimes.value = data.data
     error.value = ''
   } catch {
@@ -31,13 +32,16 @@ async function remove(id) {
   if (!confirm(`Supprimer la session #${id} ?`)) return
   try {
     await api.delete(`/workingtime/${id}`)
-    await loadWorkingTimes()
+    await getWorkingTimes()
   } catch {
     error.value = `Impossible de supprimer la session #${id}.`
   }
 }
 
-watch(() => props.userId, loadWorkingTimes, { immediate: true })
+watch(() => props.userId, newUserId => {
+  userId.value = newUserId
+  getWorkingTimes()
+}, { immediate: true })
 
 const sessions = computed(() => workingTimesToSessions(workingTimes.value))
 
@@ -68,7 +72,7 @@ const stats = computed(() => summarize(sessions.value))
       <WorkingTime
         :user-id="userId"
         :working-time-id="selectedId"
-        @saved="loadWorkingTimes"
+        @saved="getWorkingTimes"
         @cancel="selectedId = null"
       />
 

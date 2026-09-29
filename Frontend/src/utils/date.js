@@ -3,7 +3,11 @@ export function pad(n) {
 }
 
 export function toDate(value) {
-  return new Date(String(value).replace(' ', 'T'))
+  return new Date(value.includes('T') ? value : `${value.replace(' ', 'T')}Z`)
+}
+
+export function toApiDateTime(date) {
+  return date.toISOString().slice(0, 19).replace('T', ' ')
 }
 
 export function localDateKey(date) {

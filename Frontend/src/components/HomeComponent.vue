@@ -136,7 +136,7 @@ const recentSessions = computed(() => {
     <div class="rounded-2xl bg-white p-6">
       <div class="mb-4 flex items-center justify-between">
         <p class="font-medium">Sessions récentes</p>
-        <router-link to="/workingTimes" class="text-sm font-medium text-neutral-900 hover:underline">Voir tout</router-link>
+        <router-link :to="`/workingTimes/${userId}`" class="text-sm font-medium text-neutral-900 hover:underline">Voir tout</router-link>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full min-w-max text-sm">

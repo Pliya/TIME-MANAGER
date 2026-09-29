@@ -3,7 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { X } from 'lucide-vue-next'
 import api from '@/api'
-import { pad } from '@/utils/date'
+import { pad, toDate, toApiDateTime } from '@/utils/date'
 
 const props = defineProps({
   userId: { type: Number, required: true },
@@ -18,7 +18,7 @@ const end = ref('')
 const error = ref('')
 const success = ref('')
 
-const editedId = computed(() => props.workingTimeId || Number(route.params.workingTimeId) || null)
+const workingTimeId = computed(() => props.workingTimeId || Number(route.params.workingtimeid) || null)
 
 const duration = computed(() => {
   if (!start.value || !end.value) return null
@@ -26,13 +26,18 @@ const duration = computed(() => {
   return hours > 0 ? `${hours.toFixed(1)} h` : null
 })
 
-function toApi(localValue) {
-  return new Date(localValue).toISOString().replace(/\.\d{3}Z$/, 'Z')
+function toInput(apiValue) {
+  const d = toDate(apiValue)
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-function toInput(apiValue) {
-  const d = new Date(apiValue)
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+function payload() {
+  return {
+    working_time: {
+      start: toApiDateTime(new Date(start.value)),
+      end: toApiDateTime(new Date(end.value)),
+    },
+  }
 }
 
 function errorMessage(err) {
@@ -56,11 +61,11 @@ function reset() {
   end.value = ''
 }
 
-async function load() {
+async function getWorkingTime() {
   error.value = ''
-  if (!editedId.value) return reset()
+  if (!workingTimeId.value) return reset()
   try {
-    const { data } = await api.get(`/workingtime/${props.userId}/${editedId.value}`)
+    const { data } = await api.get(`/workingtime/${props.userId}/${workingTimeId.value}`)
     start.value = toInput(data.data.start)
     end.value = toInput(data.data.end)
   } catch (err) {
@@ -68,18 +73,10 @@ async function load() {
   }
 }
 
-async function save() {
-  error.value = ''
-  success.value = ''
-  const payload = { working_time: { start: toApi(start.value), end: toApi(end.value) } }
+async function createWorkingTime() {
   try {
-    if (editedId.value) {
-      await api.put(`/workingtime/${editedId.value}`, payload)
-      success.value = 'Temps de travail modifié.'
-    } else {
-      await api.post(`/workingtime/${props.userId}`, payload)
-      success.value = 'Temps de travail créé.'
-    }
+    await api.post(`/workingtime/${props.userId}`, payload())
+    success.value = 'Temps de travail créé.'
     reset()
     emit('saved')
   } catch (err) {
@@ -87,10 +84,21 @@ async function save() {
   }
 }
 
-async function remove() {
+async function updateWorkingTime() {
+  try {
+    await api.put(`/workingtime/${workingTimeId.value}`, payload())
+    success.value = 'Temps de travail modifié.'
+    reset()
+    emit('saved')
+  } catch (err) {
+    error.value = errorMessage(err)
+  }
+}
+
+async function deleteWorkingTime() {
   if (!confirm('Supprimer ce temps de travail ?')) return
   try {
-    await api.delete(`/workingtime/${editedId.value}`)
+    await api.delete(`/workingtime/${workingTimeId.value}`)
     success.value = 'Temps de travail supprimé.'
     reset()
     emit('saved')
@@ -99,19 +107,25 @@ async function remove() {
   }
 }
 
+function submit() {
+  error.value = ''
+  success.value = ''
+  return workingTimeId.value ? updateWorkingTime() : createWorkingTime()
+}
+
 function cancel() {
   reset()
   emit('cancel')
 }
 
-watch(editedId, load, { immediate: true })
+watch(workingTimeId, getWorkingTime, { immediate: true })
 </script>
 
 <template>
   <div class="w-full max-w-xl rounded-2xl bg-white p-6">
     <div class="mb-6 flex items-center justify-between">
-      <p class="font-medium">{{ editedId ? `Modifier la session #${editedId}` : 'Nouvelle session' }}</p>
-      <button v-if="editedId" class="text-neutral-400 hover:text-neutral-600" @click="cancel">
+      <p class="font-medium">{{ workingTimeId ? `Modifier la session #${workingTimeId}` : 'Nouvelle session' }}</p>
+      <button v-if="workingTimeId" class="text-neutral-400 hover:text-neutral-600" @click="cancel">
         <X class="h-5 w-5" />
       </button>
     </div>
@@ -119,7 +133,7 @@ watch(editedId, load, { immediate: true })
     <p v-if="error" class="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{{ error }}</p>
     <p v-if="success" class="mb-4 rounded-xl bg-green-50 px-4 py-3 text-sm text-green-600">{{ success }}</p>
 
-    <form class="space-y-4" @submit.prevent="save">
+    <form class="space-y-4" @submit.prevent="submit">
       <label class="block">
         <span class="text-sm text-neutral-500">Début</span>
         <input v-model="start" type="datetime-local" required class="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 focus:border-neutral-900 focus:outline-none" />
@@ -138,12 +152,12 @@ watch(editedId, load, { immediate: true })
       </div>
 
       <button type="submit" class="w-full rounded-xl bg-neutral-900 py-2.5 font-semibold text-white hover:bg-neutral-700">
-        {{ editedId ? 'Enregistrer' : 'Créer' }}
+        {{ workingTimeId ? 'Enregistrer' : 'Créer' }}
       </button>
 
-      <div v-if="editedId" class="flex gap-2">
+      <div v-if="workingTimeId" class="flex gap-2">
         <button type="button" class="flex-1 rounded-xl border border-neutral-200 py-2.5 text-sm font-medium hover:bg-neutral-50" @click="cancel">Annuler</button>
-        <button type="button" class="flex-1 rounded-xl bg-red-50 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100" @click="remove">Supprimer</button>
+        <button type="button" class="flex-1 rounded-xl bg-red-50 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100" @click="deleteWorkingTime">Supprimer</button>
       </div>
     </form>
   </div>

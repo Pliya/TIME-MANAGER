@@ -1,47 +1,33 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LayoutDashboard, Clock, ChartColumn, CalendarDays, User, ChevronDown, LogOut, Menu, X } from 'lucide-vue-next'
-import api from '@/api'
+import { LayoutDashboard, Clock, ChartColumn, CalendarDays, LogOut, Menu, X } from 'lucide-vue-next'
+import UserComponent from './components/UserComponent.vue'
 import { loggedUserId, logout } from '@/session'
 
 const route = useRoute()
 const router = useRouter()
-const currentUser = ref(null)
 const menuOpen = ref(false)
 
-const userId = computed(() => Number(route.params.userID) || loggedUserId.value)
+const userId = computed(() => Number(route.params.userID || route.params.userid) || loggedUserId.value)
 
-const navigation = [
+const navigation = computed(() => [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/clock', label: 'Pointage', icon: Clock },
-  { to: '/workingTimes', label: 'Temps de travail', icon: CalendarDays },
-  { to: '/charts', label: 'Statistiques', icon: ChartColumn },
-]
+  { to: `/clock/${userId.value}`, label: 'Pointage', icon: Clock },
+  { to: `/workingTimes/${userId.value}`, label: 'Temps de travail', icon: CalendarDays },
+  { to: `/chartManager/${userId.value}`, label: 'Statistiques', icon: ChartColumn },
+])
 
 function isActive(path) {
   if (path === '/') return route.path === '/'
-  return route.path.startsWith(path)
+  return route.path.startsWith(path.split('/').slice(0, 2).join('/'))
 }
 
 function signOut() {
   logout()
-  currentUser.value = null
   router.push('/login')
 }
 
-async function fetchCurrentUser() {
-  if (!userId.value) return
-  try {
-    const { data } = await api.get(`/users/${userId.value}`)
-    currentUser.value = data.data
-  } catch (err) {
-    currentUser.value = null
-    if (err.response?.status === 404 && userId.value === loggedUserId.value) signOut()
-  }
-}
-
-watch(userId, fetchCurrentUser, { immediate: true })
 watch(() => route.path, () => { menuOpen.value = false })
 </script>
 
@@ -80,18 +66,6 @@ watch(() => route.path, () => { menuOpen.value = false })
         </router-link>
       </nav>
 
-      <div class="my-8 border-t border-neutral-100"></div>
-
-      <p class="mb-3 px-3 text-sm font-medium tracking-wider text-neutral-400 uppercase">Compte</p>
-      <router-link
-        to="/profile"
-        class="flex items-center gap-3 rounded-full px-4 py-3 text-base"
-        :class="isActive('/profile') ? 'bg-neutral-900 font-semibold text-white' : 'text-neutral-500 hover:bg-neutral-100'"
-      >
-        <User class="h-6 w-6" :class="isActive('/profile') ? 'text-white' : 'text-neutral-400'" />
-        Profil
-      </router-link>
-
       <button
         class="mt-auto flex items-center gap-3 rounded-full px-4 py-3 text-base text-neutral-500 hover:bg-red-50 hover:text-red-600"
         @click="signOut"
@@ -109,19 +83,13 @@ watch(() => route.path, () => { menuOpen.value = false })
           </button>
           <h1 class="text-lg font-semibold lg:text-xl">{{ route.meta.title }}</h1>
         </div>
-        <div class="flex items-center gap-2 rounded-xl border border-neutral-200 px-3 py-1.5">
-          <div class="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-200 text-sm font-semibold text-neutral-900">
-            {{ currentUser?.username?.charAt(0).toUpperCase() || '?' }}
-          </div>
-          <span class="hidden text-sm font-medium sm:inline">{{ currentUser?.username || 'Aucun utilisateur' }}</span>
-          <ChevronDown class="hidden h-4 w-4 text-neutral-400 sm:block" />
-        </div>
+        <UserComponent :user-id="userId" />
       </header>
 
       <main class="flex-1 overflow-y-auto p-4 lg:p-8">
         <router-view v-slot="{ Component }">
           <KeepAlive include="ClockManager">
-            <component :is="Component" :user-id="userId" @user-updated="currentUser = $event" />
+            <component :is="Component" :user-id="userId" />
           </KeepAlive>
         </router-view>
       </main>

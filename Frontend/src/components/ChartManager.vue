@@ -12,8 +12,11 @@ const RED = '#ef4444'
 const BLUE = '#2563eb'
 const PIE_COLORS = ['#2563eb', '#38bdf8', '#818cf8', '#c084fc', '#f43f5e', '#10b981', '#f59e0b']
 
+const TYPE_LABELS = { line: 'Ligne', bar: 'Barres', radar: 'Radar', pie: 'Camembert', doughnut: 'Anneau', polarArea: 'Polaire' }
+
 const clocks = ref([])
 const workingTimes = ref([])
+const chartTypes = ref({ clockTimes: 'line', clocksPerHour: 'bar', workedHours: 'bar', distribution: 'pie' })
 
 async function loadData() {
   const [clocksRes, workingTimesRes] = await Promise.all([
@@ -42,6 +45,19 @@ const pieOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: { legend: { position: window.innerWidth < 640 ? 'bottom' : 'right', labels: { usePointStyle: true, boxWidth: 8 } } },
+}
+
+const radarOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 6 } } },
+}
+
+function optionsFor(chart) {
+  const type = chartTypes.value[chart.key]
+  if (['pie', 'doughnut', 'polarArea'].includes(type)) return pieOptions
+  if (type === 'radar') return radarOptions
+  return chart.options
 }
 
 const clockTimesChart = computed(() => {
@@ -74,8 +90,8 @@ const clocksPerHourChart = computed(() => {
   return {
     labels: activeHours.map(hour => `${pad(hour)}h`),
     datasets: [
-      { label: 'Clock In', data: activeHours.map(hour => hoursIn[hour]), backgroundColor: GREEN, borderRadius: 4 },
-      { label: 'Clock Out', data: activeHours.map(hour => hoursOut[hour]), backgroundColor: RED, borderRadius: 4 },
+      { label: 'Clock In', data: activeHours.map(hour => hoursIn[hour]), borderColor: GREEN, backgroundColor: GREEN, borderRadius: 4 },
+      { label: 'Clock Out', data: activeHours.map(hour => hoursOut[hour]), borderColor: RED, backgroundColor: RED, borderRadius: 4 },
     ],
   }
 })
@@ -95,6 +111,7 @@ const workedHoursChart = computed(() => ({
   datasets: [{
     label: 'Heures travaillées (h)',
     data: Object.values(hoursPerDay.value).map(hours => Number(hours.toFixed(2))),
+    borderColor: BLUE,
     backgroundColor: BLUE,
     borderRadius: 6,
   }],
@@ -114,16 +131,16 @@ const sections = computed(() => [
     title: 'Statistiques des Pointages',
     icon: Clock,
     charts: [
-      { title: 'Horaires de pointage', subtitle: "Heures d'arrivée et de départ sur 7 jours", icon: Clock, color: 'bg-blue-50 text-blue-600', type: 'line', data: clockTimesChart.value, options: options({ suffix: 'h', max: 24, stepSize: 4 }) },
-      { title: 'Fréquence des pointages', subtitle: 'Nombre de Clock In / Clock Out par heure', icon: ChartColumn, color: 'bg-indigo-50 text-indigo-600', type: 'bar', data: clocksPerHourChart.value, options: options({ stepSize: 1 }) },
+      { key: 'clockTimes', types: ['line', 'bar', 'radar'], title: 'Horaires de pointage', subtitle: "Heures d'arrivée et de départ sur 7 jours", icon: Clock, color: 'bg-blue-50 text-blue-600', data: clockTimesChart.value, options: options({ suffix: 'h', max: 24, stepSize: 4 }) },
+      { key: 'clocksPerHour', types: ['bar', 'line', 'radar'], title: 'Fréquence des pointages', subtitle: 'Nombre de Clock In / Clock Out par heure', icon: ChartColumn, color: 'bg-indigo-50 text-indigo-600', data: clocksPerHourChart.value, options: options({ stepSize: 1 }) },
     ],
   },
   {
     title: 'Statistiques des Temps de Travail',
     icon: CalendarDays,
     charts: [
-      { title: 'Durée travaillée par jour', subtitle: 'Heures cumulées par journée de travail', icon: CalendarDays, color: 'bg-sky-50 text-sky-600', type: 'bar', data: workedHoursChart.value, options: options({ suffix: 'h' }) },
-      { title: 'Répartition du temps travaillé', subtitle: 'Proportion (%) du temps total par jour', icon: ChartPie, color: 'bg-purple-50 text-purple-600', type: 'pie', data: distributionChart.value, options: pieOptions },
+      { key: 'workedHours', types: ['bar', 'line', 'radar'], title: 'Durée travaillée par jour', subtitle: 'Heures cumulées par journée de travail', icon: CalendarDays, color: 'bg-sky-50 text-sky-600', data: workedHoursChart.value, options: options({ suffix: 'h' }) },
+      { key: 'distribution', types: ['pie', 'doughnut', 'polarArea'], title: 'Répartition du temps travaillé', subtitle: 'Proportion (%) du temps total par jour', icon: ChartPie, color: 'bg-purple-50 text-purple-600', data: distributionChart.value, options: pieOptions },
     ],
   },
 ])
@@ -138,8 +155,8 @@ const sections = computed(() => [
       </div>
 
       <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <div v-for="chart in section.charts" :key="chart.title" class="rounded-2xl bg-white p-6 shadow-sm">
-          <div class="flex items-center gap-4">
+        <div v-for="chart in section.charts" :key="chart.key" class="rounded-2xl bg-white p-6 shadow-sm">
+          <div class="flex flex-wrap items-center gap-4">
             <div class="flex h-10 w-10 items-center justify-center rounded-xl" :class="chart.color">
               <component :is="chart.icon" class="h-5 w-5" />
             </div>
@@ -147,9 +164,17 @@ const sections = computed(() => [
               <p class="font-semibold">{{ chart.title }}</p>
               <p class="text-sm text-neutral-400">{{ chart.subtitle }}</p>
             </div>
+            <select v-model="chartTypes[chart.key]" class="ml-auto rounded-lg border border-neutral-200 px-3 py-1.5 text-sm text-neutral-600">
+              <option v-for="type in chart.types" :key="type" :value="type">{{ TYPE_LABELS[type] }}</option>
+            </select>
           </div>
           <div class="mt-6 h-72">
-            <ChartInterface :type="chart.type" :chart-data="chart.data" :chart-options="chart.options" />
+            <ChartInterface
+              :key="chartTypes[chart.key]"
+              :type="chartTypes[chart.key]"
+              :chart-data="chart.data"
+              :chart-options="optionsFor(chart)"
+            />
           </div>
         </div>
       </div>

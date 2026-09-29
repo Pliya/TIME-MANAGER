@@ -31,7 +31,11 @@ defmodule Time_managerWeb.ClockControllerTest do
     test "creates a clock-in for the user", %{conn: conn, user: user} do
       conn = post(conn, ~p"/api/clocks/#{user.id}")
       user_id = user.id
-      assert %{"status" => true, "user_id" => ^user_id} = json_response(conn, 201)["data"]
+
+      assert %{"status" => true, "user_id" => ^user_id, "time" => time} =
+               json_response(conn, 201)["data"]
+
+      assert time =~ ~r/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/
     end
 
     test "renders 404 for an unknown user", %{conn: conn} do

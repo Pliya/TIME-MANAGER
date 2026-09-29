@@ -4,19 +4,17 @@ import ClockManager from '../components/ClockManager.vue'
 import ChartManager from '../components/ChartManager.vue'
 import WorkingTimes from '../components/WorkingTimes.vue'
 import WorkingTime from '../components/WorkingTime.vue'
-import UserComponent from '../components/UserComponent.vue'
 import LoginPage from '../components/LoginPage.vue'
 import { loggedUserId } from '../session'
 
 const routes = [
   { path: '/login', component: LoginPage, meta: { title: 'Connexion', public: true } },
   { path: '/', component: HomeComponent, meta: { title: 'Dashboard' } },
-  { path: '/clock/:userID?', component: ClockManager, meta: { title: 'Pointage' } },
-  { path: '/charts', component: ChartManager, meta: { title: 'Statistiques' } },
-  { path: '/chartManager/:userID?', component: ChartManager, meta: { title: 'Statistiques' } },
-  { path: '/workingTimes/:userID?', component: WorkingTimes, meta: { title: 'Temps de travail' } },
-  { path: '/workingTime/:userID?/:workingTimeId?', component: WorkingTime, meta: { title: 'Temps de travail' } },
-  { path: '/profile', component: UserComponent, meta: { title: 'Profil' } },
+  { path: '/clock/:userid', component: ClockManager, meta: { title: 'Pointage' } },
+  { path: '/workingTimes/:userID', component: WorkingTimes, meta: { title: 'Temps de travail' } },
+  { path: '/workingTime/:userid', component: WorkingTime, meta: { title: 'Nouveau temps de travail' } },
+  { path: '/workingTime/:userid/:workingtimeid', component: WorkingTime, meta: { title: 'Modifier un temps de travail' } },
+  { path: '/chartManager/:userid', component: ChartManager, meta: { title: 'Statistiques' } },
 ]
 
 const router = createRouter({

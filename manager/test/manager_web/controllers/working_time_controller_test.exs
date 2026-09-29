@@ -4,9 +4,9 @@ defmodule Time_managerWeb.WorkingTimeControllerTest do
   import Time_manager.AccountFixtures
   import Time_manager.WorkDurationFixtures
 
-  @create_attrs %{start: "2026-09-21T08:00:00Z", end: "2026-09-21T17:00:00Z"}
-  @update_attrs %{start: "2026-09-21T09:00:00Z", end: "2026-09-21T18:00:00Z"}
-  @invalid_attrs %{start: "2026-09-21T17:00:00Z", end: "2026-09-21T08:00:00Z"}
+  @create_attrs %{start: "2026-09-21 08:00:00", end: "2026-09-21 17:00:00"}
+  @update_attrs %{start: "2026-09-21 09:00:00", end: "2026-09-21 18:00:00"}
+  @invalid_attrs %{start: "2026-09-21 17:00:00", end: "2026-09-21 08:00:00"}
 
   setup %{conn: conn} do
     {:ok, conn: put_req_header(conn, "accept", "application/json"), user: user_fixture()}
@@ -25,7 +25,7 @@ defmodule Time_managerWeb.WorkingTimeControllerTest do
     test "filters by start and end", %{conn: conn, user: user} do
       working_time_fixture(user.id)
 
-      conn = get(conn, ~p"/api/workingtime/#{user.id}?#{[start: "2026-09-22T00:00:00Z"]}")
+      conn = get(conn, ~p"/api/workingtime/#{user.id}?#{[start: "2026-09-22 00:00:00"]}")
       assert json_response(conn, 200)["data"] == []
     end
   end
@@ -40,8 +40,8 @@ defmodule Time_managerWeb.WorkingTimeControllerTest do
 
       assert %{
                "id" => ^id,
-               "start" => "2026-09-21T08:00:00Z",
-               "end" => "2026-09-21T17:00:00Z",
+               "start" => "2026-09-21 08:00:00",
+               "end" => "2026-09-21 17:00:00",
                "user_id" => ^user_id
              } = json_response(conn, 200)["data"]
     end
@@ -65,7 +65,7 @@ defmodule Time_managerWeb.WorkingTimeControllerTest do
       working_time = working_time_fixture(user.id)
 
       conn = put(conn, ~p"/api/workingtime/#{working_time.id}", working_time: @update_attrs)
-      assert %{"start" => "2026-09-21T09:00:00Z"} = json_response(conn, 200)["data"]
+      assert %{"start" => "2026-09-21 09:00:00"} = json_response(conn, 200)["data"]
     end
 
     test "renders errors when data is invalid", %{conn: conn, user: user} do
