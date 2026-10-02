@@ -10,10 +10,22 @@ defmodule Time_managerWeb.Router do
     plug :accepts, ["html"]
   end
 
+  pipeline :authenticated do
+    plug Time_managerWeb.AuthPlug
+  end
+
   scope "/api", Time_managerWeb do
     pipe_through :api
 
     scope "/users" do
+      post "/sign_up", UserController, :sign_up
+      post "/sign_in", UserController, :sign_in
+    end
+
+    scope "/users" do
+      pipe_through :authenticated
+      post "/sign_out", UserController, :sign_out
+
       get "/", UserController, :index
       post "/", UserController, :create
       get "/:userID", UserController, :show
@@ -22,6 +34,7 @@ defmodule Time_managerWeb.Router do
     end
 
     scope "/workingtime" do
+      pipe_through :authenticated
       get "/:userID/:id", WorkingTimeController, :show
       get "/:userID", WorkingTimeController, :index
       post "/:userID", WorkingTimeController, :create
@@ -30,6 +43,7 @@ defmodule Time_managerWeb.Router do
     end
 
     scope "/clocks" do
+      pipe_through :authenticated
       get "/:userID", ClockController, :index
       post "/:userID", ClockController, :create
     end
