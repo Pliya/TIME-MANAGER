@@ -8,6 +8,18 @@ defmodule Time_managerWeb.UserJSON do
     %{data: for(user <- users, do: data(user))}
   end
 
+  def auth(%{
+        user: user,
+        csrf_token: csrf_token
+      }) do
+    %{
+      data: %{
+        user: data(user),
+        xsrf_token: csrf_token
+      }
+    }
+  end
+
   @doc """
   Renders a single user.
   """
