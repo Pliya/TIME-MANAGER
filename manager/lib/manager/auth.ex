@@ -10,13 +10,15 @@ defmodule Time_manager.Auth do
       default_exp: @token_lifetime
     )
     |> add_claim("user_id", nil, &is_integer/1)
+    |> add_claim("role", nil, &is_binary/1)
     |> add_claim("csrf_token", nil, &is_binary/1)
   end
 
-  def generate_token(user_id, csrf_token) do
+  def generate_token(user_id, role, csrf_token) do
     generate_and_sign(
       %{
         "user_id" => user_id,
+        "role" => role,
         "csrf_token" => csrf_token
       },
       signer()

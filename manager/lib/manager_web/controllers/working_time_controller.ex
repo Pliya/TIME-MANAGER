@@ -9,6 +9,7 @@ defmodule Time_managerWeb.WorkingTimeController do
 
   defmodule WorkingTimeResponse do
     require OpenApiSpex
+
     OpenApiSpex.schema(%{
       title: "WorkingTime",
       description: "A working time entry for a user",
@@ -25,6 +26,7 @@ defmodule Time_managerWeb.WorkingTimeController do
 
   defmodule WorkingTimeRequest do
     require OpenApiSpex
+
     OpenApiSpex.schema(%{
       title: "WorkingTimeRequest",
       description: "Parameters for a working time entry",
@@ -43,33 +45,48 @@ defmodule Time_managerWeb.WorkingTimeController do
     })
   end
 
-  tags ["WorkingTimes"]
+  tags(["WorkingTimes"])
 
-  operation :index,
+  operation(:index,
     summary: "List working time entries for a user",
     parameters: [
       userID: [in: :path, description: "User ID", type: :integer, required: true],
-      start: [in: :query, description: "Filter from this datetime (ISO 8601)", type: :string, required: false],
-      end: [in: :query, description: "Filter until this datetime (ISO 8601)", type: :string, required: false]
+      start: [
+        in: :query,
+        description: "Filter from this datetime (ISO 8601)",
+        type: :string,
+        required: false
+      ],
+      end: [
+        in: :query,
+        description: "Filter until this datetime (ISO 8601)",
+        type: :string,
+        required: false
+      ]
     ],
     responses: [
-      ok: {"List of working time entries", "application/json", %OpenApiSpex.Schema{type: :array, items: WorkingTimeResponse}}
+      ok:
+        {"List of working time entries", "application/json",
+         %OpenApiSpex.Schema{type: :array, items: WorkingTimeResponse}}
     ]
+  )
 
   def index(conn, %{"userID" => user_id} = params) do
     workingtime = WorkDuration.list_working_times_for_user(user_id, params)
     render(conn, :index, workingtime: workingtime)
   end
 
-  operation :create,
+  operation(:create,
     summary: "Create a working time entry for a user",
     parameters: [
       userID: [in: :path, description: "User ID", type: :integer, required: true]
     ],
-    request_body: {"Working time parameters", "application/json", WorkingTimeRequest, required: true},
+    request_body:
+      {"Working time parameters", "application/json", WorkingTimeRequest, required: true},
     responses: [
       created: {"Working time entry created", "application/json", WorkingTimeResponse}
     ]
+  )
 
   def create(conn, %{"userID" => user_id, "working_time" => working_time_params}) do
     attrs = Map.put(working_time_params, "user_id", user_id)
@@ -82,7 +99,7 @@ defmodule Time_managerWeb.WorkingTimeController do
     end
   end
 
-  operation :show,
+  operation(:show,
     summary: "Get a specific working time entry",
     parameters: [
       userID: [in: :path, description: "User ID", type: :integer, required: true],
@@ -92,6 +109,7 @@ defmodule Time_managerWeb.WorkingTimeController do
       ok: {"The requested working time entry", "application/json", WorkingTimeResponse},
       not_found: {"Entry not found", "application/json", %OpenApiSpex.Schema{type: :object}}
     ]
+  )
 
   def show(conn, %{"userID" => user_id, "id" => id}) do
     case WorkDuration.get_working_time_for_user(user_id, id) do
@@ -100,7 +118,7 @@ defmodule Time_managerWeb.WorkingTimeController do
     end
   end
 
-  operation :update,
+  operation(:update,
     summary: "Update a working time entry",
     parameters: [
       id: [in: :path, description: "Working time entry ID", type: :integer, required: true]
@@ -110,11 +128,13 @@ defmodule Time_managerWeb.WorkingTimeController do
       ok: {"Updated working time entry", "application/json", WorkingTimeResponse},
       not_found: {"Entry not found", "application/json", %OpenApiSpex.Schema{type: :object}}
     ]
+  )
 
   def update(conn, %{"id" => id, "working_time" => working_time_params}) do
     case WorkDuration.get_working_time(id) do
       nil ->
         {:error, :not_found}
+
       working_time ->
         with {:ok, %WorkingTime{} = working_time} <-
                WorkDuration.update_working_time(working_time, working_time_params) do
@@ -123,7 +143,7 @@ defmodule Time_managerWeb.WorkingTimeController do
     end
   end
 
-  operation :delete,
+  operation(:delete,
     summary: "Delete a working time entry",
     parameters: [
       id: [in: :path, description: "Working time entry ID", type: :integer, required: true]
@@ -132,11 +152,13 @@ defmodule Time_managerWeb.WorkingTimeController do
       no_content: "Entry deleted successfully",
       not_found: {"Entry not found", "application/json", %OpenApiSpex.Schema{type: :object}}
     ]
+  )
 
   def delete(conn, %{"id" => id}) do
     case WorkDuration.get_working_time(id) do
       nil ->
         {:error, :not_found}
+
       working_time ->
         with {:ok, %WorkingTime{}} <- WorkDuration.delete_working_time(working_time) do
           send_resp(conn, :no_content, "")

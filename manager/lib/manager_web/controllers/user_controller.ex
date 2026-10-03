@@ -145,8 +145,9 @@ defmodule Time_managerWeb.UserController do
 
   def sign_up(conn, %{"user" => user_params}) do
     with {:ok, %User{} = user} <- Account.register_user(user_params),
+         user <- Time_manager.Repo.preload(user, :role),
          csrf_token <- Auth.generate_csrf_token(),
-         {:ok, jwt, _claims} <- Auth.generate_token(user.id, csrf_token) do
+         {:ok, jwt, _claims} <- Auth.generate_token(user.id, user.role.name, csrf_token) do
       conn
       |> put_resp_cookie(
         "time_manager_token",
@@ -167,7 +168,7 @@ defmodule Time_managerWeb.UserController do
       {:ok, user} ->
         csrf_token = Auth.generate_csrf_token()
 
-        case Auth.generate_token(user.id, csrf_token) do
+        case Auth.generate_token(user.id, user.role.name, csrf_token) do
           {:ok, jwt, _claims} ->
             conn
             |> put_resp_cookie(
