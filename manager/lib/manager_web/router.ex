@@ -14,6 +14,10 @@ defmodule Time_managerWeb.Router do
     plug Time_managerWeb.AuthPlug
   end
 
+  pipeline :manager_access do
+    plug Time_managerWeb.RolePlug, roles: ["Manager"]
+  end
+
   scope "/api", Time_managerWeb do
     pipe_through :api
 
@@ -22,15 +26,30 @@ defmodule Time_managerWeb.Router do
       post "/sign_in", UserController, :sign_in
     end
 
+    scope "/skills" do
+      pipe_through [:authenticated, :manager_access]
+
+      get "/", SkillController, :index
+      get "/:skillID", SkillController, :show
+      post "/", SkillController, :create
+      put "/:skillID", SkillController, :update
+      delete "/:skillID", SkillController, :delete
+    end
+
     scope "/users" do
       pipe_through :authenticated
+
       post "/sign_out", UserController, :sign_out
 
-      get "/", UserController, :index
-      post "/", UserController, :create
-      get "/:userID", UserController, :show
-      put "/:userID", UserController, :update
-      delete "/:userID", UserController, :delete
+      scope "/" do
+        pipe_through :manager_access
+
+        get "/", UserController, :index
+        post "/", UserController, :create
+        get "/:userID", UserController, :show
+        put "/:userID", UserController, :update
+        delete "/:userID", UserController, :delete
+      end
     end
 
     scope "/workingtime" do
