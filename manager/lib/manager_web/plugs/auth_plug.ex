@@ -42,6 +42,7 @@ defmodule Time_managerWeb.AuthPlug do
     if valid_xsrf?(request_xsrf, jwt_xsrf) do
       conn
       |> assign(:current_user_id, claims["user_id"])
+      |> assign(:current_user_role, claims["role"])
       |> assign(:auth_claims, claims)
     else
       forbidden(conn)
