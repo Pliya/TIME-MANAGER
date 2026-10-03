@@ -27,6 +27,7 @@ services:
       db:
         condition: service_healthy
 
+
   frontend:
     image: lerau/time-manager-frontend:latest
     container_name: time_manager_frontend
