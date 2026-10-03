@@ -1,0 +1,83 @@
+### PLAN DE COMMUNICATION DE CRISE & CONDUITE AU CHANGEMENT
+
+### PROJET TIME MANAGER — VILLE DE GOTHAM (PHASE BOOTSTRAP)
+
+### 1. NOTE DE CADRAGE STRATÉGIQUE
+
+### A. Diagnostic de la Crise Sociale à Gotham
+
+L'annonce du déploiement de l'application *Time Manager* a provoqué une vague d'inquiétude légitime au sein des services municipaux. L'analyse des courriers syndicaux et des messages anonymes révèle trois facteurs de blocage : 
+
+* **La peur de l'hyper-contrôle :** Les agents perçoivent l'outil comme une arme de flicage informatique pour traquer les temps morts au détriment de l'efficacité.
+* **Le sentiment d'injustice opérationnelle :** Les équipes de terrain subissent le chaos urbain (attaques de Batman, blocages logistiques) sans que les outils actuels ne mesurent la complexité de leurs missions ou la pénibilité de leurs horaires de nuit (80% du temps des équipes de nettoyage).
+* **Le manque de transparence institutionnelle :** L'absence de communication initiale a créé un vide informationnel comblé par des rumeurs de licenciement déguisé des profils seniors ou non connectés.
+
+### B. Objectifs et Ligne Éditoriale
+
+L'objectif de cette campagne de communication corrective est de **de-escalader le conflit social** en utilisant les maquettes d'interface comme preuves concrètes de bonne foi. 
+
+* **Inverser la sémantique :** Passer d'une logique de *contrôle du temps* à une logique de *valorisation du travail accompli*.
+* **Prouver par le visuel :** Démontrer grâce à l'interface épurée que l'outil fait gagner du temps (suppression de la paperasse) au lieu d'en perdre.
+
+### 2. ACTIONS DE COMMUNICATION CIBLÉES
+
+### SUPPORT 1 : LA NEWSLETTER INTERNE (Destinée à l'ensemble des agents)
+
+**Canal :** E-mail global mensuel et affichage sur l'intranet.
+**Objectif :** Briser le mythe du flicage, rassurer sur les données privées et annoncer le plan de formation. 
+
+### [TITRE] : TIME MANAGER : VOTRE ALLIÉ CONTRE LA PAPERASSE, PAS VOTRE SURVEILLANT.
+
+Chères collègues, chers collègues de la Mairie de Gotham, 
+
+Ces dernières semaines, beaucoup de rumeurs ont circulé concernant la future application de gestion du temps. Il est temps de lever les malentendus avec la transparence la plus totale : **Non, la mairie ne va pas espionner vos écrans, ni suivre vos mouvements de souris.** 
+
+Notre but est de remplacer les tableaux Excel interminables et obsolètes par un outil moderne qui vous protège. Nous avons conçu cette application avec un objectif central : la simplicité. 
+
+**Découvrez votre future Interface Employé (En 3 clics seulement) :**
+*(Insérer ici la Maquette UI : Interface Employé)* 
+
+* **Zéro flicage :** L'interface affiche uniquement votre progression globale de la semaine. Pas de tracking individuel, pas de surveillance de vos pauses.
+* **Copie en 1 clic :** Vous faites souvent les mêmes horaires ? Le bouton "Journée type" vous permet de dupliquer votre journée de la veille instantanément. La saisie prend moins de 15 secondes par jour.
+* **Accessibilité pour tous :** Suite aux incidents industriels ayant touché certains de nos agents chez ACE Chemicals, l'application intègre nativement un mode contraste élevé et une synthèse vocale complète. Personne ne sera laissé de côté.
+
+**Et pour la formation ?** Des sessions d'accompagnement personnalisées seront organisées pour tous les services dès le mois prochain. Ce logiciel est un outil d'inclusion pour valoriser votre engagement, pas pour vous juger. 
+
+### SUPPORT 2 : LE DÉPLIANT DE TERRAIN / FAQ (Destiné aux Policiers, Éboueurs, Jardiniers)
+
+**Canal :** Dépliant papier format A5 distribué dans les casernes, dépôts et entrepôts de la ville.
+**Objectif :** Répondre aux réalités physiques du travail à Gotham (absence d'ordinateurs, imprévus Batman). 
+
+### [RECTO] : AGENTS DE TERRAIN : COMMENT LE TIME MANAGER S'ADAPTE À VOS RÉALITÉS.
+
+**Q : Je suis jardinier ou policier, je commence à 5h du matin directement sur site et je n'ai pas d'ordinateur. Comment faire ?**
+**R :** L'application a été pensée pour vous. Une version mobile ultra-légère est disponible sur vos smartphones professionnels. Si vous n'avez aucun équipement, pas de panique : le système autorise votre manager à valider globalement vos heures en fin de semaine sur la base de vos feuilles de route habituelles, ou via une borne tactile commune installée au dépôt. 
+
+**Q : À cause des combats de Batman, le trafic est paralysé, ou je me retrouve bloqué sur une scène de crime sans pouvoir avancer. Mes quotas vont s'effondrer, vais-je être sanctionné ?**
+**R :** Absolument pas. Les imprévus de Gotham font partie de votre quotidien. Nous avons intégré un bouton exclusif sur votre interface : **"Incident Force Majeure - Blocage Ville"**. En l'activant, le décompte de vos métriques de productivité est immédiatement gelé. Le système informe votre manager que la situation est hors de votre contrôle. Vos quotas sont protégés. 
+
+**Q : Je travaille à 80% sur les plages de nuit (Nettoyage, Police). L'application fait-elle la différence ?**
+**R :** Oui. Le Time Manager intègre automatiquement les règles de la fonction publique de Gotham. Dès qu'une heure est saisie entre 21h et 6h, elle est automatiquement tagguée "Heure de Nuit" et envoyée directement à la comptabilité pour garantir l'application stricte de vos majorations de salaire sur votre prochaine fiche de paie. 
+
+### SUPPORT 3 : L'E-MAIL INSTITUTIONNEL (Destiné au Syndicat et aux Cadres)
+
+**Canal :** Courrier officiel de la Direction Générale des Services.
+**Objectif :** Présenter les garanties managériales, le respect du droit du travail et le module budgétaire. 
+
+**Objet :** Garanties sociales et innovations fonctionnelles du projet Time Manager 
+
+Mesdames, Messieurs les représentants du personnel, 
+
+Nous avons pris connaissance de vos inquiétudes légitimes concernant l'introduction du logiciel de gestion du temps. Nous partageons votre attachement indéfectible au bien-être des agents de la Ville de Gotham. C'est pourquoi nous tenons à vous apporter des réponses structurelles. 
+
+Le Time Manager n'est pas un outil de micro-management, mais un instrument de régulation de la charge de travail. Les documents d'interface ci-joints démontrent notre philosophie : 
+
+*(Insérer ici la Maquette UI : Interface Manager)* 
+
+1. **Visibilité Macro vs Flicage Individuel :** Le tableau de bord destiné aux gestionnaires affiche des données consolidées par équipe. Un manager ne peut pas surveiller l'activité minute par minute d'un agent. L'outil sert à identifier les équipes en surchauffe pour rééquilibrer les effectifs.
+2. **Valorisation des Heures Supplémentaires Invisibles :** Nous connaissons la problématique des heures supplémentaires non déclarées qui pèsent sur l'équilibre des cadres. Le Time Manager intègre un onglet spécifique de déclaration des temps de transition de crise. Le travail réel ne sera plus un secret de polichinelle, il sera tracé et compensé.
+3. **L'Innovation "Bat-Signal" :** En réponse aux demandes de la commission de la ville, nous connectons l'application aux alertes majeures de Gotham. Plutôt que de maintenir des vagues entières de policiers ou d'agents sanitaires en astreinte permanente "juste au cas où", le système avertira en temps réel les équipes nécessaires lors du déclenchement du signal. Cela réduira la fatigue de vos équipes et optimisera le budget municipal, soutenu cette année par une hausse des dotations de la fondation Wayne.
+
+Nous restons à votre entière disposition pour planifier une démonstration en direct de nos prototypes fonctionnels afin de valider ensemble ces avancées avant tout déploiement. 
+
+La Direction Générale des Services, Mairie de Gotham.
