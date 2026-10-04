@@ -16,11 +16,6 @@ echo "PGDATABASE=$PGDATABASE"
 echo "PGUSER=$PGUSER"
 echo ""
 
-
-# ==========================================
-# Attendre PostgreSQL
-# ==========================================
-
 echo "Attente de PostgreSQL..."
 
 
@@ -41,10 +36,6 @@ done
 echo "PostgreSQL est disponible."
 
 
-# ==========================================
-# Préparer la base de données
-# ==========================================
-
 echo "Préparation de la base de données..."
 
 
@@ -57,9 +48,11 @@ echo "Application des migrations..."
 mix ecto.migrate
 
 
-# ==========================================
-# Démarrer Phoenix
-# ==========================================
+echo "Application des seeds (rôles, admin)..."
+
+
+mix run priv/repo/seeds.exs
+
 
 echo "=========================================="
 echo "Démarrage de Phoenix..."
