@@ -92,9 +92,13 @@ defmodule Time_managerWeb.UserController do
   def show(conn, %{"userID" => id}) do
     case Account.get_user(id) do
       nil -> {:error, :not_found}
-      user -> render(conn, :show, user: user)
+      user ->
+        user = Time_manager.Repo.preload(user, :role)
+        render(conn, :show, user: user)
     end
   end
+
+
 
   operation(:update,
     summary: "Update a user",
@@ -115,6 +119,7 @@ defmodule Time_managerWeb.UserController do
 
       user ->
         with {:ok, %User{} = user} <- Account.update_user(user, user_params) do
+          user = Time_manager.Repo.preload(user, :role)
           render(conn, :show, user: user)
         end
     end
@@ -211,4 +216,43 @@ defmodule Time_managerWeb.UserController do
     )
     |> send_resp(:no_content, "")
   end
+
+  # GET /api/users/me — tout utilisateur authentifié
+  # Lit le user_id depuis les claims du JWT (mis par AuthPlug dans conn.assigns)
+  def me(conn, _params) do
+    user_id = conn.assigns.current_user_id
+
+    case Account.get_user(user_id) do
+      nil ->
+        # Cas rare : le token est valide mais le user a été supprimé
+        conn
+        |> put_status(:not_found)
+        |> json(%{errors: %{detail: "Utilisateur introuvable."}})
+
+      user ->
+        user = Time_manager.Repo.preload(user, :role)
+        render(conn, :show, user: user)
+    end
+  end
+
+  # PUT /api/users/:userID/role — Manager/Admin uniquement
+  def update_role(conn, %{"userID" => id, "user" => %{"role" => role_name}}) do
+    case Account.update_user_role(id, role_name) do
+      {:ok, user} ->
+        user = Time_manager.Repo.preload(user, :role)
+        render(conn, :show, user: user)
+
+      {:error, :not_found} ->
+        {:error, :not_found}
+
+      {:error, :invalid_role} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{errors: %{detail: "Rôle invalide. Valeurs acceptées : Employee, Manager, Administrator."}})
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
+  end
 end
+
