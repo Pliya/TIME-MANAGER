@@ -26,16 +26,6 @@ defmodule Time_managerWeb.Router do
       post "/sign_in", UserController, :sign_in
     end
 
-    scope "/skills" do
-      pipe_through [:authenticated, :manager_access]
-
-      get    "/",         SkillController, :index
-      get    "/:skillID", SkillController, :show
-      post   "/",         SkillController, :create
-      put    "/:skillID", SkillController, :update
-      delete "/:skillID", SkillController, :delete
-    end
-
     # ── Users ──────────────────────────────────────────────────────────────
     scope "/users" do
       pipe_through :authenticated

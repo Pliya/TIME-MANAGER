@@ -174,68 +174,6 @@ defmodule Time_manager.Account do
     User.changeset(user, attrs)
   end
 
-  # Skills
-
-  def list_skills do
-    Repo.all(Time_manager.Account.Skill)
-  end
-
-  def get_skill!(id) do
-    Repo.get!(Time_manager.Account.Skill, id)
-  end
-
-  def create_skill(attrs \\ %{}) do
-    %Time_manager.Account.Skill{}
-    |> Time_manager.Account.Skill.changeset(attrs)
-    |> Repo.insert()
-  end
-
-  def update_skill(%Time_manager.Account.Skill{} = skill, attrs) do
-    skill
-    |> Time_manager.Account.Skill.changeset(attrs)
-    |> Repo.update()
-  end
-
-  def delete_skill(%Time_manager.Account.Skill{} = skill) do
-    Repo.delete(skill)
-  end
-
-  def list_user_skills(user_id) do
-    user =
-      User
-      |> Repo.get!(user_id)
-      |> Repo.preload(:skills)
-
-    user.skills
-  end
-
-  def add_skill_to_user(user_id, skill_id) do
-    user = Repo.get!(User, user_id)
-    skill = Repo.get!(Time_manager.Account.Skill, skill_id)
-
-    user
-    |> Repo.preload(:skills)
-    |> Ecto.Changeset.change()
-    |> Ecto.Changeset.put_assoc(:skills, Enum.uniq([skill | user.skills]))
-    |> Repo.update()
-  end
-
-  def remove_skill_from_user(user_id, skill_id) do
-    user = Repo.get!(User, user_id)
-    skill = Repo.get!(Time_manager.Account.Skill, skill_id)
-
-    user
-    |> Repo.preload(:skills)
-    |> Ecto.Changeset.change()
-    |> Ecto.Changeset.put_assoc(
-      :skills,
-      Enum.reject(user.skills, fn current_skill ->
-        current_skill.id == skill.id
-      end)
-    )
-    |> Repo.update()
-  end
-
   # ── Teams ──────────────────────────────────────────────────────────────
 
   alias Time_manager.Account.Team

@@ -15,7 +15,6 @@ defmodule Time_manager.Account.User do
     has_many :clocks, Time_manager.Attendance.Clock
     has_many :workingtimes, Time_manager.WorkDuration.WorkingTime
 
-    many_to_many :skills, Time_manager.Account.Skill, join_through: "user_skills"
     many_to_many :teams,  Time_manager.Account.Team,  join_through: "user_teams"
 
     belongs_to :role, Time_manager.Account.Role
