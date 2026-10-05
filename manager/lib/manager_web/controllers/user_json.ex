@@ -35,5 +35,4 @@ defmodule Time_managerWeb.UserJSON do
       role: if(Ecto.assoc_loaded?(user.role) && user.role, do: user.role.name, else: nil)
     }
   end
-
 end

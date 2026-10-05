@@ -36,9 +36,11 @@ defmodule Time_managerWeb.UserController do
           type: :object,
           properties: %{
             username: %OpenApiSpex.Schema{type: :string},
-            email: %OpenApiSpex.Schema{type: :string}
+            email: %OpenApiSpex.Schema{type: :string},
+            password: %OpenApiSpex.Schema{type: :string, format: :password},
+            role: %OpenApiSpex.Schema{type: :string, enum: ["Employee", "Manager"]}
           },
-          required: [:username, :email]
+          required: [:username, :email, :password, :role]
         }
       },
       required: [:user]
@@ -71,6 +73,8 @@ defmodule Time_managerWeb.UserController do
 
   def create(conn, %{"user" => user_params}) do
     with {:ok, %User{} = user} <- Account.create_user(user_params) do
+      user = Time_manager.Repo.preload(user, :role)
+
       conn
       |> put_status(:created)
       |> put_resp_header("location", ~p"/api/users/#{user}")
@@ -91,14 +95,14 @@ defmodule Time_managerWeb.UserController do
 
   def show(conn, %{"userID" => id}) do
     case Account.get_user(id) do
-      nil -> {:error, :not_found}
+      nil ->
+        {:error, :not_found}
+
       user ->
         user = Time_manager.Repo.preload(user, :role)
         render(conn, :show, user: user)
     end
   end
-
-
 
   operation(:update,
     summary: "Update a user",
@@ -248,11 +252,14 @@ defmodule Time_managerWeb.UserController do
       {:error, :invalid_role} ->
         conn
         |> put_status(:unprocessable_entity)
-        |> json(%{errors: %{detail: "Rôle invalide. Valeurs acceptées : Employee, Manager, Administrator."}})
+        |> json(%{
+          errors: %{
+            detail: "Rôle invalide. Valeurs acceptées : Employee, Manager, Administrator."
+          }
+        })
 
       {:error, changeset} ->
         {:error, changeset}
     end
   end
 end
-
