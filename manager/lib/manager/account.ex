@@ -18,7 +18,7 @@ defmodule Time_manager.Account do
 
   """
   def list_users do
-    Repo.all(User)
+    Repo.all(User) |> Repo.preload(:role)
   end
 
   def list_users(params) do
@@ -38,7 +38,7 @@ defmodule Time_manager.Account do
         query
       end
 
-    Repo.all(query)
+    Repo.all(query) |> Repo.preload(:role)
   end
 
   @doc """
@@ -72,9 +72,41 @@ defmodule Time_manager.Account do
 
   """
   def create_user(attrs \\ %{}) do
+    employee_role = Repo.get_by!(Time_manager.Account.Role, name: "Employee")
+
     %User{}
     |> User.changeset(attrs)
+    |> Ecto.Changeset.put_change(:role_id, employee_role.id)
     |> Repo.insert()
+  end
+
+  def register_user(attrs \\ %{}) do
+    employee_role = Repo.get_by!(Time_manager.Account.Role, name: "Employee")
+
+    %User{}
+    |> User.registration_changeset(attrs)
+    |> Ecto.Changeset.put_change(:role_id, employee_role.id)
+    |> Repo.insert()
+  end
+
+  def authenticate_user(email, password) do
+    case Repo.get_by(User, email: email) |> Repo.preload(:role) do
+      nil ->
+        {:error, :invalid_credentials}
+
+      %User{password_hash: nil} ->
+        {:error, :invalid_credentials}
+
+      %User{role: nil} ->
+        {:error, :invalid_role}
+
+      user ->
+        if Bcrypt.verify_pass(password, user.password_hash) do
+          {:ok, user}
+        else
+          {:error, :invalid_credentials}
+        end
+    end
   end
 
   @doc """
@@ -94,6 +126,24 @@ defmodule Time_manager.Account do
     |> User.changeset(attrs)
     |> Repo.update()
   end
+
+  @valid_roles ~w(Employee Manager Administrator)
+
+  def update_user_role(user_id, role_name) when role_name in @valid_roles do
+    case Repo.get(User, user_id) do
+      nil ->
+        {:error, :not_found}
+
+      user ->
+        role = Repo.get_by!(Time_manager.Account.Role, name: role_name)
+
+        user
+        |> Ecto.Changeset.change(role_id: role.id)
+        |> Repo.update()
+    end
+  end
+
+  def update_user_role(_user_id, _role_name), do: {:error, :invalid_role}
 
   @doc """
   Deletes a user.
@@ -122,5 +172,56 @@ defmodule Time_manager.Account do
   """
   def change_user(%User{} = user, attrs \\ %{}) do
     User.changeset(user, attrs)
+  end
+
+  # ── Teams ──────────────────────────────────────────────────────────────
+
+  alias Time_manager.Account.Team
+
+  def list_teams do
+    Repo.all(Team) |> Repo.preload(:users)
+  end
+
+  def get_team(id) do
+    Repo.get(Team, id) |> Repo.preload(:users)
+  end
+
+  def create_team(attrs) do
+    %Team{}
+    |> Team.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def update_team(%Team{} = team, attrs) do
+    team
+    |> Team.changeset(attrs)
+    |> Repo.update()
+  end
+
+  def delete_team(%Team{} = team) do
+    Repo.delete(team)
+  end
+
+  def add_user_to_team(team_id, user_id) do
+    team = Repo.get!(Team, team_id) |> Repo.preload(:users)
+    user = Repo.get!(User, user_id)
+
+    team
+    |> Ecto.Changeset.change()
+    |> Ecto.Changeset.put_assoc(:users, Enum.uniq([user | team.users]))
+    |> Repo.update()
+  end
+
+  def remove_user_from_team(team_id, user_id) do
+    team = Repo.get!(Team, team_id) |> Repo.preload(:users)
+    uid  = String.to_integer("#{user_id}")
+
+    team
+    |> Ecto.Changeset.change()
+    |> Ecto.Changeset.put_assoc(
+      :users,
+      Enum.reject(team.users, fn u -> u.id == uid end)
+    )
+    |> Repo.update()
   end
 end

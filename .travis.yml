@@ -5,8 +5,7 @@ services:
 
 env:
   global:
-    # URL publique de l'API, injectée dans le bundle du frontend
-    - VITE_API_URL=http://92.4.131.118:4000/api
+    - VITE_API_URL=http://35.208.70.76:4000/api
 
 stages:
   - name: "Build & Push Image"
