@@ -133,7 +133,6 @@ defmodule Time_manager.Account do
     |> Repo.update()
   end
 
-  @valid_roles ~w(Employee Manager Administrator)
 
   @valid_roles ~w(Employee Manager)
 
@@ -151,7 +150,7 @@ defmodule Time_manager.Account do
     end
   end
 
-  def update_user_role(_user_id, _role_name), do: {:error, :invalid_role}
+  ##def update_user_role(_user_id, _role_name), do: {:error, :invalid_role}
 
   @doc """
   Deletes a user.

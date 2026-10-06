@@ -1,8 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from 'axios'
-import { API_URL } from '@/api'
+import { api } from '@/api'
 import { X } from 'lucide-vue-next'
 import { hoursToText } from '@/utils/kpi'
 
@@ -104,7 +103,7 @@ async function fetchWorkingTime() {
   if (!workingTimeId.value || !userId.value) return
   clearMessages()
   try {
-    const response = await axios.get(`${API_URL}/workingtime/${userId.value}/${workingTimeId.value}`)
+    const response = await api.get(`/workingtime/${userId.value}/${workingTimeId.value}`)
     const wt = response.data.data || response.data
     start.value = toLocalInputFormat(wt.start)
     end.value = toLocalInputFormat(wt.end)
@@ -127,7 +126,7 @@ async function createWorkingTime() {
   }
 
   try {
-    const response = await axios.post(`${API_URL}/workingtime/${userId.value}`, payload)
+    const response = await api.post(`/workingtime/${userId.value}`, payload)
     successMessage.value = 'Temps de travail créé avec succès.'
     const newRecord = response.data.data || response.data
     resetForm()
@@ -161,7 +160,7 @@ async function updateWorkingTime() {
     },
   }
   try {
-    const response = await axios.put(`${API_URL}/workingtime/${workingTimeId.value}`, payload)
+    const response = await api.put(`/workingtime/${workingTimeId.value}`, payload)
     successMessage.value = 'Modification effectuée avec succès.'
     const updatedRecord = response.data.data || response.data
     resetForm()
@@ -190,7 +189,7 @@ async function deleteWorkingTime() {
   const idToDelete = workingTimeId.value
   clearMessages()
   try {
-    await axios.delete(`${API_URL}/workingtime/${idToDelete}`)
+    await api.delete(`/workingtime/${idToDelete}`)
     successMessage.value = 'Temps de travail supprimé avec succès.'
     resetForm()
     emit('refresh-list', { deletedId: idToDelete })
@@ -270,7 +269,7 @@ defineExpose({
 
 <template>
   <div class="w-full max-w-xl rounded-2xl bg-white p-6">
-    <div class="mb-6 flex items-center justify-between">
+    <div class="card-title mb-6 flex items-center justify-between">
       <p class="font-medium">{{ isEditMode ? `Modifier la plage #${workingTimeId}` : 'Create a Working Time' }}</p>
       <button v-if="isEditMode" type="button" class="text-neutral-400 hover:text-neutral-600" title="Annuler le mode édition" @click="cancelEdit">
         <X class="h-5 w-5" />

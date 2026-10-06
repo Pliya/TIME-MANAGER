@@ -6,7 +6,7 @@ defmodule Time_manager.Account.Team do
     field :name, :string
 
     belongs_to :manager, Time_manager.Account.User
-    many_to_many :users, Time_manager.Account.User, join_through: "user_teams"
+    many_to_many :users, Time_manager.Account.User, join_through: "user_teams", on_replace: :delete
 
     timestamps(type: :utc_datetime)
   end
