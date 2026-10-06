@@ -16,7 +16,6 @@ alias Time_manager.Repo
 alias Time_manager.Account.Role
 alias Time_manager.Account.User
 
-# Roles prédéfinis de l'application
 roles = [
   "Administrator",
   "Manager",
@@ -38,25 +37,38 @@ Enum.each(roles, fn role_name ->
   )
 end)
 
-# Récupération des rôles
 administrator_role = Repo.get_by!(Role, name: "Administrator")
 employee_role = Repo.get_by!(Role, name: "Employee")
 
-# Les utilisateurs sans rôle deviennent des employés par défaut
 Repo.update_all(
   from(u in User, where: is_nil(u.role_id)),
   set: [role_id: employee_role.id]
 )
 
-# Le compte Isaac devient administrateur
-case Repo.get_by(User, email: "isaac@test.com") do
-  nil ->
-    IO.puts("Utilisateur isaac@test.com introuvable.")
+admin_email = System.get_env("ADMIN_EMAIL")
+admin_password = System.get_env("ADMIN_PASSWORD")
 
-  user ->
-    user
-    |> Ecto.Changeset.change(role_id: administrator_role.id)
-    |> Repo.update!()
+if admin_email && admin_password do
+  user =
+    case Repo.get_by(User, email: admin_email) do
+      nil ->
+        {:ok, user} =
+          Time_manager.Account.register_user(%{
+            "username" => System.get_env("ADMIN_USERNAME", "admin"),
+            "email" => admin_email,
+            "password" => admin_password
+          })
 
-    IO.puts("isaac@test.com est maintenant Administrator.")
+        IO.puts("Administrateur #{admin_email} créé.")
+        user
+
+      user ->
+        user
+    end
+
+  user
+  |> Ecto.Changeset.change(role_id: administrator_role.id)
+  |> Repo.update!()
+else
+  IO.puts("ADMIN_EMAIL / ADMIN_PASSWORD non définis : aucun administrateur initial créé.")
 end
