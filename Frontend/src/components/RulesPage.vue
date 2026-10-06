@@ -7,7 +7,7 @@ const sections = [
     title: 'Heures supplémentaires',
     rules: [
       ['weekHours', 'Seuil hebdomadaire', 'Au-delà, les heures sont majorées', 'h'],
-      ['overtimeRate', 'Majoration', 'Taux appliqué aux heures sup', '×'],
+      ['overtimeRate', 'Majoration', 'Taux appliqué aux heures sup', 'x'],
       ['lateCountsAsOvertime', 'Heures tardives', 'Rester tard le soir compte comme heure sup'],
       ['weekendCountsAsOvertime', 'Week-end', 'Le travail du week-end compte comme heure sup'],
       ['dutyNotOvertime', 'Astreinte', 'Non comptée comme heure sup'],
@@ -18,7 +18,7 @@ const sections = [
     rules: [
       ['nightStart', 'Début de la nuit', 'Heure à partir de laquelle on compte la nuit', 'h'],
       ['nightEnd', 'Fin de la nuit', 'Heure à laquelle la nuit se termine', 'h'],
-      ['nightRate', 'Majoration de nuit', 'Taux appliqué', '×'],
+      ['nightRate', 'Majoration de nuit', 'Taux appliqué', 'x'],
       ['maxConsecutiveNights', 'Nuits consécutives', 'Maximum avant alerte'],
       ['maxNightsPerMonth', 'Nuits par mois', 'Plafond par agent'],
       ['restAfterNight', 'Repos après une nuit', 'Jour de repos imposé'],
@@ -63,9 +63,9 @@ const sections = [
         </div>
         <Toggle v-if="typeof store.rules[key] === 'boolean'" v-model="store.rules[key]" />
         <label v-else class="flex items-center gap-1 rounded-lg border border-neutral-200 px-3 py-1.5 text-sm font-semibold whitespace-nowrap">
-          <span v-if="unit === '×'">×</span>
+          <span v-if="unit === 'x'">x</span>
           <input v-model.number="store.rules[key]" type="number" min="0" step="any" class="w-12 text-right outline-none" />
-          <span v-if="unit && unit !== '×'">{{ unit }}</span>
+          <span v-if="unit && unit !== 'x'">{{ unit }}</span>
         </label>
       </div>
     </div>

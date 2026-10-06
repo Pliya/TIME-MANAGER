@@ -20,9 +20,9 @@ function card(day, i) {
   const shift = shiftOf(userId.value, day)
   const afterNight = i > 0 ? shiftOf(userId.value, days.value[i - 1]) === 'N' : shiftOf(userId.value, addDays(day, -1)) === 'N'
   const label = `${DAY_NAMES[i]} ${day.getDate()}`
-  if (shift === 'J') return { label, hours: '08:00 – 16:00', type: 'Jour', style: 'bg-white' }
-  if (shift === 'N') return { label, hours: '22:00 – 06:00', type: 'Nuit', style: 'bg-neutral-900 text-white' }
-  if (shift === 'A') return { label, hours: '18:00 – 08:00', type: 'Astreinte', style: 'border-2 border-neutral-900 bg-white' }
+  if (shift === 'J') return { label, hours: '08:00 - 16:00', type: 'Jour', style: 'bg-white' }
+  if (shift === 'N') return { label, hours: '22:00 - 06:00', type: 'Nuit', style: 'bg-neutral-900 text-white' }
+  if (shift === 'A') return { label, hours: '18:00 - 08:00', type: 'Astreinte', style: 'border-2 border-neutral-900 bg-white' }
   if (shift === 'R' && afterNight) return { label, hours: 'Repos', type: 'Après une nuit', style: 'border-2 border-dashed border-neutral-400 text-neutral-500' }
   return { label, hours: '—', type: 'Repos', style: 'text-neutral-400' }
 }

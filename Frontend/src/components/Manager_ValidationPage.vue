@@ -45,7 +45,7 @@ function correctionInfo(c) {
   const hours = (toDate(end) - toDate(c.start)) / 3600000
   const shift = SHIFTS[shiftOf(c.userId, toDate(c.start))]
   const average = teamAverage(members.value, c.start.slice(0, 10))
-  const planned = shift?.start ? `${shift.start} – ${shift.end}` : 'rien de prévu'
+  const planned = shift?.start ? `${shift.start} - ${shift.end}` : 'rien de prévu'
   return {
     end,
     duration: hoursToText(hours),
