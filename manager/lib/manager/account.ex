@@ -72,12 +72,18 @@ defmodule Time_manager.Account do
 
   """
   def create_user(attrs \\ %{}) do
-    employee_role = Repo.get_by!(Time_manager.Account.Role, name: "Employee")
+    role_name = Map.get(attrs, "role", "Employee")
 
-    %User{}
-    |> User.changeset(attrs)
-    |> Ecto.Changeset.put_change(:role_id, employee_role.id)
-    |> Repo.insert()
+    if role_name not in ["Employee", "Manager"] do
+      {:error, :invalid_role}
+    else
+      role = Repo.get_by!(Time_manager.Account.Role, name: role_name)
+
+      %User{}
+      |> User.changeset(attrs)
+      |> Ecto.Changeset.put_change(:role_id, role.id)
+      |> Repo.insert()
+    end
   end
 
   def register_user(attrs \\ %{}) do
@@ -129,6 +135,8 @@ defmodule Time_manager.Account do
 
   @valid_roles ~w(Employee Manager Administrator)
 
+  @valid_roles ~w(Employee Manager)
+
   def update_user_role(user_id, role_name) when role_name in @valid_roles do
     case Repo.get(User, user_id) do
       nil ->
@@ -179,7 +187,17 @@ defmodule Time_manager.Account do
   alias Time_manager.Account.Team
 
   def list_teams do
-    Repo.all(Team) |> Repo.preload(:users)
+    Repo.all(Team)
+    |> Repo.preload([:manager, :users])
+  end
+
+  def list_teams_for_manager(user_id) do
+    Team
+    |> join(:left, [t], ut in "user_teams", on: ut.team_id == t.id and ut.user_id == ^user_id)
+    |> where([t, ut], t.manager_id == ^user_id or not is_nil(ut.user_id))
+    |> distinct(true)
+    |> Repo.all()
+    |> Repo.preload([:manager, :users])
   end
 
   def get_team(id) do
@@ -214,7 +232,7 @@ defmodule Time_manager.Account do
 
   def remove_user_from_team(team_id, user_id) do
     team = Repo.get!(Team, team_id) |> Repo.preload(:users)
-    uid  = String.to_integer("#{user_id}")
+    uid = String.to_integer("#{user_id}")
 
     team
     |> Ecto.Changeset.change()

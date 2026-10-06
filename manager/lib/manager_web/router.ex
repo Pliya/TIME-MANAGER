@@ -18,11 +18,14 @@ defmodule Time_managerWeb.Router do
     plug Time_managerWeb.RolePlug, roles: ["Manager"]
   end
 
+  pipeline :admin_access do
+    plug Time_managerWeb.RolePlug, roles: ["Administrator"]
+  end
+
   scope "/api", Time_managerWeb do
     pipe_through :api
 
     scope "/users" do
-      post "/sign_up", UserController, :sign_up
       post "/sign_in", UserController, :sign_in
     end
 
@@ -31,50 +34,60 @@ defmodule Time_managerWeb.Router do
       pipe_through :authenticated
 
       post "/sign_out", UserController, :sign_out
-
-      # /me : accessible à tout utilisateur connecté
-      # DOIT être avant /:userID pour ne pas être capturé comme paramètre
       get "/me", UserController, :me
 
+      # Routes accessibles aux Managers et Administrators
       scope "/" do
         pipe_through :manager_access
 
-        get    "/",              UserController, :index
-        post   "/",              UserController, :create
-        get    "/:userID",       UserController, :show
-        put    "/:userID",       UserController, :update
-        put    "/:userID/role",  UserController, :update_role
-        delete "/:userID",       UserController, :delete
+        get "/", UserController, :index
+        get "/:userID", UserController, :show
+        put "/:userID", UserController, :update
+        delete "/:userID", UserController, :delete
+      end
+
+      # Routes accessibles uniquement aux Administrators
+      scope "/" do
+        pipe_through :admin_access
+
+        post "/", UserController, :create
+        put "/:userID/role", UserController, :update_role
       end
     end
 
     # ── Teams (Manager/Admin uniquement) ──────────────────────────────────
+    # ── Teams ─────────────────────────────────────────────────────────────
     scope "/teams" do
-      pipe_through [:authenticated, :manager_access]
+      pipe_through :authenticated
 
-      get    "/",                      TeamController, :index
-      post   "/",                      TeamController, :create
-      get    "/:teamID",               TeamController, :show
-      put    "/:teamID",               TeamController, :update
-      delete "/:teamID",               TeamController, :delete
-      post   "/:teamID/users/:userID", TeamController, :add_user
-      delete "/:teamID/users/:userID", TeamController, :remove_user
+      get "/", TeamController, :index
+      get "/:teamID", TeamController, :show
+
+      scope "/" do
+        pipe_through :manager_access
+
+        post "/", TeamController, :create
+        put "/:teamID", TeamController, :update
+        delete "/:teamID", TeamController, :delete
+        post "/:teamID/users/:userID", TeamController, :add_user
+        delete "/:teamID/users/:userID", TeamController, :remove_user
+      end
     end
 
     scope "/workingtime" do
       pipe_through :authenticated
 
-      get    "/:userID/:id", WorkingTimeController, :show
-      get    "/:userID",     WorkingTimeController, :index
-      post   "/:userID",     WorkingTimeController, :create
-      put    "/:id",         WorkingTimeController, :update
-      delete "/:id",         WorkingTimeController, :delete
+      get "/:userID/:id", WorkingTimeController, :show
+      get "/:userID", WorkingTimeController, :index
+      post "/:userID", WorkingTimeController, :create
+      put "/:id", WorkingTimeController, :update
+      delete "/:id", WorkingTimeController, :delete
     end
 
     scope "/clocks" do
       pipe_through :authenticated
 
-      get  "/:userID", ClockController, :index
+      get "/:userID", ClockController, :index
       post "/:userID", ClockController, :create
     end
 
