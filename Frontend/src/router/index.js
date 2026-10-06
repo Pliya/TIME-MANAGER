@@ -4,17 +4,47 @@ import ClockManager from '../components/ClockManager.vue'
 import ChartManager from '../components/ChartManager.vue'
 import WorkingTimes from '../components/WorkingTimes.vue'
 import WorkingTime from '../components/WorkingTime.vue'
-import LoginPage from '../components/LoginPage.vue'
-import { loggedUserId } from '../session'
+import Authentication from '../components/Authentication.vue'
+import PlanningPage from '../components/PlanningPage.vue'
+import AbsencesPage from '../components/AbsencesPage.vue'
+import TeamPage from '../components/TeamPage.vue'
+import AlertsPage from '../components/AlertsPage.vue'
+import ValidationPage from '../components/ValidationPage.vue'
+import TeamPlanningPage from '../components/TeamPlanningPage.vue'
+import TeamStatsPage from '../components/TeamStatsPage.vue'
+import UsersPage from '../components/UsersPage.vue'
+import RulesPage from '../components/RulesPage.vue'
+import PayrollPage from '../components/PayrollPage.vue'
+import AdminAbsencesPage from '../components/AdminAbsencesPage.vue'
+import { loggedUserId, isManager, hasRole } from '../session'
+
+const MANAGER = ['Manager']
+const ADMIN = ['Administrator']
 
 const routes = [
-  { path: '/login', component: LoginPage, meta: { title: 'Connexion', public: true } },
+  { path: '/sign_in', component: Authentication, meta: { title: 'Connexion', public: true } },
   { path: '/', component: HomeComponent, meta: { title: 'Dashboard' } },
+
   { path: '/clock/:userid', component: ClockManager, meta: { title: 'Pointage' } },
-  { path: '/workingTimes/:userID', component: WorkingTimes, meta: { title: 'Temps de travail' } },
-  { path: '/workingTime/:userid', component: WorkingTime, meta: { title: 'Nouveau temps de travail' } },
-  { path: '/workingTime/:userid/:workingtimeid', component: WorkingTime, meta: { title: 'Modifier un temps de travail' } },
+  { path: '/workingTimes/:userID', component: WorkingTimes, meta: { title: 'Mes temps' } },
   { path: '/chartManager/:userid', component: ChartManager, meta: { title: 'Statistiques' } },
+  { path: '/planning', component: PlanningPage, meta: { title: 'Planning' } },
+  { path: '/absences', component: AbsencesPage, meta: { title: 'Absences' } },
+
+  { path: '/workingTime/:userid', component: WorkingTime, meta: { title: 'Nouveau temps de travail', roles: MANAGER } },
+  { path: '/workingTime/:userid/:workingtimeid', component: WorkingTime, meta: { title: 'Modifier un temps de travail', roles: MANAGER } },
+  { path: '/equipe', component: TeamPage, meta: { title: 'Équipe', roles: MANAGER } },
+  { path: '/alertes', component: AlertsPage, meta: { title: 'Alertes', roles: MANAGER } },
+  { path: '/validation', component: ValidationPage, meta: { title: 'Validation', roles: MANAGER } },
+  { path: '/planning-equipe', component: TeamPlanningPage, meta: { title: 'Planning', roles: MANAGER } },
+  { path: '/statistiques-equipe', component: TeamStatsPage, meta: { title: 'Statistiques', roles: MANAGER } },
+
+  { path: '/utilisateurs', component: UsersPage, meta: { title: 'Utilisateurs', roles: ADMIN } },
+  { path: '/regles', component: RulesPage, meta: { title: 'Règles', roles: ADMIN } },
+  { path: '/paie', component: PayrollPage, meta: { title: 'Paie', roles: ADMIN } },
+  { path: '/absences-rh', component: AdminAbsencesPage, meta: { title: 'Absences', roles: ADMIN } },
+
+  { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 
 const router = createRouter({
@@ -22,9 +52,20 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach(to => {
-  if (!to.meta.public && !loggedUserId.value) return '/login'
-  if (to.path === '/login' && loggedUserId.value) return '/'
+router.beforeEach(to =>
+{
+  if (to.meta.public)
+    return loggedUserId.value ? '/' : true
+
+  if (!loggedUserId.value)
+    return '/sign_in'
+
+  if (to.meta.roles && !hasRole(...to.meta.roles))
+    return '/'
+
+  const idInUrl = Number(to.params.userid || to.params.userID)
+  if (idInUrl && idInUrl !== loggedUserId.value && !isManager())
+    return '/'
 })
 
 export default router

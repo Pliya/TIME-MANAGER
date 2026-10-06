@@ -1,253 +1,196 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from 'axios'
-import { API_URL } from '@/api'
-import WorkingTime from './WorkingTime.vue'
+import { Lock, ChevronDown } from 'lucide-vue-next'
+import { api } from '@/api'
 import StatCard from './StatCard.vue'
-import { computeKpi, hoursToText } from '@/utils/kpi'
-import { Clock, CalendarCheck, TrendingUp, CalendarDays, Pencil, Trash2, X } from 'lucide-vue-next'
+import Chip from './Chip.vue'
+import { computeKpi, hoursToText, isNight, sortByTime } from '@/utils/kpi'
+import { store, newId } from '@/store'
+import { username } from '@/session'
 
 const route = useRoute()
+const props = defineProps({ userId: { type: [Number, String], default: null } })
 
-const props = defineProps({
-  userId: { type: [Number, String], default: null }
-})
-
-const resolveUserId = () => {
-  const fromRoute = route?.params?.userID || route?.params?.userid
-  if (fromRoute) return Number(fromRoute)
-  if (props.userId) return Number(props.userId)
-  return 1
-}
-
-const userId = ref(resolveUserId())
+const userId = ref(Number(route.params.userID || props.userId))
 const workingTimes = ref([])
-const selectedId = ref(null)
 const errorMessage = ref('')
 
-const filterMonth = ref('')
-const filterYear = ref('')
+const requests = computed(() => store.corrections.filter(c => c.userId === userId.value))
+const pendingCount = computed(() => requests.value.filter(c => c.status === 'En attente').length)
+const form = ref({ sessionId: '', type: 'Pointage oublié', time: '', reason: '' })
+const formError = ref('')
 
 const stats = computed(() => computeKpi(workingTimes.value))
 
-const availableYears = computed(() => {
-  const years = new Set()
-  workingTimes.value.forEach(wt => {
-    if (wt.start) {
-      const y = new Date(wt.start.replace(' ', 'T')).getFullYear()
-      if (!isNaN(y)) years.add(y)
-    }
-  })
-  if (years.size === 0) years.add(new Date().getFullYear())
-  return Array.from(years).sort((a, b) => b - a)
-})
-
-const filteredWorkingTimes = computed(() => {
-  return workingTimes.value.filter(wt => {
-    if (!wt.start) return false
-    const d = new Date(wt.start.replace(' ', 'T'))
-    const matchMonth = !filterMonth.value || (d.getMonth() + 1) === Number(filterMonth.value)
-    const matchYear = !filterYear.value || d.getFullYear() === Number(filterYear.value)
-    return matchMonth && matchYear
-  })
-})
-
-function resetFilters() {
-  filterMonth.value = ''
-  filterYear.value = ''
-}
+const sessions = computed(() => [...workingTimes.value].reverse())
 
 async function getWorkingTimes() {
   errorMessage.value = ''
   try {
-    const res = await axios.get(`${API_URL}/workingtime/${userId.value}`)
-    workingTimes.value = res.data.data || res.data || []
-  } catch (err) {
-    console.warn("Serveur Phoenix non joignable :", err.message)
-    errorMessage.value = "Impossible de joindre le serveur Phoenix (port 4000). Vérifiez que `mix phx.server` est lancé."
+    const res = await api.get(`/workingtime/${userId.value}`)
+    workingTimes.value = sortByTime(res.data.data || [], 'start')
+  } catch {
+    errorMessage.value = 'Impossible de charger tes temps de travail.'
   }
 }
 
-async function onWorkingTimeUpdated(newItem) {
-  selectedId.value = null
-  try {
-    const res = await axios.get(`${API_URL}/workingtime/${userId.value}`)
-    workingTimes.value = res.data.data || res.data || []
-    errorMessage.value = ''
+function toDate(time) {
+  return new Date(time.replace(' ', 'T'))
+}
+
+function dayText(time) {
+  return toDate(time).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })
+}
+
+function hours(wt) {
+  return `${wt.start.slice(11, 16)} → ${wt.end.slice(11, 16)}`
+}
+
+function duration(wt) {
+  return hoursToText((toDate(wt.end) - toDate(wt.start)) / 3600000)
+}
+
+function requestFor(wt) {
+  return requests.value.find(r => r.workingTimeId === wt.id)
+}
+
+function correct(wt) {
+  form.value.sessionId = wt.id
+}
+
+function sendRequest() {
+  formError.value = ''
+  const wt = workingTimes.value.find(w => w.id === Number(form.value.sessionId))
+  if (!wt || !form.value.reason) return
+
+  const sheet = `${wt.start.slice(0, 7)}-${userId.value}`
+  if (store.rules.correctionsUntilValidation && store.validatedSheets[sheet]) {
+    formError.value = 'Ce mois est déjà validé par ton manager : la correction est fermée.'
     return
-  } catch (err) {
-    if (newItem) {
-      const idx = workingTimes.value.findIndex(item => item.id === newItem.id)
-      if (idx !== -1) {
-        workingTimes.value[idx] = newItem
-      } else {
-        workingTimes.value.unshift(newItem)
-      }
-    }
   }
+
+  store.corrections.unshift({
+    id: newId(),
+    userId: userId.value,
+    userName: username.value,
+    workingTimeId: wt.id,
+    start: wt.start,
+    end: wt.end,
+    day: dayText(wt.start),
+    type: form.value.type,
+    time: form.value.time,
+    reason: form.value.reason,
+    status: 'En attente',
+  })
+  form.value = { sessionId: '', type: 'Pointage oublié', time: '', reason: '' }
 }
 
-async function deleteWorkingTime(id) {
-  if (!confirm(`Supprimer la fiche #${id} ?`)) return
-  try {
-    await axios.delete(`${API_URL}/workingtime/${id}`)
-    await getWorkingTimes()
-  } catch (err) {
-    console.warn("Erreur suppression API, retrait local :", err.message)
-    workingTimes.value = workingTimes.value.filter(item => item.id !== id)
-  }
-  if (selectedId.value === id) selectedId.value = null
-}
-
-function handleEdit(id) {
-  selectedId.value = id
-  const mainEl = document.querySelector('.main-content')
-  if (mainEl) {
-    mainEl.scrollTo({ top: 0, behavior: 'smooth' })
-  } else {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-}
-
-function formatDate(isoStr) {
-  if (!isoStr) return '-'
-  const d = new Date(isoStr.replace(' ', 'T'))
-  return d.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })
-}
-
-function formatHours(startStr, endStr) {
-  if (!startStr || !endStr) return ''
-  const s = new Date(startStr.replace(' ', 'T'))
-  const e = new Date(endStr.replace(' ', 'T'))
-  const pad = (n) => n.toString().padStart(2, '0')
-  const startTime = `${pad(s.getHours())}:${pad(s.getMinutes())}`
-  const endTime = `${pad(e.getHours())}:${pad(e.getMinutes())}`
-  
-  if (s.toDateString() !== e.toDateString()) {
-    const endDay = e.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
-    return `${startTime} → ${endDay} ${endTime}`
-  }
-  return `${startTime} → ${endTime}`
-}
-
-function getDuration(startStr, endStr) {
-  if (!startStr || !endStr) return '- h'
-  const start = new Date(startStr.replace(' ', 'T'))
-  const end = new Date(endStr.replace(' ', 'T'))
-  const hours = (end - start) / (1000 * 60 * 60)
-  return hoursToText(hours)
-}
-
-watch(() => [props.userId, route?.params?.userID], ([newPropId, newRouteId]) => {
-  const nextId = newRouteId || newPropId
-  if (nextId) {
-    userId.value = Number(nextId)
+watch(() => route.params.userID, id => {
+  if (id) {
+    userId.value = Number(id)
     getWorkingTimes()
   }
 })
 
-onMounted(() => {
-  getWorkingTimes()
-})
+onMounted(getWorkingTimes)
 
-defineExpose({
-  userId,
-  workingTimes,
-  getWorkingTimes
-})
+defineExpose({ userId, workingTimes, getWorkingTimes })
 </script>
 
 <template>
   <div class="space-y-6">
     <p v-if="errorMessage" class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{{ errorMessage }}</p>
 
-    <div class="grid grid-cols-2 gap-4 lg:gap-6 xl:grid-cols-4">
-      <StatCard label="Total Hours" :value="stats.totalHours" hint="Total cumulé" :icon="Clock" />
-      <StatCard label="Days Worked" :value="stats.daysWorked" hint="Jours travaillés" :icon="CalendarCheck" />
-      <StatCard label="Regular Hours" :value="stats.avgHours" hint="Moyenne / jour" :icon="TrendingUp" />
-      <StatCard label="Plages Enregistrées" :value="stats.totalEntries" hint="Sessions déclarées" :icon="CalendarDays" />
+    <div class="stat-grid">
+      <StatCard label="Heures totales" :value="stats.totalHours" hint="Depuis le début" icon="timetable" />
+      <StatCard label="Jours travaillés" :value="stats.daysWorked" hint="Depuis le début" icon="schedule" />
+      <StatCard label="Moyenne par jour" :value="stats.avgHours" hint="Depuis le début" icon="trend" />
+      <StatCard label="Corrections" :value="pendingCount" hint="En attente" icon="list-interface-symbol" />
     </div>
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
-      <WorkingTime
-        :user-id="userId"
-        :working-time-id="selectedId"
-        @refresh-list="onWorkingTimeUpdated"
-        @cancel-edit="selectedId = null"
-      />
+      <div class="space-y-6">
+        <form class="rounded-2xl bg-white p-5" @submit.prevent="sendRequest">
+          <p class="card-title mb-1 font-medium">Demander une correction</p>
+          <p class="mb-4 text-xs text-neutral-500">Ton manager accepte, modifie ou refuse sous 48 h.</p>
 
-      <div class="rounded-2xl bg-white p-6 xl:col-span-2">
-        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <p class="font-medium">Working Times List <span class="text-neutral-400">({{ filteredWorkingTimes.length }})</span></p>
-          <div class="flex flex-wrap items-center gap-2">
-            <select v-model="filterMonth" class="rounded-lg border border-neutral-200 px-3 py-1.5 text-sm text-neutral-600">
-              <option value="">Tous les mois</option>
-              <option value="1">Janvier</option>
-              <option value="2">Février</option>
-              <option value="3">Mars</option>
-              <option value="4">Avril</option>
-              <option value="5">Mai</option>
-              <option value="6">Juin</option>
-              <option value="7">Juillet</option>
-              <option value="8">Août</option>
-              <option value="9">Septembre</option>
-              <option value="10">Octobre</option>
-              <option value="11">Novembre</option>
-              <option value="12">Décembre</option>
+          <label class="text-sm text-neutral-500">Session concernée</label>
+          <select v-model="form.sessionId" required class="mt-1 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm">
+            <option value="" disabled>Choisir une session</option>
+            <option v-for="wt in sessions" :key="wt.id" :value="wt.id">{{ dayText(wt.start) }} · {{ hours(wt) }}</option>
+          </select>
+
+          <label class="mt-3 block text-sm text-neutral-500">Type de demande</label>
+          <div class="relative mt-1">
+            <select v-model="form.type" class="w-full appearance-none rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm">
+              <option>Pointage oublié</option>
+              <option>Heures non pointées</option>
+              <option>Erreur d'horaire</option>
             </select>
-            <select v-model="filterYear" class="rounded-lg border border-neutral-200 px-3 py-1.5 text-sm text-neutral-600">
-              <option value="">Toutes les années</option>
-              <option v-for="y in availableYears" :key="y" :value="y">{{ y }}</option>
-            </select>
-            <button v-if="filterMonth || filterYear" class="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100" title="Effacer le filtre" @click="resetFilters">
-              <X class="h-4 w-4" />
-            </button>
+            <ChevronDown class="pointer-events-none absolute top-2.5 right-3 h-4 w-4" />
+          </div>
+
+          <label class="mt-3 block text-sm text-neutral-500">Heure de sortie proposée</label>
+          <input v-model="form.time" type="time" class="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm" />
+
+          <label class="mt-3 block text-sm text-neutral-500">Motif</label>
+          <input v-model.trim="form.reason" required placeholder="J'ai oublié de pointer en partant." class="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm" />
+
+          <p v-if="formError" class="mt-3 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-600">{{ formError }}</p>
+          <button type="submit" class="mt-4 w-full rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-neutral-700">
+            Envoyer la demande
+          </button>
+        </form>
+
+        <div class="rounded-2xl bg-white p-5">
+          <p class="card-title mb-3 font-medium">Historique</p>
+          <div class="space-y-3 text-xs text-neutral-500">
+            <p v-for="r in requests" :key="r.id">
+              <span class="font-medium text-neutral-900">{{ r.day }}</span> ·
+              <template v-if="r.status === 'Acceptée'">Sortie fixée à {{ r.newEnd.slice(11, 16) }} par {{ r.decidedBy }}, à ta demande.</template>
+              <template v-else-if="r.status === 'Refusée'">Demande refusée : « {{ r.answer }} »</template>
+              <template v-else>{{ r.type }}{{ r.time ? ` (${r.time})` : '' }} : « {{ r.reason }} » En attente du manager.</template>
+            </p>
+            <p v-if="requests.length === 0">Aucune demande pour l'instant.</p>
           </div>
         </div>
+      </div>
 
-        <div class="max-h-[28rem] overflow-auto">
+      <div class="rounded-2xl bg-white p-5 xl:col-span-2">
+        <div class="card-title mb-4 flex flex-wrap items-center justify-between gap-2">
+          <p class="font-medium">Mes sessions <span class="text-neutral-400">({{ sessions.length }})</span></p>
+          <span class="flex items-center gap-1 text-xs text-neutral-500"><Lock class="h-4 w-4" /> Lecture seule</span>
+        </div>
+
+        <div class="max-h-[32rem] overflow-auto">
           <table class="w-full min-w-max text-sm">
-            <thead class="sticky top-0 z-10">
+            <thead>
               <tr class="bg-neutral-50 text-left text-neutral-500">
-                <th class="rounded-l-lg px-3 py-3 font-medium sm:px-4">Date</th>
-                <th class="px-3 py-3 font-medium sm:px-4">Durée</th>
-                <th class="rounded-r-lg px-3 py-3 sm:px-4"></th>
+                <th class="rounded-l-lg px-3 py-3 font-medium">Date</th>
+                <th class="px-3 py-3 font-medium">Horaires</th>
+                <th class="px-3 py-3 font-medium">Durée</th>
+                <th class="px-3 py-3 font-medium">Statut</th>
+                <th class="rounded-r-lg px-3 py-3"></th>
               </tr>
             </thead>
             <tbody>
-              <tr
-                v-for="wt in filteredWorkingTimes"
-                :key="wt.id"
-                class="border-b border-neutral-100 last:border-0"
-                :class="{ 'bg-neutral-100': selectedId === wt.id }"
-              >
-                <td class="px-3 py-3 sm:px-4">
-                  <p class="font-medium">{{ formatDate(wt.start) }}</p>
-                  <p class="text-neutral-500">{{ formatHours(wt.start, wt.end) }}</p>
+              <tr v-for="wt in sessions" :key="wt.id" class="border-b border-neutral-100 last:border-0">
+                <td class="px-3 py-3 font-medium">{{ dayText(wt.start) }}</td>
+                <td class="px-3 py-3">{{ hours(wt) }}</td>
+                <td class="px-3 py-3">{{ duration(wt) }}</td>
+                <td class="px-3 py-3">
+                  <Chip v-if="requestFor(wt)?.status === 'En attente'">Correction en attente</Chip>
+                  <Chip v-else-if="requestFor(wt)?.status === 'Acceptée'" color="green">Corrigée par {{ requestFor(wt).decidedBy }}</Chip>
+                  <Chip v-else-if="isNight(wt.start)" color="dark">Nuit</Chip>
+                  <Chip v-else>Pointée</Chip>
                 </td>
-                <td class="px-3 py-3 sm:px-4">
-                  <span class="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium">{{ getDuration(wt.start, wt.end) }}</span>
-                </td>
-                <td class="px-3 py-3 sm:px-4">
-                  <div class="flex justify-end gap-1">
-                    <button type="button" class="flex items-center gap-1 rounded-lg px-2 py-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900" title="Modifier cette fiche" @click="handleEdit(wt.id)">
-                      <Pencil class="h-4 w-4" />
-                      <span>Modifier</span>
-                    </button>
-                    <button type="button" class="rounded-lg p-2 text-neutral-400 hover:bg-red-50 hover:text-red-600" title="Supprimer" @click="deleteWorkingTime(wt.id)">
-                      <Trash2 class="h-4 w-4" />
-                    </button>
-                  </div>
+                <td class="px-3 py-3 text-right">
+                  <button class="text-xs font-medium text-neutral-500 hover:text-neutral-900" @click="correct(wt)">Corriger</button>
                 </td>
               </tr>
-              <tr v-if="filteredWorkingTimes.length === 0">
-                <td colspan="3" class="px-4 py-8 text-center text-neutral-400">
-                  <p class="font-medium">Aucun enregistrement trouvé.</p>
-                  <p class="text-sm">
-                    {{ workingTimes.length === 0 ? 'Utilisez le formulaire pour ajouter votre premier temps de travail.' : 'Aucun résultat pour ce filtre.' }}
-                  </p>
-                </td>
+              <tr v-if="sessions.length === 0">
+                <td colspan="5" class="px-4 py-8 text-center text-neutral-400">Aucune session enregistrée.</td>
               </tr>
             </tbody>
           </table>

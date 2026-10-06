@@ -1,18 +1,15 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
 import { ChevronDown } from 'lucide-vue-next'
-import { API_URL as API_BASE_URL } from '@/api'
-import { loggedUserId, logout } from '@/session'
+import { api } from '@/api'
+import { loggedUserId, isManager, isAdmin, clearSession } from '@/session'
 
 const props = defineProps({ userId: { type: Number, default: null } })
 
 const emit = defineEmits(['user-updated'])
 
 const router = useRouter()
-
-const API_URL = `${API_BASE_URL}/users`
 
 const user = ref(null)
 const userId = ref(props.userId)
@@ -24,6 +21,7 @@ const success = ref(null)
 
 const newUsername = ref('')
 const newEmail = ref('')
+const newPassword = ref('')
 
 const editUsername = ref('')
 const editEmail = ref('')
@@ -37,6 +35,7 @@ function formatFieldName(field) {
   const names = {
     username: 'Username',
     email: 'Email',
+    password: 'Mot de passe',
     user_id: 'Utilisateur',
     id: 'ID'
   }
@@ -88,7 +87,8 @@ async function getUser() {
   loading.value = true
   clearMessages()
   try {
-    const response = await axios.get(`${API_URL}/${userId.value}`)
+    const path = userId.value === loggedUserId.value ? '/users/me' : `/users/${userId.value}`
+    const response = await api.get(path)
     const fetchedUser = getUserFromResponse(response)
     user.value = fetchedUser
     editUsername.value = user.value.username
@@ -121,15 +121,17 @@ async function createUser() {
     return
   }
   try {
-    const response = await axios.post(API_URL, {
+    const response = await api.post('/users', {
       user: {
         username: newUsername.value,
-        email: newEmail.value
+        email: newEmail.value,
+        password: newPassword.value
       }
     })
     getUserFromResponse(response)
     newUsername.value = ''
     newEmail.value = ''
+    newPassword.value = ''
     success.value = "Utilisateur créé avec succès."
     creating.value = false
   } catch (err) {
@@ -162,7 +164,7 @@ async function updateUser() {
     return
   }
   try {
-    const response = await axios.put(`${API_URL}/${userId.value}`, {
+    const response = await api.put(`/users/${userId.value}`, {
       user: {
         username: editUsername.value,
         email: editEmail.value
@@ -197,10 +199,10 @@ async function deleteUser() {
   loading.value = true
   clearMessages()
   try {
-    await axios.delete(`${API_URL}/${userId.value}`)
+    await api.delete(`/users/${userId.value}`)
     if (userId.value === loggedUserId.value) {
-      logout()
-      router.push('/login')
+      clearSession()
+      router.push('/sign_in')
     }
     user.value = null
     userId.value = null
@@ -228,8 +230,8 @@ watch(() => props.userId, (newId) => {
 
 <template>
   <div class="relative">
-    <button class="flex items-center gap-2 rounded-xl border border-neutral-200 px-3 py-1.5 hover:bg-neutral-50" @click="open = !open">
-      <span class="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-200 text-sm font-semibold">
+    <button class="flex items-center gap-2 rounded-xl bg-neutral-900 px-3 py-2 text-white hover:bg-neutral-700" @click="open = !open">
+      <span class="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm font-semibold text-neutral-900">
         {{ user ? user.username.charAt(0).toUpperCase() : '?' }}
       </span>
       <span class="hidden text-sm font-medium sm:inline">{{ user ? user.username : 'Aucun utilisateur' }}</span>
@@ -238,7 +240,7 @@ watch(() => props.userId, (newId) => {
 
     <div v-if="open" class="fixed inset-0 z-40" @click="open = false"></div>
 
-    <div v-if="open" class="absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl bg-white p-5 shadow-xl ring-1 ring-neutral-200">
+    <div v-if="open" class="absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl bg-white p-5 text-neutral-900 shadow-xl ring-1 ring-neutral-200">
       <div v-if="user && !loading" class="mb-5 flex items-center gap-3">
         <span class="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-200 text-lg font-semibold">
           {{ user.username.charAt(0).toUpperCase() }}
@@ -246,6 +248,7 @@ watch(() => props.userId, (newId) => {
         <div class="min-w-0">
           <p class="truncate font-semibold">{{ user.username }}</p>
           <p class="truncate text-sm text-neutral-400">{{ user.email }}</p>
+          <p v-if="user.role" class="mt-1 inline-block rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium">{{ user.role }}</p>
         </div>
       </div>
 
@@ -259,7 +262,7 @@ watch(() => props.userId, (newId) => {
       </div>
       <p v-if="success" class="mb-4 rounded-xl bg-green-50 px-3 py-2 text-sm text-green-600">{{ success }}</p>
 
-      <form v-if="user && !creating" class="space-y-3" @submit.prevent="updateUser">
+      <form v-if="isManager() && user && !creating" class="space-y-3" @submit.prevent="updateUser">
         <input v-model.trim="editUsername" type="text" required placeholder="Username" class="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none" />
         <input v-model.trim="editEmail" type="email" required placeholder="Email" class="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none" />
         <div class="flex gap-2">
@@ -276,12 +279,13 @@ watch(() => props.userId, (newId) => {
         <p class="text-sm font-medium">Créer un utilisateur</p>
         <input v-model.trim="newUsername" type="text" required placeholder="Entrez le username" class="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none" />
         <input v-model.trim="newEmail" type="email" required placeholder="exemple@email.com" class="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none" />
+        <input v-model="newPassword" type="password" required minlength="8" autocomplete="new-password" placeholder="Mot de passe (8 caractères minimum)" class="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none" />
         <button type="submit" :disabled="loading" class="w-full rounded-full bg-neutral-900 py-2 text-sm font-semibold text-white hover:bg-neutral-700 disabled:opacity-50">
           {{ loading ? 'Création...' : 'Créer' }}
         </button>
       </form>
 
-      <button class="mt-4 w-full text-center text-sm text-neutral-500 hover:text-neutral-900" @click="creating = !creating; clearMessages()">
+      <button v-if="isAdmin()" class="mt-4 w-full text-center text-sm text-neutral-500 hover:text-neutral-900" @click="creating = !creating; clearMessages()">
         {{ creating ? 'Retour à mon profil' : 'Créer un autre utilisateur' }}
       </button>
     </div>

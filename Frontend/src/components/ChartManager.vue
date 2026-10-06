@@ -1,10 +1,12 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import axios from 'axios'
-import { Clock, ChartColumn, CalendarDays, ChartPie } from 'lucide-vue-next'
-import { API_URL } from '@/api'
+import { ref, computed, onMounted, watch } from 'vue'
+import { Lock } from 'lucide-vue-next'
+import { api } from '@/api'
 import ChartInterface from './ChartInterface.vue'
-import { hoursToText } from '@/utils/kpi'
+import LogoIcon from './LogoIcon.vue'
+import { hoursToText, summarize, inMonth, sortByTime } from '@/utils/kpi'
+import { recoveryBalance } from '@/utils/absences'
+import { store } from '@/store'
 
 const props = defineProps({
   userId: {
@@ -17,6 +19,19 @@ const clock_bar_data = ref({ labels: [], datasets: [] })
 
 const wt_bar_data = ref({ labels: [], datasets: [] })
 const wt_pie_data = ref({ labels: [], datasets: [] })
+
+const pay = ref({ month: '', normal: '0h 00m', night: '0h 00m', overtime: '0h 00m' })
+const recovery = computed(() => hoursToText(recoveryBalance(Number(props.userId))))
+
+function compute_pay(wt_list) {
+  const month = summarize(inMonth(wt_list))
+  pay.value = {
+    month: new Date().toLocaleDateString('fr-FR', { month: 'long' }),
+    normal: hoursToText(month.normal),
+    night: hoursToText(month.night),
+    overtime: hoursToText(month.overtime),
+  }
+}
 
 function format_clock_time(hour_decimal) {
   const minutes = Math.round(hour_decimal * 60)
@@ -91,8 +106,8 @@ const wt_pie_options = {
 
 async function load_clocks_data() {
   try {
-    const { data } = await axios.get(`${API_URL}/clocks/${props.userId}`)
-    const clocks_list = data.data || []
+    const { data } = await api.get(`/clocks/${props.userId}`)
+    const clocks_list = sortByTime(data.data || [], 'time')
 
     const days_map = {}
     const hours_in = Array(24).fill(0)
@@ -138,8 +153,10 @@ async function load_clocks_data() {
 
 async function load_working_times_data() {
   try {
-    const { data } = await axios.get(`${API_URL}/workingtime/${props.userId}`)
+    const { data } = await api.get(`/workingtime/${props.userId}`)
     const wt_list = data.data || data || []
+
+    compute_pay(wt_list)
 
     const days_durations = {}
 
@@ -168,7 +185,7 @@ async function load_working_times_data() {
         {
           label: 'Heures travaillées (h)',
           data: values_to_use,
-          backgroundColor: '#2563eb',
+          backgroundColor: '#2f6496',
           borderRadius: 6
         }
       ]
@@ -182,7 +199,7 @@ async function load_working_times_data() {
       datasets: [
         {
           data: values_to_use,
-          backgroundColor: ['#2563eb', '#38bdf8', '#818cf8', '#c084fc', '#f43f5e', '#10b981', '#f59e0b'],
+          backgroundColor: ['#2f6496', '#38bdf8', '#818cf8', '#c084fc', '#f43f5e', '#10b981', '#f59e0b'],
           borderWidth: 1,
           borderColor: '#ffffff'
         }
@@ -223,13 +240,13 @@ watch(() => props.userId, load_all_charts)
   <div class="space-y-8">
     <section>
       <div class="mb-4 flex items-center gap-3">
-        <Clock class="h-5 w-5 text-neutral-500" />
+        <LogoIcon name="timetable" class="h-6 w-6" />
         <h2 class="text-lg font-bold">Statistiques des Pointages</h2>
       </div>
       <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <div class="rounded-2xl bg-white p-6 shadow-sm">
-          <div class="flex flex-wrap items-center gap-4">
-            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><Clock class="h-5 w-5" /></div>
+          <div class="card-title flex flex-wrap items-center gap-4">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white"><LogoIcon name="timetable" class="h-6 w-6" /></div>
             <div>
               <p class="font-semibold">Horaires de pointage</p>
               <p class="text-sm text-neutral-400">Heures d'arrivée et de départ sur 7 jours</p>
@@ -244,8 +261,8 @@ watch(() => props.userId, load_all_charts)
         </div>
 
         <div class="rounded-2xl bg-white p-6 shadow-sm">
-          <div class="flex flex-wrap items-center gap-4">
-            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600"><ChartColumn class="h-5 w-5" /></div>
+          <div class="card-title flex flex-wrap items-center gap-4">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white"><LogoIcon name="bar-chart" class="h-6 w-6" /></div>
             <div>
               <p class="font-semibold">Fréquence des pointages</p>
               <p class="text-sm text-neutral-400">Nombre de Clock In / Clock Out par heure</p>
@@ -263,13 +280,13 @@ watch(() => props.userId, load_all_charts)
 
     <section>
       <div class="mb-4 flex items-center gap-3">
-        <CalendarDays class="h-5 w-5 text-neutral-500" />
+        <LogoIcon name="schedule" class="h-6 w-6" />
         <h2 class="text-lg font-bold">Statistiques des Temps de Travail</h2>
       </div>
       <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <div class="rounded-2xl bg-white p-6 shadow-sm">
-          <div class="flex flex-wrap items-center gap-4">
-            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-sky-600"><CalendarDays class="h-5 w-5" /></div>
+          <div class="card-title flex flex-wrap items-center gap-4">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white"><LogoIcon name="schedule" class="h-6 w-6" /></div>
             <div>
               <p class="font-semibold">Durée travaillée par jour</p>
               <p class="text-sm text-neutral-400">Heures cumulées par journée de travail</p>
@@ -284,8 +301,8 @@ watch(() => props.userId, load_all_charts)
         </div>
 
         <div class="rounded-2xl bg-white p-6 shadow-sm">
-          <div class="flex flex-wrap items-center gap-4">
-            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600"><ChartPie class="h-5 w-5" /></div>
+          <div class="card-title flex flex-wrap items-center gap-4">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white"><LogoIcon name="chart" class="h-6 w-6" /></div>
             <div>
               <p class="font-semibold">Répartition du temps travaillé</p>
               <p class="text-sm text-neutral-400">Proportion (%) du temps total par jour</p>
@@ -300,5 +317,18 @@ watch(() => props.userId, load_all_charts)
         </div>
       </div>
     </section>
+
+    <div class="rounded-2xl bg-white p-5">
+      <p class="card-title mb-3 font-medium">Ma fiche de paie estimée · {{ pay.month }}</p>
+      <div class="grid grid-cols-2 gap-4 text-sm xl:grid-cols-4">
+        <div><p class="text-neutral-500">Heures normales</p><p class="text-xl font-semibold">{{ pay.normal }}</p></div>
+        <div><p class="text-neutral-500">Nuit (× {{ store.rules.nightRate }})</p><p class="text-xl font-semibold">{{ pay.night }}</p></div>
+        <div><p class="text-neutral-500">Heures sup (× {{ store.rules.overtimeRate }})</p><p class="text-xl font-semibold">{{ pay.overtime }}</p></div>
+        <div><p class="text-neutral-500">À récupérer</p><p class="text-xl font-semibold">{{ recovery }}</p></div>
+      </div>
+      <p class="mt-4 flex items-start gap-2 text-xs text-neutral-500">
+        <Lock class="h-4 w-4 shrink-0" /> Ces chiffres sont pour toi. Aucune comparaison avec tes collègues.
+      </p>
+    </div>
   </div>
 </template>
