@@ -43,3 +43,10 @@ export function isAdmin()
 {
   return role.value === 'Administrator'
 }
+
+const HOME = { Employee: '/', Manager: '/equipe', Administrator: '/utilisateurs' }
+
+export function homePath()
+{
+  return HOME[role.value] || '/'
+}

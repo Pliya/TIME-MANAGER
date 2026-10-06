@@ -6,7 +6,7 @@ import UserComponent from './components/UserComponent.vue'
 import AccessibilityPanel from './components/AccessibilityPanel.vue'
 import LogoIcon from './components/LogoIcon.vue'
 import { api } from '@/api'
-import { loggedUserId, clearSession, hasRole } from '@/session'
+import { loggedUserId, clearSession, role } from '@/session'
 
 const route = useRoute()
 const router = useRouter()
@@ -18,7 +18,7 @@ const userId = computed(() => Number(route.params.userID || route.params.userid)
 const allSections = computed(() => [
   {
     title: 'Employé',
-    roles: ['Employee', 'Manager'],
+    roles: ['Employee'],
     links: [
       { to: '/', label: 'Dashboard', logo: 'dashboard' },
       { to: `/clock/${userId.value}`, label: 'Pointage', logo: 'timetable' },
@@ -51,7 +51,7 @@ const allSections = computed(() => [
   },
 ])
 
-const navigation = computed(() => allSections.value.filter(section => hasRole(...section.roles)))
+const navigation = computed(() => allSections.value.filter(section => section.roles.includes(role.value)))
 
 function isActive(path) {
   return route.path.split('/')[1] === path.split('/')[1]

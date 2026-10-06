@@ -42,12 +42,12 @@ Mot de passe de tous les comptes : **`Gotham2026!`**
 
 | Rôle | Email | Ce qu'il voit |
 |---|---|---|
-| Administrateur / RH | `albert@gotham.gov` | Tout : Employé, Manager, Administrateur / RH |
-| Manager | `gordon@gotham.gov` | Employé + Manager (équipe « Brigade de nuit ») |
-| Employé | `john.doe@gotham.gov` | Employé |
-| Employé | `selina.kyle@gotham.gov` | Employé |
-| Employé | `renee.montoya@gotham.gov` | Employé |
-| Employé hors équipe | `harvey.dent@gotham.gov` | Employé (sert à tester l'ajout dans une équipe) |
+| Administrateur / RH | `albert@gotham.gov` | Section Administrateur / RH ; arrive sur Utilisateurs |
+| Manager | `gordon@gotham.gov` | Section Manager ; arrive sur Équipe (équipe « Brigade de nuit ») |
+| Employé | `john.doe@gotham.gov` | Section Employé ; arrive sur le Dashboard |
+| Employé | `selina.kyle@gotham.gov` | Section Employé |
+| Employé | `renee.montoya@gotham.gov` | Section Employé |
+| Employé hors équipe | `harvey.dent@gotham.gov` | Section Employé (sert à tester l'ajout dans une équipe) |
 
 ### Ce que contiennent les données
 
@@ -86,8 +86,8 @@ Remettre Contraste et Texte A+ à zéro avant de continuer.
 
 | # | Action | Résultat attendu |
 |---|---|---|
-| 1.1 | Se connecter | Menu avec les sections **Employé** et **Manager**, sans Administrateur |
-| 1.2 | Manager → **Planning** ; revenir à la semaine en cours avec la flèche ← | Tableau des 3 agents de l'équipe |
+| 1.1 | Se connecter | Arrivée sur **Équipe** ; le menu ne montre que la section **Manager** |
+| 1.2 | **Planning** ; revenir à la semaine en cours avec la flèche ← | Tableau des 3 agents de l'équipe |
 | 1.3 | Pour John Doe : « Jour » sur aujourd'hui et sur les jours de semaine | Les menus se colorent |
 | 1.4 | Pour Selina : « Nuit » trois jours de suite, puis « Jour » le lendemain | Avertissements en rouge : « plus de 2 nuits d'affilée » et « pas de repos après la nuit » |
 | 1.5 | Mettre « Astr. » à quelqu'un aujourd'hui | — |
@@ -99,7 +99,7 @@ Remettre Contraste et Texte A+ à zéro avant de continuer.
 
 | # | Action | Résultat attendu |
 |---|---|---|
-| 2.1 | Se connecter | Menu avec la seule section **Employé** |
+| 2.1 | Se connecter | Arrivée sur le **Dashboard** ; le menu ne montre que la section **Employé** |
 | 2.2 | **Dashboard** | Chiffres de la semaine, carte de pointage « En cours » (session ouverte hier) |
 | 2.3 | **Pointage** → **Pointer la sortie** | La session se ferme, et la carte passe à « Pas pointé » |
 | 2.4 | **Pointer l'arrivée**, puis **Pause**, puis **Reprendre** | Pastille « En pause », puis retour à « En cours » |
@@ -118,7 +118,7 @@ Remettre Contraste et Texte A+ à zéro avant de continuer.
 
 | # | Action | Résultat attendu |
 |---|---|---|
-| 3.1 | Manager → **Équipe** | Présents, heures, heures sup, nuits ; **l'incident et le trajet de John** dans « Justifications reçues » |
+| 3.1 | **Équipe** | Présents, heures, heures sup, nuits ; **l'incident et le trajet de John** dans « Justifications reçues » |
 | 3.2 | « Gérer les équipes » : ajouter **harvey_dent** à « Brigade de nuit » | Harvey apparaît dans l'équipe |
 | 3.3 | Cliquer sur le × à côté de harvey_dent | Harvey est retiré |
 | 3.4 | Créer une équipe « Patrouille Est » | L'équipe apparaît, avec Gordon comme manager |
@@ -129,8 +129,8 @@ Remettre Contraste et Texte A+ à zéro avant de continuer.
 | 3.9 | **Tout valider** | Les feuilles passent à « Validé » ; une nouvelle correction sur ce mois devient impossible |
 | 3.10 | **Pointage d'équipe** | Arrivée pointée pour tous les absents (le bouton devient « Sortie d'équipe ») |
 | 3.11 | Choisir un agent, puis **Ajouter un temps** | Formulaire de création d'un temps de travail (réservé au manager) |
-| 3.12 | Manager → **Statistiques** | Graphiques de l'équipe ; un clic sur un agent ouvre ses statistiques |
-| 3.13 | Taper `/utilisateurs` | Renvoyé vers `/` : réservé à l'administrateur |
+| 3.12 | **Statistiques** | Graphiques de l'équipe ; un clic sur un agent ouvre ses statistiques |
+| 3.13 | Taper `/utilisateurs`, `/`, `/absences` | Renvoyé vers `/equipe` : pages d'un autre rôle. Seuls les temps et statistiques d'un agent (`/workingTimes/<id>`, `/chartManager/<id>`) restent ouverts au manager |
 | 3.14 | Se déconnecter | — |
 
 ### Étape 4 · Employé : vérifier les retours (`john.doe@gotham.gov`)
@@ -144,12 +144,12 @@ Remettre Contraste et Texte A+ à zéro avant de continuer.
 
 | # | Action | Résultat attendu |
 |---|---|---|
-| 5.1 | Se connecter | Les 3 sections du menu |
+| 5.1 | Se connecter | Arrivée sur **Utilisateurs** ; le menu ne montre que la section **Administrateur / RH**. Taper `/equipe` ou `/` renvoie vers `/utilisateurs` |
 | 5.2 | **Utilisateurs** → **Ajouter un utilisateur** (nom, email, mot de passe d'au moins 8 caractères) | Le compte apparaît dans la liste ; il peut se connecter |
 | 5.3 | Rôle de john_doe : **Manager**, puis **Employé** | Rôle changé dans l'API ; les deux changements apparaissent dans « Historique des droits » |
 | 5.4 | Retirer le droit « Modifier le planning » à jim_gordon | Ligne ajoutée à l'historique |
 | 5.5 | Vérifier qu'aucun menu ne permet de nommer un administrateur | Les administrateurs affichent un rôle fixe (l'API refuse cette promotion) |
-| 5.6 | **Règles** → seuil hebdomadaire à **1 h** | Retourner dans Manager → **Alertes** : des alertes « Heures sup élevées » apparaissent. **Remettre 40 h ensuite.** |
+| 5.6 | **Règles** → seuil hebdomadaire à **1 h** | Se reconnecter en manager → **Alertes** : des alertes « Heures sup élevées » apparaissent. **Remettre ensuite 40 h** avec l'administrateur |
 | 5.7 | **Paie** | Heures normales, nuit, heures sup payées et récupération de chaque agent |
 | 5.8 | **Exporter pour la comptabilité** | Téléchargement de `paie-AAAA-MM.csv` |
 | 5.9 | **Absences** (RH) | Le congé de John (étape 2.10) → **Valider** ; il apparaît dans le calendrier du mois |
@@ -169,7 +169,7 @@ Remettre Contraste et Texte A+ à zéro avant de continuer.
 | S.4 | Une requête sans cet en-tête est refusée | Console : `fetch('/api/users/me').then(r => r.status)` | `403` |
 | S.5 | Session expirée | Supprimer le cookie `time_manager_token`, puis changer de page | Retour automatique sur `/sign_in` et `localStorage` vidé |
 | S.6 | Déconnexion | Bouton « Se déconnecter » | Appel `POST /api/users/sign_out`, cookie supprimé, `localStorage` vidé |
-| S.7 | Routes protégées par `beforeEach` | Taper les adresses à la main | Publique : `/sign_in`. Privées : tout le reste. Manager : `/equipe`, `/alertes`, `/validation`, `/planning-equipe`, `/statistiques-equipe`, `/workingTime/...`. Administration : `/utilisateurs`, `/regles`, `/paie`, `/absences-rh` |
+| S.7 | Routes protégées par `beforeEach` | Taper les adresses à la main | Publique : `/sign_in`. Employé : `/`, `/clock/...`, `/planning`, `/absences`. Employé et manager : `/workingTimes/...`, `/chartManager/...`. Manager : `/equipe`, `/alertes`, `/validation`, `/planning-equipe`, `/statistiques-equipe`, `/workingTime/...`. Administration : `/utilisateurs`, `/regles`, `/paie`, `/absences-rh`. Une page d'un autre rôle renvoie vers la page d'accueil du rôle |
 | S.8 | Fonctions masquées par `v-if` (jamais `v-show`) | Inspecter le menu d'un employé | Les liens Manager et Admin ne sont pas dans le HTML |
 
 ---

@@ -16,20 +16,22 @@ import UsersPage from '../components/UsersPage.vue'
 import RulesPage from '../components/RulesPage.vue'
 import PayrollPage from '../components/PayrollPage.vue'
 import AdminAbsencesPage from '../components/AdminAbsencesPage.vue'
-import { loggedUserId, isManager, hasRole} from '../session'
+import { loggedUserId, role, isManager, homePath } from '../session'
 
+const EMPLOYEE = ['Employee']
 const MANAGER = ['Manager']
 const ADMIN = ['Administrator']
+const EMPLOYEE_AND_MANAGER = ['Employee', 'Manager']
 
 const routes = [
   { path: '/sign_in', component: Authentication, meta: { title: 'Connexion', public: true } },
-  { path: '/', component: HomeComponent, meta: { title: 'Dashboard' } },
+  { path: '/', component: HomeComponent, meta: { title: 'Dashboard', roles: EMPLOYEE } },
 
-  { path: '/clock/:userid', component: ClockManager, meta: { title: 'Pointage' } },
-  { path: '/workingTimes/:userID', component: WorkingTimes, meta: { title: 'Mes temps' } },
-  { path: '/chartManager/:userid', component: ChartManager, meta: { title: 'Statistiques' } },
-  { path: '/planning', component: PlanningPage, meta: { title: 'Planning' } },
-  { path: '/absences', component: AbsencesPage, meta: { title: 'Absences' } },
+  { path: '/clock/:userid', component: ClockManager, meta: { title: 'Pointage', roles: EMPLOYEE } },
+  { path: '/workingTimes/:userID', component: WorkingTimes, meta: { title: 'Mes temps', roles: EMPLOYEE_AND_MANAGER } },
+  { path: '/chartManager/:userid', component: ChartManager, meta: { title: 'Statistiques', roles: EMPLOYEE_AND_MANAGER } },
+  { path: '/planning', component: PlanningPage, meta: { title: 'Planning', roles: EMPLOYEE } },
+  { path: '/absences', component: AbsencesPage, meta: { title: 'Absences', roles: EMPLOYEE } },
 
   { path: '/workingTime/:userid', component: WorkingTime, meta: { title: 'Nouveau temps de travail', roles: MANAGER } },
   { path: '/workingTime/:userid/:workingtimeid', component: WorkingTime, meta: { title: 'Modifier un temps de travail', roles: MANAGER } },
@@ -55,17 +57,17 @@ const router = createRouter({
 router.beforeEach(to =>
 {
   if (to.meta.public)
-    return loggedUserId.value ? '/' : true
+    return loggedUserId.value ? homePath() : true
 
   if (!loggedUserId.value)
     return '/sign_in'
 
-  if (to.meta.roles && !hasRole(...to.meta.roles))
-    return '/'
+  if (to.meta.roles && !to.meta.roles.includes(role.value))
+    return homePath()
 
   const idInUrl = Number(to.params.userid || to.params.userID)
   if (idInUrl && idInUrl !== loggedUserId.value && !isManager())
-    return '/'
+    return homePath()
 })
 
 export default router
