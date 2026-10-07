@@ -1,15 +1,15 @@
 import { ref } from 'vue'
 
-export const loggedUserId = ref(Number(localStorage.getItem('userId')) || null)
+export const logged_user_id = ref(Number(localStorage.getItem('userId')) || null)
 export const role = ref(localStorage.getItem('role'))
-export const xsrfToken = ref(localStorage.getItem('xsrfToken'))
+export const xsrf_token = ref(localStorage.getItem('xsrfToken'))
 export const username = ref(localStorage.getItem('username'))
 
-export function saveSession(user, token)
+export function save_session(user, token)
 {
-  loggedUserId.value = user.id
+  logged_user_id.value = user.id
   role.value = user.role
-  xsrfToken.value = token
+  xsrf_token.value = token
   username.value = user.username
   localStorage.setItem('userId', user.id)
   localStorage.setItem('username', user.username)
@@ -17,11 +17,11 @@ export function saveSession(user, token)
   localStorage.setItem('xsrfToken', token)
 }
 
-export function clearSession()
+export function clear_session()
 {
-  loggedUserId.value = null
+  logged_user_id.value = null
   role.value = null
-  xsrfToken.value = null
+  xsrf_token.value = null
   username.value = null
   localStorage.removeItem('userId')
   localStorage.removeItem('username')
@@ -29,24 +29,24 @@ export function clearSession()
   localStorage.removeItem('xsrfToken')
 }
 
-export function hasRole(...roles)
+export function has_role(...roles)
 {
   return role.value === 'Administrator' || roles.includes(role.value)
 }
 
-export function isManager()
+export function is_manager()
 {
-  return hasRole('Manager')
+  return has_role('Manager')
 }
 
-export function isAdmin()
+export function is_admin()
 {
   return role.value === 'Administrator'
 }
 
 const HOME = { Employee: '/', Manager: '/equipe', Administrator: '/utilisateurs' }
 
-export function homePath()
+export function home_path()
 {
   return HOME[role.value] || '/'
 }

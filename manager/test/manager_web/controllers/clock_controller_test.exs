@@ -38,6 +38,23 @@ defmodule Time_managerWeb.ClockControllerTest do
       assert time =~ ~r/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/
     end
 
+    test "clock in then clock out with the times sent by the frontend", %{conn: conn, user: user} do
+      post(conn, ~p"/api/clocks/#{user.id}", clock: %{status: true, time: "2026-09-29 08:30:00"})
+
+      conn =
+        post(conn, ~p"/api/clocks/#{user.id}",
+          clock: %{status: false, time: "2026-09-29 12:00:00"}
+        )
+
+      assert %{"status" => false, "time" => "2026-09-29 12:00:00"} =
+               json_response(conn, 201)["data"]
+
+      conn = get(conn, ~p"/api/workingtime/#{user.id}")
+
+      assert [%{"start" => "2026-09-29 08:30:00", "end" => "2026-09-29 12:00:00"}] =
+               json_response(conn, 200)["data"]
+    end
+
     test "renders 404 for an unknown user", %{conn: conn} do
       conn = post(conn, ~p"/api/clocks/-1")
       assert json_response(conn, 404)

@@ -4,25 +4,27 @@ import { Download } from 'lucide-vue-next'
 import StatCard from '@/components/StatCard.vue'
 import DataTable from '@/components/DataTable.vue'
 import { store } from '@/store'
-import { loadAllUsers } from '@/team'
-import { hoursToText, summarize, inMonth, monthKey } from '@/utils/kpi'
+import { load_all_users } from '@/team'
+import { hours_to_text, summarize, in_month, month_key } from '@/utils/kpi'
 
-const month = monthKey()
-const monthName = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+const month = month_key()
+const month_name = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
 
 const users = ref([])
 const error = ref('')
 
-onMounted(async () => {
+onMounted(async () =>
+{
   try {
-    users.value = await loadAllUsers()
+    users.value = await load_all_users()
   } catch {
     error.value = 'Impossible de charger les utilisateurs.'
   }
 })
 
-const lines = computed(() => users.value.map(u => {
-  const s = summarize(inMonth(u.times, month))
+const lines = computed(() => users.value.map(u =>
+{
+  const s = summarize(in_month(u.times, month))
   const recover = store.overtimeDecisions[`${month}-${u.id}`]?.choice === 'recover'
   return {
     name: u.name,
@@ -41,9 +43,10 @@ const totals = computed(() => lines.value.reduce((t, l) => ({
 }), { normal: 0, night: 0, paidOvertime: 0, recovery: 0 }))
 
 const head = computed(() => ['Agent', 'Normales', `Nuit × ${store.rules.nightRate}`, `Sup × ${store.rules.overtimeRate}`, 'Récupération'])
-const rows = computed(() => lines.value.map(l => [l.name, hoursToText(l.normal), hoursToText(l.night), hoursToText(l.paidOvertime), hoursToText(l.recovery)]))
+const rows = computed(() => lines.value.map(l => [l.name, hours_to_text(l.normal), hours_to_text(l.night), hours_to_text(l.paidOvertime), hours_to_text(l.recovery)]))
 
-function exportCsv() {
+function export_csv()
+{
   const csv = [
     ['Agent', 'Normales', 'Nuit', 'Heures sup payées', 'Récupération'],
     ...lines.value.map(l => [l.name, l.normal, l.night, l.paidOvertime, l.recovery].map(v => (typeof v === 'number' ? v.toFixed(2) : v))),
@@ -59,10 +62,10 @@ function exportCsv() {
 <template>
   <div class="space-y-6">
     <div class="stat-grid">
-      <StatCard label="Heures normales" :value="hoursToText(totals.normal)" :hint="monthName" icon="timetable" />
-      <StatCard :label="`Nuit × ${store.rules.nightRate}`" :value="hoursToText(totals.night)" :hint="monthName" icon="schedule" />
-      <StatCard :label="`Heures sup × ${store.rules.overtimeRate}`" :value="hoursToText(totals.paidOvertime)" :hint="`Au-delà de ${store.rules.weekHours}h / semaine`" icon="increase" />
-      <StatCard label="À récupérer" :value="hoursToText(totals.recovery)" hint="Non payées" icon="timetable" />
+      <StatCard label="Heures normales" :value="hours_to_text(totals.normal)" :hint="month_name" icon="timetable" />
+      <StatCard :label="`Nuit × ${store.rules.nightRate}`" :value="hours_to_text(totals.night)" :hint="month_name" icon="schedule" />
+      <StatCard :label="`Heures sup × ${store.rules.overtimeRate}`" :value="hours_to_text(totals.paidOvertime)" :hint="`Au-delà de ${store.rules.weekHours}h / semaine`" icon="increase" />
+      <StatCard label="À récupérer" :value="hours_to_text(totals.recovery)" hint="Non payées" icon="timetable" />
     </div>
 
     <p v-if="error" class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{{ error }}</p>
@@ -70,7 +73,7 @@ function exportCsv() {
     <div class="rounded-2xl bg-white p-5">
       <div class="card-title mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <p class="font-medium">Détail par agent</p>
-        <button class="inline-flex items-center justify-center gap-2 rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white" @click="exportCsv">
+        <button class="inline-flex items-center justify-center gap-2 rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white" @click="export_csv">
           <Download class="h-4 w-4" /> Exporter pour la comptabilité
         </button>
       </div>

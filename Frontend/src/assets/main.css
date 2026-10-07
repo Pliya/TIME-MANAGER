@@ -9,13 +9,13 @@
 
   --radius-lg: 0.2rem;
   --radius-xl: 0.25rem;
-  --radius-2xl: 0.25rem;
+  --radius-2xl: 12px;
 }
 
 .card-title {
   margin: -1.25rem -1.25rem 1.25rem;
   padding: 0.8rem 1.25rem;
-  border-radius: 0.25rem 0.25rem 0 0;
+  border-radius: 12px 12px 0 0;
   background: var(--color-brand);
   color: #fff;
   font-size: 0.875rem;
@@ -68,8 +68,6 @@ html.high-contrast .border-neutral-200 {
 }
 @media (min-width: 80rem) {
   .stat-grid {
-    gap: 1.5rem;
-    grid-template-columns: repeat(4, minmax(0, 17.5rem));
-    justify-content: space-between;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

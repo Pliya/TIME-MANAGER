@@ -1,6 +1,6 @@
 defmodule Time_managerWeb.DateFormat do
   @moduledoc """
-  Formats datetimes as "YYYY-MM-DD hh:mm:ss" (UTC) in the API responses.
+  Formats datetimes as "YYYY-MM-DD hh:mm:ss" in the API responses.
   """
 
   def format(nil), do: nil

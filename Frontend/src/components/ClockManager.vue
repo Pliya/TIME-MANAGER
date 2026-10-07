@@ -3,10 +3,10 @@
     import { Coffee, Footprints, TriangleAlert, CalendarCheck, WifiOff } from 'lucide-vue-next';
     import { api } from '@/api';
     import Chip from './Chip.vue';
-    import { isNight, dateKey, sortByTime } from '@/utils/kpi';
-    import { store, newId } from '@/store';
+    import { is_night, date_key, sort_by_time } from '@/utils/kpi';
+    import { store, new_id } from '@/store';
     import { username } from '@/session';
-    import { SHIFTS, shiftOf, shiftTimes } from '@/utils/planning';
+    import { SHIFTS, shift_of, shift_times } from '@/utils/planning';
 
     const props = defineProps({
         userId: {
@@ -16,8 +16,8 @@
 
     const DAILY_GOAL_HOURS = 7;
 
-    const startDateTime = ref(null);
-    const clockIn = ref(false);
+    const start_date_time = ref(null);
+    const clock_in = ref(false);
     const error = ref("");
     const clocks = ref([]);
     const loaded = ref(false);
@@ -25,24 +25,25 @@
     const notice = ref("");
     let timer = null;
 
-    async function refresh() {
+    async function refresh()
+    {
         error.value = "";
         try {
             const reponse = await api.get(`/clocks/${props.userId}`);
-            const clocksArray = sortByTime(reponse.data.data, 'time');
-            clocks.value = clocksArray;
-            if (clocksArray && clocksArray.length > 0) {
-                const lastClock = clocksArray[clocksArray.length - 1];
-                if (lastClock.status) {
-                    startDateTime.value = lastClock.time;
-                    clockIn.value = true;
+            const clocks_array = sort_by_time(reponse.data.data, 'time');
+            clocks.value = clocks_array;
+            if (clocks_array && clocks_array.length > 0) {
+                const last_clock = clocks_array[clocks_array.length - 1];
+                if (last_clock.status) {
+                    start_date_time.value = last_clock.time;
+                    clock_in.value = true;
                 } else {
-                    startDateTime.value = null;
-                    clockIn.value = false;
+                    start_date_time.value = null;
+                    clock_in.value = false;
                 }
             } else {
-                startDateTime.value = null;
-                clockIn.value = false;
+                start_date_time.value = null;
+                clock_in.value = false;
             }
         } catch (err) {
             error.value = "Erreur lors de la récupération des clocks : " + err.message;
@@ -50,158 +51,200 @@
         loaded.value = true;
     }
 
-    async function clock() {
+    async function clock()
+    {
         error.value = "";
         try {
             const date = new Date();
             const pad = (n) => n.toString().padStart(2, '0');
-            const formattedTime = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+            const formatted_time = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 
             const payload = {
                 clock: {
-                    status: !clockIn.value,
-                    time: formattedTime
+                    status: !clock_in.value,
+                    time: formatted_time
                 }
             };
             const reponse = await api.post(`/clocks/${props.userId}`, payload);
-            const newClock = reponse.data.data;
-            clocks.value.push(newClock);
+            const new_clock = reponse.data.data;
+            clocks.value.push(new_clock);
 
-            if (newClock.status) {
-                startDateTime.value = newClock.time;
-                clockIn.value = true;
+            if (new_clock.status) {
+                start_date_time.value = new_clock.time;
+                clock_in.value = true;
             } else {
-                startDateTime.value = null;
-                clockIn.value = false;
+                start_date_time.value = null;
+                clock_in.value = false;
+                store.pauses[props.userId] = null;
             }
         } catch (err) {
             error.value = "Erreur lors du clocking : " + err.message;
         }
     }
 
-    function toDate(time) {
+    function to_date(time)
+    {
         return new Date(time.replace(' ', 'T'));
     }
 
-    function formatDuration(ms) {
+    function format_duration(ms)
+    {
         const minutes = Math.floor(ms / 60000);
         return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}m`;
     }
 
-    const elapsed = computed(() => {
-        if (!startDateTime.value) return '00:00:00';
-        const seconds = Math.max(0, Math.floor((now.value - toDate(startDateTime.value)) / 1000));
+    // Pause de la session en cours : { session, since (début de la pause en cours ou null), total (ms déjà en pause) }
+    const pause_state = computed(() =>
+    {
+        const p = store.pauses[props.userId];
+        return p && typeof p === 'object' && p.session === start_date_time.value ? p : null;
+    });
+
+    const paused = computed(() => Boolean(pause_state.value?.since));
+
+    const paused_ms = computed(() =>
+    {
+        const p = pause_state.value;
+        if (!p) return 0;
+        return p.total + (p.since ? now.value - p.since : 0);
+    });
+
+    const elapsed = computed(() =>
+    {
+        if (!start_date_time.value) return '00:00:00';
+        const seconds = Math.max(0, Math.floor((now.value - to_date(start_date_time.value) - paused_ms.value) / 1000));
         const pad = (n) => n.toString().padStart(2, '0');
         return `${pad(Math.floor(seconds / 3600))}:${pad(Math.floor((seconds % 3600) / 60))}:${pad(seconds % 60)}`;
     });
 
-    const sessions = computed(() => {
+    const sessions = computed(() =>
+    {
         const result = [];
-        let clockInTime = null;
-        clocks.value.forEach(c => {
+        let clock_in_time = null;
+        clocks.value.forEach(c =>
+        {
             if (c.status) {
-                clockInTime = c.time;
-            } else if (clockInTime) {
-                result.push({ id: c.id, start: clockInTime, end: c.time });
-                clockInTime = null;
+                clock_in_time = c.time;
+            } else if (clock_in_time) {
+                result.push({ id: c.id, start: clock_in_time, end: c.time });
+                clock_in_time = null;
             }
         });
         return result;
     });
 
-    const lastSessions = computed(() => sessions.value.slice(-8).reverse());
+    const last_sessions = computed(() => sessions.value.slice(-8).reverse());
 
-    const todayMs = computed(() => {
-        const today = toDate(`${now.value.getFullYear()}-${String(now.value.getMonth() + 1).padStart(2, '0')}-${String(now.value.getDate()).padStart(2, '0')} 00:00:00`);
+    const today_ms = computed(() =>
+    {
+        const today = to_date(`${now.value.getFullYear()}-${String(now.value.getMonth() + 1).padStart(2, '0')}-${String(now.value.getDate()).padStart(2, '0')} 00:00:00`);
         let total = 0;
-        sessions.value.forEach(s => {
-            if (toDate(s.start) >= today) total += toDate(s.end) - toDate(s.start);
+        sessions.value.forEach(s =>
+        {
+            if (to_date(s.start) >= today) total += to_date(s.end) - to_date(s.start);
         });
-        if (startDateTime.value) total += now.value - toDate(startDateTime.value);
+        if (start_date_time.value) total += now.value - to_date(start_date_time.value) - paused_ms.value;
         return total;
     });
 
-    const goalPercent = computed(() => Math.min(100, Math.round(todayMs.value / (DAILY_GOAL_HOURS * 3600000) * 100)));
+    const goal_percent = computed(() => Math.min(100, Math.round(today_ms.value / (DAILY_GOAL_HOURS * 3600000) * 100)));
 
-    const goalMessage = computed(() => {
-        const remaining = DAILY_GOAL_HOURS * 3600000 - todayMs.value;
+    const goal_message = computed(() =>
+    {
+        const remaining = DAILY_GOAL_HOURS * 3600000 - today_ms.value;
         if (remaining <= 0) return 'Objectif atteint, bravo !';
-        if (clockIn.value) {
-            const leaveAt = new Date(now.value.getTime() + remaining);
-            return `Tu peux partir à ${String(leaveAt.getHours()).padStart(2, '0')}:${String(leaveAt.getMinutes()).padStart(2, '0')}`;
+        if (clock_in.value) {
+            const leave_at = new Date(now.value.getTime() + remaining);
+            return `Tu peux partir à ${String(leave_at.getHours()).padStart(2, '0')}:${String(leave_at.getMinutes()).padStart(2, '0')}`;
         }
-        return `Encore ${formatDuration(remaining)} à faire aujourd'hui`;
+        return `Encore ${format_duration(remaining)} à faire aujourd'hui`;
     });
 
-    const paused = computed(() => Boolean(store.pauses[props.userId]));
-
-    async function pause() {
-        if (!paused.value && !clockIn.value) {
+    // La pause ne pointe pas : la session reste ouverte et le minuteur se fige jusqu'à la reprise
+    function pause()
+    {
+        if (!clock_in.value) {
             notice.value = "Pointe ton arrivée avant de prendre une pause.";
             return;
         }
-        await clock();
-        store.pauses[props.userId] = !paused.value;
-        notice.value = paused.value ? 'Bonne pause ! Reviens ici pour reprendre.' : 'Pause terminée.';
+        const p = pause_state.value || { session: start_date_time.value, since: null, total: 0 };
+        if (p.since) {
+            store.pauses[props.userId] = { ...p, since: null, total: p.total + (Date.now() - p.since) };
+            notice.value = 'Pause terminée, le minuteur reprend.';
+        } else {
+            store.pauses[props.userId] = { ...p, since: Date.now() };
+            notice.value = 'Bonne pause ! Reviens ici pour reprendre.';
+        }
     }
 
-    const incidentOpen = ref(false);
-    const incidentText = ref('');
+    const incident_open = ref(false);
+    const incident_text = ref('');
 
-    function addJustification(type, text) {
+    function add_justification(type, text)
+    {
         store.justifications.unshift({
-            id: newId(),
+            id: new_id(),
             userId: Number(props.userId),
             userName: username.value,
             type,
             text,
-            date: dateKey(),
+            date: date_key(),
             time: new Date().toTimeString().slice(0, 5),
         });
     }
 
-    function travel() {
-        addJustification('Trajet', 'Trajet entre deux sites, compté comme temps de travail.');
+    function travel()
+    {
+        add_justification('Trajet', 'Trajet entre deux sites, compté comme temps de travail.');
         notice.value = 'Trajet déclaré à ton manager.';
     }
 
-    function sendIncident() {
-        if (!incidentText.value) return;
-        addJustification('Incident', incidentText.value);
-        incidentText.value = '';
-        incidentOpen.value = false;
+    function send_incident()
+    {
+        if (!incident_text.value) return;
+        add_justification('Incident', incident_text.value);
+        incident_text.value = '';
+        incident_open.value = false;
         notice.value = 'Incident envoyé à ton manager.';
     }
 
-    const todayShift = computed(() => SHIFTS[shiftOf(props.userId, new Date())]);
+    const today_shift = computed(() => SHIFTS[shift_of(props.userId, new Date())]);
 
-    async function conformDay() {
-        const shift = shiftOf(props.userId, new Date());
+    async function conform_day()
+    {
+        const shift = shift_of(props.userId, new Date());
         if (!shift || shift === 'R') {
             notice.value = "Aucun créneau de travail n'est prévu aujourd'hui dans ton planning.";
             return;
         }
         try {
-            await api.post(`/workingtime/${props.userId}`, { working_time: shiftTimes(shift, new Date()) });
+            await api.post(`/workingtime/${props.userId}`, { working_time: shift_times(shift, new Date()) });
             notice.value = 'Journée enregistrée selon le planning.';
         } catch {
             notice.value = "Impossible d'enregistrer la journée.";
         }
     }
 
-    onMounted(() => {
-        timer = setInterval(() => { now.value = new Date(); }, 1000);
+    onMounted(() =>
+    {
+        timer = setInterval(() =>
+        {
+          now.value = new Date();
+        }, 1000);
     });
 
-    onUnmounted(() => {
+    onUnmounted(() =>
+    {
         clearInterval(timer);
     });
 
-    onActivated(() => {
+    onActivated(() =>
+    {
         refresh();
     });
 
-    watch(() => props.userId, () => {
+    watch(() => props.userId, () =>
+    {
         refresh();
     });
 </script>
@@ -214,9 +257,9 @@
       <div class="space-y-6">
         <div class="flex flex-col items-center rounded-2xl bg-white p-6 xl:p-8">
           <Chip v-if="paused" color="outline">En pause</Chip>
-          <Chip v-else :color="clockIn ? 'dark' : 'gray'">{{ clockIn ? 'En cours' : 'Pas pointé' }}</Chip>
+          <Chip v-else :color="clock_in ? 'dark' : 'gray'">{{ clock_in ? 'En cours' : 'Pas pointé' }}</Chip>
           <p class="mt-6 text-5xl font-bold tracking-tight tabular-nums xl:text-6xl">{{ elapsed }}</p>
-          <p class="mt-2 text-sm text-neutral-400">{{ clockIn ? `Depuis ${startDateTime.slice(11, 16)}` : "Tu n'as pas encore pointé" }}</p>
+          <p class="mt-2 text-sm text-neutral-400">{{ clock_in ? `Depuis ${start_date_time.slice(11, 16)}` : "Tu n'as pas encore pointé" }}</p>
 
           <button v-if="!loaded" disabled class="mt-6 w-full rounded-full bg-neutral-100 py-3 font-semibold text-neutral-400">
             Chargement...
@@ -224,10 +267,10 @@
           <button
             v-else
             class="mt-6 w-full rounded-full border-2 border-neutral-900 py-3 text-base font-semibold"
-            :class="clockIn ? 'bg-white hover:bg-neutral-50' : 'bg-neutral-900 text-white hover:bg-neutral-700'"
+            :class="clock_in ? 'bg-white hover:bg-neutral-50' : 'bg-neutral-900 text-white hover:bg-neutral-700'"
             @click="paused ? pause() : clock()"
           >
-            {{ paused ? 'Reprendre le travail' : clockIn ? 'Pointer la sortie' : "Pointer l'arrivée" }}
+            {{ paused ? 'Reprendre le travail' : clock_in ? 'Pointer la sortie' : "Pointer l'arrivée" }}
           </button>
 
           <div class="mt-3 grid w-full grid-cols-3 gap-2 text-xs">
@@ -237,23 +280,23 @@
             <button class="flex flex-col items-center gap-1 rounded-xl bg-neutral-100 py-2 hover:bg-neutral-200" @click="travel">
               <Footprints class="h-4 w-4" /> Trajet
             </button>
-            <button class="flex flex-col items-center gap-1 rounded-xl bg-neutral-100 py-2 hover:bg-neutral-200" @click="incidentOpen = !incidentOpen">
+            <button class="flex flex-col items-center gap-1 rounded-xl bg-neutral-100 py-2 hover:bg-neutral-200" @click="incident_open = !incident_open">
               <TriangleAlert class="h-4 w-4" /> Incident
             </button>
           </div>
 
-          <form v-if="incidentOpen" class="mt-3 w-full" @submit.prevent="sendIncident">
-            <textarea v-model.trim="incidentText" rows="2" required placeholder="Ex. : route bloquée après une intervention de Batman" class="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"></textarea>
+          <form v-if="incident_open" class="mt-3 w-full" @submit.prevent="send_incident">
+            <textarea v-model.trim="incident_text" rows="2" required placeholder="Ex. : route bloquée après une intervention de Batman" class="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"></textarea>
             <button type="submit" class="mt-2 w-full rounded-full bg-neutral-900 py-2 text-sm font-semibold text-white">Envoyer au manager</button>
           </form>
 
           <button
             class="mt-3 flex w-full items-center justify-center gap-1 rounded-lg bg-neutral-100 px-3 py-2.5 text-xs font-medium hover:bg-neutral-200"
-            @click="conformDay"
+            @click="conform_day"
           >
             <CalendarCheck class="h-4 w-4" />
             Journée conforme au planning
-            <template v-if="todayShift && todayShift.start">({{ todayShift.start }} – {{ todayShift.end }})</template>
+            <template v-if="today_shift && today_shift.start">({{ today_shift.start }} – {{ today_shift.end }})</template>
           </button>
           <p v-if="notice" class="mt-3 text-center text-xs text-neutral-500">{{ notice }}</p>
         </div>
@@ -261,16 +304,16 @@
         <div v-if="loaded" class="rounded-2xl bg-white p-5">
           <div class="card-title flex items-center justify-between">
             <p class="font-medium">Objectif du jour</p>
-            <span class="text-sm text-neutral-400">{{ goalPercent }}%</span>
+            <span class="text-sm text-neutral-400">{{ goal_percent }}%</span>
           </div>
           <p class="mt-4 text-3xl font-semibold">
-            {{ formatDuration(todayMs) }}
+            {{ format_duration(today_ms) }}
             <span class="text-base font-normal text-neutral-400">/ {{ DAILY_GOAL_HOURS }}h</span>
           </p>
           <div class="mt-4 h-2 rounded-full bg-neutral-100">
-            <div class="h-2 rounded-full bg-neutral-900" :style="{ width: `${goalPercent}%` }"></div>
+            <div class="h-2 rounded-full bg-neutral-900" :style="{ width: `${goal_percent}%` }"></div>
           </div>
-          <p class="mt-3 text-sm text-neutral-500">{{ goalMessage }}</p>
+          <p class="mt-3 text-sm text-neutral-500">{{ goal_message }}</p>
         </div>
       </div>
 
@@ -288,16 +331,16 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="session in lastSessions" :key="session.id" class="border-b border-neutral-100 last:border-0">
+                <tr v-for="session in last_sessions" :key="session.id" class="border-b border-neutral-100 last:border-0">
                   <td class="px-3 py-3 font-medium">{{ session.start.slice(0, 10) }}</td>
                   <td class="px-3 py-3">{{ session.start.slice(11, 16) }}</td>
                   <td class="px-3 py-3">
                     {{ session.end.slice(11, 16) }}
-                    <Chip v-if="isNight(session.start)" color="dark">Nuit</Chip>
+                    <Chip v-if="is_night(session.start)" color="dark">Nuit</Chip>
                   </td>
-                  <td class="px-3 py-3">{{ formatDuration(toDate(session.end) - toDate(session.start)) }}</td>
+                  <td class="px-3 py-3">{{ format_duration(to_date(session.end) - to_date(session.start)) }}</td>
                 </tr>
-                <tr v-if="lastSessions.length === 0">
+                <tr v-if="last_sessions.length === 0">
                   <td colspan="4" class="px-4 py-8 text-center text-neutral-400">Aucune session enregistrée.</td>
                 </tr>
               </tbody>

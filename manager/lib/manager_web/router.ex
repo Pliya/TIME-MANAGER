@@ -55,6 +55,14 @@ defmodule Time_managerWeb.Router do
       end
     end
 
+    # ── Données partagées (justificatifs, corrections, absences, planning, règles...) ──
+    scope "/data" do
+      pipe_through :authenticated
+
+      get "/", SharedDataController, :index
+      put "/:key", SharedDataController, :update
+    end
+
     # ── Teams (Manager/Admin uniquement) ──────────────────────────────────
     # ── Teams ─────────────────────────────────────────────────────────────
     scope "/teams" do

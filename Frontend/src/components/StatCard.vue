@@ -10,7 +10,7 @@ defineProps({
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-2xl bg-white">
+  <div class="overflow-hidden rounded-[12px] bg-white shadow-[0_8px_24px_rgba(23,27,69,0.08)]">
     <div class="flex items-center justify-between gap-2 bg-brand px-4 py-2.5 text-xs font-semibold tracking-wide text-white uppercase sm:px-5 sm:text-sm">
       <span class="truncate">{{ label }}</span>
       <LogoIcon :name="icon" class="h-5 w-5 shrink-0 invert" />

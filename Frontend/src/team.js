@@ -1,11 +1,12 @@
 import { api } from './api'
 import { store } from './store'
-import { toDate, hoursOf, hoursToText, inMonth, inWeek, summarize, maxConsecutiveNights, dateKey, monthKey, startOfWeek, sortByTime } from './utils/kpi'
+import { to_date, hours_of, hours_to_text, in_month, in_week, summarize, max_consecutive_nights, date_key, month_key, start_of_week, sort_by_time } from './utils/kpi'
 
-async function withData(user) {
+async function with_data(user)
+{
   const [clocks, times] = await Promise.all([
-    api.get(`/clocks/${user.id}`).then(res => sortByTime(res.data.data, 'time')).catch(() => []),
-    api.get(`/workingtime/${user.id}`).then(res => sortByTime(res.data.data, 'start')).catch(() => []),
+    api.get(`/clocks/${user.id}`).then(res => sort_by_time(res.data.data, 'time')).catch(() => []),
+    api.get(`/workingtime/${user.id}`).then(res => sort_by_time(res.data.data, 'start')).catch(() => []),
   ])
   const last = clocks[clocks.length - 1]
   return {
@@ -20,35 +21,41 @@ async function withData(user) {
   }
 }
 
-function byName(list) {
+function by_name(list)
+{
   return list.sort((a, b) => a.name.localeCompare(b.name))
 }
 
-export async function loadTeamMembers() {
+export async function load_team_members()
+{
   const { data } = await api.get('/teams')
   const users = new Map()
   data.data.forEach(team => team.users.forEach(user => users.set(user.id, user)))
-  return byName(await Promise.all([...users.values()].map(withData)))
+  return by_name(await Promise.all([...users.values()].map(with_data)))
 }
 
-export async function loadAllUsers() {
+export async function load_all_users()
+{
   const { data } = await api.get('/users')
-  return byName(await Promise.all(data.data.map(withData)))
+  return by_name(await Promise.all(data.data.map(with_data)))
 }
 
-export function teamAverage(members, day, excludeId = null) {
+export function team_average(members, day, exclude_id = null)
+{
   const durations = members
-    .filter(m => m.id !== excludeId)
-    .flatMap(m => m.times.filter(wt => wt.start.startsWith(day)).map(hoursOf))
+    .filter(m => m.id !== exclude_id)
+    .flatMap(m => m.times.filter(wt => wt.start.startsWith(day)).map(hours_of))
   return durations.length ? durations.reduce((a, b) => a + b, 0) / durations.length : 0
 }
 
-export function computeAlerts(members) {
-  const { maxNightsPerMonth, maxConsecutiveNights: maxRun, weekHours } = store.rules
+export function compute_alerts(members)
+{
+  const { maxNightsPerMonth: max_nights_per_month, maxConsecutiveNights: max_run, weekHours: week_hours } = store.rules
   const alerts = []
 
-  members.forEach(m => {
-    if (m.present && (Date.now() - toDate(m.since)) > 12 * 3600000) {
+  members.forEach(m =>
+  {
+    if (m.present && (Date.now() - to_date(m.since)) > 12 * 3600000) {
       alerts.push({
         key: `open-${m.id}-${m.since}`, kind: 'open', red: true, member: m,
         title: `Pointage de sortie oublié · ${m.name}`,
@@ -56,35 +63,36 @@ export function computeAlerts(members) {
       })
     }
 
-    const month = inMonth(m.times)
+    const month = in_month(m.times)
     const nights = summarize(month).nights
-    const run = maxConsecutiveNights(month)
-    if (nights > maxNightsPerMonth || run > maxRun) {
+    const run = max_consecutive_nights(month)
+    if (nights > max_nights_per_month || run > max_run) {
       alerts.push({
-        key: `nights-${m.id}-${monthKey()}-${nights}`, kind: 'nights', red: true, member: m,
+        key: `nights-${m.id}-${month_key()}-${nights}`, kind: 'nights', red: true, member: m,
         title: `Trop de nuits · ${m.name}`,
-        text: `${run} nuits consécutives au plus, ${nights} nuits ce mois-ci (plafond : ${maxNightsPerMonth}).`,
+        text: `${run} nuits consécutives au plus, ${nights} nuits ce mois-ci (plafond : ${max_nights_per_month}).`,
       })
     }
 
-    const week = summarize(inWeek(m.times))
-    if (week.total > weekHours) {
+    const week = summarize(in_week(m.times))
+    if (week.total > week_hours) {
       alerts.push({
-        key: `overtime-${m.id}-${dateKey(startOfWeek())}`, kind: 'overtime', red: false, member: m,
+        key: `overtime-${m.id}-${date_key(start_of_week())}`, kind: 'overtime', red: false, member: m,
         title: `Heures sup élevées · ${m.name}`,
-        text: `${hoursToText(week.total)} cette semaine, dont ${hoursToText(week.total - weekHours)} au-delà de ${weekHours}h.`,
+        text: `${hours_to_text(week.total)} cette semaine, dont ${hours_to_text(week.total - week_hours)} au-delà de ${week_hours}h.`,
       })
     }
 
     const limit = Date.now() - 30 * 86400000
-    m.times.filter(wt => toDate(wt.start) > limit).forEach(wt => {
+    m.times.filter(wt => to_date(wt.start) > limit).forEach(wt =>
+    {
       const day = wt.start.slice(0, 10)
-      const average = teamAverage(members, day, m.id)
-      if (average && hoursOf(wt) > average * 1.5) {
+      const average = team_average(members, day, m.id)
+      if (average && hours_of(wt) > average * 1.5) {
         alerts.push({
           key: `unusual-${wt.id}`, kind: 'unusual', red: false, member: m, wt,
           title: `Durée inhabituelle · ${m.name}`,
-          text: `${hoursToText(hoursOf(wt))} déclarées le ${day}. Moyenne de l'équipe ce jour-là : ${hoursToText(average)}.`,
+          text: `${hours_to_text(hours_of(wt))} déclarées le ${day}. Moyenne de l'équipe ce jour-là : ${hours_to_text(average)}.`,
         })
       }
     })

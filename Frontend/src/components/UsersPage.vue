@@ -16,14 +16,15 @@ const search = ref('')
 const error = ref('')
 const PERMISSIONS = { validate: 'Valider les heures', plan: 'Modifier le planning' }
 
-const showForm = ref(false)
-const newUser = ref({ username: '', email: '', password: '' })
+const show_form = ref(false)
+const new_user = ref({ username: '', email: '', password: '' })
 
-const filteredUsers = computed(() =>
+const filtered_users = computed(() =>
   users.value.filter(u => `${u.username} ${u.email}`.toLowerCase().includes(search.value.toLowerCase()))
 )
 
-async function loadUsers() {
+async function load_users()
+{
   try {
     const { data } = await api.get('/users')
     users.value = data.data
@@ -32,20 +33,24 @@ async function loadUsers() {
   }
 }
 
-function log(action) {
+function log(action)
+{
   store.rightsHistory.unshift([new Date().toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }), username.value, action])
 }
 
-function permission(user, name) {
+function permission(user, name)
+{
   return store.permissions[user.id]?.[name] ?? user.role !== 'Employee'
 }
 
-function setPermission(user, name, value) {
+function set_permission(user, name, value)
+{
   store.permissions[user.id] = { validate: permission(user, 'validate'), plan: permission(user, 'plan'), [name]: value }
   log(`${value ? 'Ajout' : 'Retrait'} du droit « ${PERMISSIONS[name]} » à ${user.username}`)
 }
 
-async function changeRole(user, event) {
+async function change_role(user, event)
+{
   const role = event.target.value
   try {
     await api.put(`/users/${user.id}/role`, { user: { role } })
@@ -57,18 +62,19 @@ async function changeRole(user, event) {
   }
 }
 
-async function addUser() {
+async function add_user()
+{
   try {
-    await api.post('/users', { user: newUser.value })
-    newUser.value = { username: '', email: '', password: '' }
-    showForm.value = false
-    loadUsers()
+    await api.post('/users', { user: new_user.value })
+    new_user.value = { username: '', email: '', password: '' }
+    show_form.value = false
+    load_users()
   } catch {
     error.value = "Impossible de créer l'utilisateur. L'email est peut-être déjà utilisé."
   }
 }
 
-onMounted(loadUsers)
+onMounted(load_users)
 </script>
 
 <template>
@@ -78,17 +84,17 @@ onMounted(loadUsers)
         <Search class="h-4 w-4" />
         <input v-model="search" placeholder="Rechercher un agent" class="w-full outline-none" />
       </label>
-      <button class="inline-flex items-center justify-center gap-2 rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white" @click="showForm = !showForm">
+      <button class="inline-flex items-center justify-center gap-2 rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white" @click="show_form = !show_form">
         <UserPlus class="h-4 w-4" /> Ajouter un utilisateur
       </button>
     </div>
 
     <p v-if="error" class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{{ error }}</p>
 
-    <form v-if="showForm" class="grid grid-cols-1 gap-3 rounded-2xl bg-white p-5 xl:grid-cols-4" @submit.prevent="addUser">
-      <input v-model.trim="newUser.username" required placeholder="Nom d'utilisateur" class="rounded-xl border border-neutral-200 px-3 py-2 text-sm" />
-      <input v-model.trim="newUser.email" type="email" required placeholder="Email" class="rounded-xl border border-neutral-200 px-3 py-2 text-sm" />
-      <input v-model="newUser.password" type="password" required minlength="8" placeholder="Mot de passe (8 caractères min.)" class="rounded-xl border border-neutral-200 px-3 py-2 text-sm" />
+    <form v-if="show_form" class="grid grid-cols-1 gap-3 rounded-2xl bg-white p-5 xl:grid-cols-4" @submit.prevent="add_user">
+      <input v-model.trim="new_user.username" required placeholder="Nom d'utilisateur" class="rounded-xl border border-neutral-200 px-3 py-2 text-sm" />
+      <input v-model.trim="new_user.email" type="email" required placeholder="Email" class="rounded-xl border border-neutral-200 px-3 py-2 text-sm" />
+      <input v-model="new_user.password" type="password" required minlength="8" placeholder="Mot de passe (8 caractères min.)" class="rounded-xl border border-neutral-200 px-3 py-2 text-sm" />
       <button type="submit" class="rounded-full bg-neutral-900 px-5 py-2 text-sm font-semibold text-white">Créer</button>
     </form>
 
@@ -101,11 +107,12 @@ onMounted(loadUsers)
               <th class="px-3 py-3 font-medium">Email</th>
               <th class="px-3 py-3 font-medium">Rôle</th>
               <th class="px-3 py-3 font-medium">Valider les heures</th>
-              <th class="rounded-r-lg px-3 py-3 font-medium">Modifier le planning</th>
+              <th class="px-3 py-3 font-medium">Modifier le planning</th>
+              <th class="rounded-r-lg px-3 py-3 font-medium">Consulter</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="user in filteredUsers" :key="user.id" class="border-b border-neutral-100 last:border-0">
+            <tr v-for="user in filtered_users" :key="user.id" class="border-b border-neutral-100 last:border-0">
               <td class="px-3 py-3 font-medium">{{ user.username }}</td>
               <td class="px-3 py-3">{{ user.email }}</td>
               <td class="px-3 py-3">
@@ -115,17 +122,23 @@ onMounted(loadUsers)
                   :value="user.role"
                   class="rounded-full px-2.5 py-1 text-xs font-medium"
                   :class="user.role === 'Employee' ? 'bg-neutral-100' : 'bg-neutral-900 text-white'"
-                  @change="changeRole(user, $event)"
+                  @change="change_role(user, $event)"
                 >
                   <option v-for="(label, value) in ASSIGNABLE" :key="value" :value="value">{{ label }}</option>
                 </select>
               </td>
               <td v-for="(label, name) in PERMISSIONS" :key="name" class="px-3 py-3">
-                <Toggle :model-value="permission(user, name)" @update:model-value="setPermission(user, name, $event)" />
+                <Toggle :model-value="permission(user, name)" @update:model-value="set_permission(user, name, $event)" />
+              </td>
+              <td class="px-3 py-3">
+                <span class="flex gap-1">
+                  <router-link :to="`/workingTimes/${user.id}`"><Chip>Temps</Chip></router-link>
+                  <router-link :to="`/chartManager/${user.id}`"><Chip>Statistiques</Chip></router-link>
+                </span>
               </td>
             </tr>
-            <tr v-if="filteredUsers.length === 0">
-              <td colspan="5" class="px-4 py-8 text-center text-neutral-400">Aucun utilisateur.</td>
+            <tr v-if="filtered_users.length === 0">
+              <td colspan="6" class="px-4 py-8 text-center text-neutral-400">Aucun utilisateur.</td>
             </tr>
           </tbody>
         </table>

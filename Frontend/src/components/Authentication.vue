@@ -4,9 +4,11 @@ import { useRouter } from 'vue-router'
 import { Eye, EyeOff, CircleHelp, X, Check } from 'lucide-vue-next'
 import AccessibilityPanel from './AccessibilityPanel.vue'
 import LogoIcon from './LogoIcon.vue'
+import gotham from '@/assets/gotham.png'
+import seal from '@/assets/gotham-seal.png'
 import { accessibility, speak } from '@/accessibility'
 import { api } from '@/api'
-import { saveSession } from '@/session'
+import { save_session } from '@/session'
 
 const router = useRouter()
 
@@ -14,7 +16,7 @@ const email = ref('')
 const password = ref('')
 const error = ref('')
 const loading = ref(false)
-const showPassword = ref(false)
+const show_password = ref(false)
 const forgotten = ref(false)
 
 const STEPS = [
@@ -31,17 +33,19 @@ const POINTS = [
   'Aucune comparaison entre collègues',
 ]
 
-function showStep(index) {
+function show_step(index)
+{
   step.value = index
   if (accessibility.voice && index >= 0) speak(`${STEPS[index].title}. ${STEPS[index].text}`)
 }
 
-async function signIn() {
+async function sign_in()
+{
   error.value = ''
   loading.value = true
   try {
     const { data } = await api.post('/users/sign_in', { user: { email: email.value, password: password.value } })
-    saveSession(data.data.user, data.data.xsrf_token)
+    save_session(data.data.user, data.data.xsrf_token)
     router.push('/')
   } catch (err) {
     error.value = err.response?.status === 401 ? 'Email ou mot de passe incorrect.' : "Impossible de contacter l'API."
@@ -53,12 +57,12 @@ async function signIn() {
 
 <template>
   <div class="flex min-h-screen flex-wrap bg-[#F0F0F0] font-sans text-neutral-900">
-    <section class="flex min-w-0 flex-[1_1_380px] flex-col bg-gradient-to-b from-[#2b3170] to-[#171b45] text-white">
-      <div class="flex h-20 shrink-0 items-center gap-3 bg-brand px-8">
-        <LogoIcon name="timetable" class="h-9 w-9 invert" />
+    <section class="flex min-w-0 flex-[1_1_440px] flex-col bg-[#171b45] bg-cover bg-center text-white" :style="{ backgroundImage: `linear-gradient(to bottom, rgba(23, 27, 69, 0.35), rgba(23, 27, 69, 0.9)), url(${gotham})` }">
+      <div class="flex h-24 shrink-0 items-center gap-4 bg-brand px-8">
+        <img :src="seal" alt="Sceau de la ville de Gotham" class="h-16 w-16 rounded-full shadow-lg ring-2 ring-white/70" />
         <div class="flex flex-col leading-tight">
-          <span class="text-base font-bold tracking-wide uppercase">Time Manager</span>
-          <span class="text-xs text-white/80 uppercase">Ville de Gotham</span>
+          <span class="text-2xl font-bold tracking-wide uppercase">Time Manager</span>
+          <span class="text-sm text-white/80 uppercase">Ville de Gotham</span>
         </div>
       </div>
 
@@ -76,24 +80,24 @@ async function signIn() {
       <p class="px-8 pb-6 text-xs text-white/60 uppercase xl:px-14">Mairie de Gotham · Ressources humaines</p>
     </section>
 
-    <section class="flex min-w-0 flex-[999_1_480px] items-center justify-center p-4 xl:p-10">
-      <div class="w-full max-w-md rounded-2xl bg-white p-5">
+    <section class="flex min-w-0 flex-[1.5_1_480px] items-center justify-center p-4 xl:p-10">
+      <div class="w-full max-w-md overflow-hidden rounded-[20px] bg-white p-5">
         <p class="card-title font-medium">Connexion · Espace agent</p>
 
       <p v-if="error" class="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{{ error }}</p>
 
-      <form @submit.prevent="signIn">
+      <form @submit.prevent="sign_in">
         <label class="block">
           <span class="text-sm font-medium">Email professionnel</span>
-          <input v-model.trim="email" type="email" required autocomplete="email" placeholder="prenom.nom@gotham.gov" class="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-3 text-sm focus:border-brand focus:outline-none" />
+          <input v-model.trim="email" type="email" required autocomplete="email" placeholder="prenom.nom@gotham.gov" class="mt-1 w-full rounded-[12px] border border-neutral-300 px-3 py-3 text-sm focus:border-brand focus:outline-none" />
         </label>
 
         <label class="mt-4 block">
           <span class="text-sm font-medium">Mot de passe</span>
           <span class="relative mt-1 block">
-            <input v-model="password" :type="showPassword ? 'text' : 'password'" required autocomplete="current-password" placeholder="••••••••••" class="w-full rounded-xl border border-neutral-300 py-3 pr-12 pl-3 text-sm focus:border-brand focus:outline-none" />
-            <button type="button" class="absolute top-2.5 right-3 text-neutral-400 hover:text-neutral-900" :aria-label="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'" @click="showPassword = !showPassword">
-              <EyeOff v-if="showPassword" class="h-5 w-5" />
+            <input v-model="password" :type="show_password ? 'text' : 'password'" required autocomplete="current-password" placeholder="••••••••••" class="w-full rounded-[12px] border border-neutral-300 py-3 pr-12 pl-3 text-sm focus:border-brand focus:outline-none" />
+            <button type="button" class="absolute top-2.5 right-3 text-neutral-400 hover:text-neutral-900" :aria-label="show_password ? 'Masquer le mot de passe' : 'Afficher le mot de passe'" @click="show_password = !show_password">
+              <EyeOff v-if="show_password" class="h-5 w-5" />
               <Eye v-else class="h-5 w-5" />
             </button>
           </span>
@@ -106,18 +110,14 @@ async function signIn() {
           Contacte ton administrateur ou le service RH : ils réinitialisent ton mot de passe.
         </p>
 
-        <button type="submit" :disabled="loading" class="mt-4 w-full rounded-full bg-neutral-900 py-3 font-semibold text-white hover:bg-neutral-700 disabled:opacity-50">
+        <button type="submit" :disabled="loading" class="mt-4 w-full rounded-md bg-neutral-900 py-3 font-semibold text-white hover:bg-neutral-700 disabled:opacity-50">
           {{ loading ? 'Connexion...' : 'Se connecter' }}
         </button>
       </form>
 
-      <p class="mt-4 rounded-xl bg-neutral-100 px-3 py-2 text-xs text-neutral-600">
-        Pas de compte ? C'est ton administrateur ou le service RH qui le crée pour toi.
-      </p>
+      <AccessibilityPanel large class="mt-6" />
 
-      <AccessibilityPanel class="mt-6" />
-
-      <button class="mt-6 flex w-full items-center justify-center gap-2 text-sm text-neutral-500 hover:text-neutral-900" @click="showStep(0)">
+      <button class="mt-6 flex w-full items-center justify-center gap-2 text-sm text-neutral-500 hover:text-neutral-900" @click="show_step(0)">
         <CircleHelp class="h-4 w-4" /> Première connexion ? Suivre le tutoriel
       </button>
       </div>
@@ -137,8 +137,8 @@ async function signIn() {
         </div>
 
         <div class="mt-5 flex justify-between gap-2">
-          <button class="rounded-full border-2 border-neutral-200 px-5 py-2 text-sm font-semibold disabled:opacity-40" :disabled="step === 0" @click="showStep(step - 1)">Précédent</button>
-          <button v-if="step < STEPS.length - 1" class="rounded-full bg-neutral-900 px-5 py-2 text-sm font-semibold text-white" @click="showStep(step + 1)">Suivant</button>
+          <button class="rounded-full border-2 border-neutral-200 px-5 py-2 text-sm font-semibold disabled:opacity-40" :disabled="step === 0" @click="show_step(step - 1)">Précédent</button>
+          <button v-if="step < STEPS.length - 1" class="rounded-full bg-neutral-900 px-5 py-2 text-sm font-semibold text-white" @click="show_step(step + 1)">Suivant</button>
           <button v-else class="rounded-full bg-neutral-900 px-5 py-2 text-sm font-semibold text-white" @click="step = -1">C'est parti</button>
         </div>
       </div>

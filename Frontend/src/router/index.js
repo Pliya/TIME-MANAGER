@@ -16,12 +16,13 @@ import UsersPage from '../components/UsersPage.vue'
 import RulesPage from '../components/RulesPage.vue'
 import PayrollPage from '../components/PayrollPage.vue'
 import AdminAbsencesPage from '../components/AdminAbsencesPage.vue'
-import { loggedUserId, role, isManager, homePath } from '../session'
+import { logged_user_id, role, is_manager, home_path } from '../session'
+import { load_shared_data } from '../store'
 
 const EMPLOYEE = ['Employee']
-const MANAGER = ['Manager']
+const MANAGER = ['Manager', 'Administrator']
 const ADMIN = ['Administrator']
-const EMPLOYEE_AND_MANAGER = ['Employee', 'Manager']
+const EMPLOYEE_AND_MANAGER = ['Employee', 'Manager', 'Administrator']
 
 const routes = [
   { path: '/sign_in', component: Authentication, meta: { title: 'Connexion', public: true } },
@@ -57,17 +58,19 @@ const router = createRouter({
 router.beforeEach(to =>
 {
   if (to.meta.public)
-    return loggedUserId.value ? homePath() : true
+    return logged_user_id.value ? home_path() : true
 
-  if (!loggedUserId.value)
+  if (!logged_user_id.value)
     return '/sign_in'
 
   if (to.meta.roles && !to.meta.roles.includes(role.value))
-    return homePath()
+    return home_path()
 
-  const idInUrl = Number(to.params.userid || to.params.userID)
-  if (idInUrl && idInUrl !== loggedUserId.value && !isManager())
-    return homePath()
+  const id_in_url = Number(to.params.userid || to.params.userID)
+  if (id_in_url && id_in_url !== logged_user_id.value && !is_manager())
+    return home_path()
 })
+
+router.afterEach(() => load_shared_data())
 
 export default router

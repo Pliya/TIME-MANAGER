@@ -2,8 +2,9 @@
 import { ref, computed, onMounted } from 'vue'
 import LogoIcon from '@/components/LogoIcon.vue'
 import { api } from '@/api'
+import { now_text } from '@/utils/kpi'
 import { store } from '@/store'
-import { loadTeamMembers, computeAlerts } from '@/team'
+import { load_team_members, compute_alerts } from '@/team'
 
 const LOGOS = { open: 'timetable', nights: 'schedule', unusual: 'data', overtime: 'increase' }
 
@@ -11,11 +12,12 @@ const members = ref([])
 const loading = ref(true)
 const message = ref('')
 
-const alerts = computed(() => computeAlerts(members.value))
+const alerts = computed(() => compute_alerts(members.value))
 
-async function load() {
+async function load()
+{
   try {
-    members.value = await loadTeamMembers()
+    members.value = await load_team_members()
   } catch {
     message.value = 'Impossible de charger les équipes.'
   } finally {
@@ -23,22 +25,26 @@ async function load() {
   }
 }
 
-async function closeSession(alert) {
-  await api.post(`/clocks/${alert.member.id}`)
+async function close_session(alert)
+{
+  await api.post(`/clocks/${alert.member.id}`, { clock: { time: now_text() } })
   message.value = `Session de ${alert.member.name} clôturée. Vérifie l'heure dans ses temps de travail.`
   load()
 }
 
-function reminders(alert) {
+function reminders(alert)
+{
   return store.reminders[alert.key] || 0
 }
 
-function remind(alert) {
+function remind(alert)
+{
   store.reminders[alert.key] = reminders(alert) + 1
   message.value = `Relance envoyée à ${alert.member.name}.`
 }
 
-function dismiss(alert) {
+function dismiss(alert)
+{
   store.dismissedAlerts.push(alert.key)
 }
 
@@ -62,7 +68,7 @@ onMounted(load)
 
       <div class="flex flex-wrap gap-2">
         <template v-if="alert.kind === 'open'">
-          <button class="rounded-full border-2 border-neutral-900 bg-neutral-900 px-5 py-2 text-sm font-semibold text-white" @click="closeSession(alert)">Corriger</button>
+          <button class="rounded-full border-2 border-neutral-900 bg-neutral-900 px-5 py-2 text-sm font-semibold text-white" @click="close_session(alert)">Corriger</button>
           <button
             class="rounded-full border-2 border-neutral-900 bg-white px-5 py-2 text-sm font-semibold disabled:opacity-40"
             :disabled="reminders(alert) >= store.rules.maxReminders"

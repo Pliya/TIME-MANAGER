@@ -1,18 +1,21 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { Lock } from 'lucide-vue-next'
+import { Lock, ArrowLeft } from 'lucide-vue-next'
 import { api } from '@/api'
 import ChartInterface from './ChartInterface.vue'
 import LogoIcon from './LogoIcon.vue'
-import { hoursToText, summarize, inMonth, sortByTime } from '@/utils/kpi'
-import { recoveryBalance } from '@/utils/absences'
+import { hours_to_text, summarize, in_month, sort_by_time } from '@/utils/kpi'
+import { recovery_balance } from '@/utils/absences'
 import { store } from '@/store'
+import { logged_user_id } from '@/session'
 
 const props = defineProps({
   userId: {
     required: true
   }
 })
+
+const other_agent = computed(() => Number(props.userId) !== logged_user_id.value)
 
 const line_data = ref({ labels: [], datasets: [] })
 const clock_bar_data = ref({ labels: [], datasets: [] })
@@ -21,19 +24,21 @@ const wt_bar_data = ref({ labels: [], datasets: [] })
 const wt_pie_data = ref({ labels: [], datasets: [] })
 
 const pay = ref({ month: '', normal: '0h 00m', night: '0h 00m', overtime: '0h 00m' })
-const recovery = computed(() => hoursToText(recoveryBalance(Number(props.userId))))
+const recovery = computed(() => hours_to_text(recovery_balance(Number(props.userId))))
 
-function compute_pay(wt_list) {
-  const month = summarize(inMonth(wt_list))
+function compute_pay(wt_list)
+{
+  const month = summarize(in_month(wt_list))
   pay.value = {
     month: new Date().toLocaleDateString('fr-FR', { month: 'long' }),
-    normal: hoursToText(month.normal),
-    night: hoursToText(month.night),
-    overtime: hoursToText(month.overtime),
+    normal: hours_to_text(month.normal),
+    night: hours_to_text(month.night),
+    overtime: hours_to_text(month.overtime),
   }
 }
 
-function format_clock_time(hour_decimal) {
+function format_clock_time(hour_decimal)
+{
   const minutes = Math.round(hour_decimal * 60)
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
 }
@@ -80,7 +85,7 @@ const wt_bar_options = {
   ...base_options,
   plugins: {
     ...base_options.plugins,
-    tooltip: { callbacks: { label: context => hoursToText(context.raw) } }
+    tooltip: { callbacks: { label: context => hours_to_text(context.raw) } }
   },
   scales: {
     y: {
@@ -100,20 +105,22 @@ const wt_pie_options = {
       position: window.innerWidth < 640 ? 'bottom' : 'right',
       labels: { usePointStyle: true, boxWidth: 8, font: { size: 12 } }
     },
-    tooltip: { callbacks: { label: context => hoursToText(context.raw) } }
+    tooltip: { callbacks: { label: context => hours_to_text(context.raw) } }
   }
 }
 
-async function load_clocks_data() {
+async function load_clocks_data()
+{
   try {
     const { data } = await api.get(`/clocks/${props.userId}`)
-    const clocks_list = sortByTime(data.data || [], 'time')
+    const clocks_list = sort_by_time(data.data || [], 'time')
 
     const days_map = {}
     const hours_in = Array(24).fill(0)
     const hours_out = Array(24).fill(0)
 
-    clocks_list.forEach(c => {
+    clocks_list.forEach(c =>
+    {
       const d = new Date(c.time.replace(' ', 'T'))
       const key = d.toISOString().split('T')[0]
       const hour_decimal = d.getHours() + d.getMinutes() / 60
@@ -151,7 +158,8 @@ async function load_clocks_data() {
   }
 }
 
-async function load_working_times_data() {
+async function load_working_times_data()
+{
   try {
     const { data } = await api.get(`/workingtime/${props.userId}`)
     const wt_list = data.data || data || []
@@ -160,7 +168,8 @@ async function load_working_times_data() {
 
     const days_durations = {}
 
-    wt_list.forEach(wt => {
+    wt_list.forEach(wt =>
+    {
       if (!wt.start || !wt.end) return
       const s = new Date(wt.start.replace(' ', 'T')).getTime()
       const e = new Date(wt.end.replace(' ', 'T')).getTime()
@@ -173,11 +182,8 @@ async function load_working_times_data() {
       days_durations[capitalized_day] = (days_durations[capitalized_day] || 0) + hours_worked
     })
 
-    const days_keys = Object.keys(days_durations)
-    const default_days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi']
-    const labels_to_use = days_keys.length ? days_keys : default_days
-    const default_values = [8.5, 7.75, 9.0, 8.16, 7.83]
-    const values_to_use = days_keys.length ? days_keys.map(k => Number(days_durations[k].toFixed(2))) : default_values
+    const labels_to_use = Object.keys(days_durations)
+    const values_to_use = labels_to_use.map(k => Number(days_durations[k].toFixed(2)))
 
     wt_bar_data.value = {
       labels: labels_to_use,
@@ -220,14 +226,16 @@ const radar_options = {
   plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 6 } } }
 }
 
-function options_for(key, default_options) {
+function options_for(key, default_options)
+{
   const type = chart_types.value[key]
   if (['pie', 'doughnut', 'polarArea'].includes(type)) return wt_pie_options
   if (type === 'radar') return radar_options
   return default_options
 }
 
-function load_all_charts() {
+function load_all_charts()
+{
   load_clocks_data()
   load_working_times_data()
 }
@@ -238,11 +246,10 @@ watch(() => props.userId, load_all_charts)
 
 <template>
   <div class="space-y-8">
+    <button v-if="other_agent" type="button" @click="$router.back()" class="inline-flex items-center gap-2 rounded-full border-2 border-neutral-900 bg-white px-5 py-2 text-sm font-semibold hover:bg-neutral-100">
+      <ArrowLeft class="h-4 w-4" /> Retour
+    </button>
     <section>
-      <div class="mb-4 flex items-center gap-3">
-        <LogoIcon name="timetable" class="h-6 w-6" />
-        <h2 class="text-lg font-bold">Statistiques des Pointages</h2>
-      </div>
       <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <div class="rounded-2xl bg-white p-6 shadow-sm">
           <div class="card-title flex flex-wrap items-center gap-4">
@@ -279,10 +286,6 @@ watch(() => props.userId, load_all_charts)
     </section>
 
     <section>
-      <div class="mb-4 flex items-center gap-3">
-        <LogoIcon name="schedule" class="h-6 w-6" />
-        <h2 class="text-lg font-bold">Statistiques des Temps de Travail</h2>
-      </div>
       <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <div class="rounded-2xl bg-white p-6 shadow-sm">
           <div class="card-title flex flex-wrap items-center gap-4">

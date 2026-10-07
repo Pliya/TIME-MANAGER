@@ -19,7 +19,8 @@ defmodule Time_manager.WorkDuration do
   """
 
   def list_working_times_for_user(user_id, params \\ %{}) do
-    query = from w in WorkingTime, where: w.user_id == ^user_id
+    query =
+      from w in WorkingTime, where: w.user_id == ^user_id, order_by: [asc: w.start, asc: w.id]
 
     query
     |> filter_by_start(params["start"])

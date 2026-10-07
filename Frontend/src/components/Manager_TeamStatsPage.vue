@@ -6,23 +6,26 @@ import Chip from '@/components/Chip.vue'
 import ChartInterface from '@/components/ChartInterface.vue'
 import LogoIcon from '@/components/LogoIcon.vue'
 import { store } from '@/store'
-import { loadTeamMembers } from '@/team'
-import { hoursToText, hoursOf, summarize, inWeek, inMonth, toDate } from '@/utils/kpi'
+import { load_team_members } from '@/team'
+import { hours_to_text, hours_of, summarize, in_week, in_month, to_date } from '@/utils/kpi'
 import { DAY_NAMES } from '@/utils/planning'
 
 const BLUE = '#2f6496'
+const GREEN = '#10b981'
 const RED = '#ef4444'
+const PALETTE = ['#2f6496', '#38bdf8', '#818cf8', '#c084fc', '#f43f5e', '#10b981', '#f59e0b']
 
 const members = ref([])
-onMounted(async () => {
-  members.value = await loadTeamMembers().catch(() => [])
+onMounted(async () =>
+{
+  members.value = await load_team_members().catch(() => [])
 })
 
 const rows = computed(() => members.value.map(m => ({
   name: m.name,
-  week: summarize(inWeek(m.times)),
-  nights: summarize(inMonth(m.times)).nights,
-  weekTimes: inWeek(m.times),
+  week: summarize(in_week(m.times)),
+  nights: summarize(in_month(m.times)).nights,
+  weekTimes: in_week(m.times),
 })))
 
 const total = computed(() => rows.value.reduce((t, r) => ({
@@ -36,9 +39,13 @@ const average = computed(() => (rows.value.length ? total.value.hours / rows.val
 
 const round = h => Number(h.toFixed(1))
 
-const charts = computed(() => {
-  const perDay = [0, 0, 0, 0, 0, 0, 0]
-  rows.value.forEach(r => r.weekTimes.forEach(wt => { perDay[(toDate(wt.start).getDay() + 6) % 7] += hoursOf(wt) }))
+const charts = computed(() =>
+{
+  const per_day = [0, 0, 0, 0, 0, 0, 0]
+  rows.value.forEach(r => r.weekTimes.forEach(wt =>
+  {
+    per_day[(to_date(wt.start).getDay() + 6) % 7] += hours_of(wt)
+  }))
   const names = rows.value.map(r => r.name)
   const limit = store.rules.maxNightsPerMonth
   const day = total.value.hours - total.value.night - total.value.overtime
@@ -47,17 +54,17 @@ const charts = computed(() => {
     {
       key: 'perDay', title: "Heures de l'équipe par jour", subtitle: 'Heures cumulées de tous les agents, cette semaine',
       logo: 'schedule', types: ['bar', 'line', 'radar'],
-      data: { labels: DAY_NAMES, datasets: [{ label: 'Heures travaillées (h)', data: perDay.map(round), backgroundColor: BLUE, borderColor: BLUE, borderRadius: 4 }] },
+      data: { labels: DAY_NAMES, datasets: [{ label: 'Heures travaillées (h)', data: per_day.map(round), backgroundColor: BLUE, borderColor: BLUE, borderRadius: 4 }] },
     },
     {
       key: 'perAgent', title: 'Heures par agent', subtitle: 'Total de la semaine, par ordre alphabétique',
       logo: 'bar-chart', types: ['bar', 'line', 'radar'],
-      data: { labels: names, datasets: [{ label: 'Heures de la semaine (h)', data: rows.value.map(r => round(r.week.total)), backgroundColor: BLUE, borderColor: BLUE, borderRadius: 4 }] },
+      data: { labels: names, datasets: [{ label: 'Heures de la semaine (h)', data: rows.value.map(r => round(r.week.total)), backgroundColor: PALETTE, borderColor: PALETTE, borderRadius: 4 }] },
     },
     {
       key: 'split', title: 'Répartition des heures', subtitle: 'Jour, nuit et heures supplémentaires, cette semaine',
       logo: 'chart', types: ['pie', 'doughnut', 'polarArea'],
-      data: { labels: ['Jour', 'Nuit', 'Heures sup'], datasets: [{ data: [day, total.value.night, total.value.overtime].map(round), backgroundColor: [BLUE, '#818cf8', '#f43f5e'] }] },
+      data: { labels: ['Jour', 'Nuit', 'Heures sup'], datasets: [{ data: [day, total.value.night, total.value.overtime].map(round), backgroundColor: [PALETTE[0], PALETTE[1], PALETTE[4]], borderColor: '#ffffff' }] },
     },
     {
       key: 'nights', title: 'Nuits par agent', subtitle: `Ce mois-ci, plafond de ${limit} nuits (en rouge au-delà)`,
@@ -65,7 +72,7 @@ const charts = computed(() => {
       data: {
         labels: names,
         datasets: [
-          { label: 'Sous le plafond', data: rows.value.map(r => Math.min(r.nights, limit)), backgroundColor: BLUE, borderColor: BLUE, borderRadius: 4 },
+          { label: 'Sous le plafond', data: rows.value.map(r => Math.min(r.nights, limit)), backgroundColor: GREEN, borderColor: GREEN, borderRadius: 4 },
           { label: 'Au-dessus du plafond', data: rows.value.map(r => Math.max(0, r.nights - limit)), backgroundColor: RED, borderColor: RED, borderRadius: 4 },
         ],
       },
@@ -73,7 +80,7 @@ const charts = computed(() => {
   ]
 })
 
-const chartTypes = ref({ perDay: 'bar', perAgent: 'bar', split: 'pie', nights: 'bar' })
+const chart_types = ref({ perDay: 'bar', perAgent: 'bar', split: 'pie', nights: 'bar' })
 const TYPE_LABELS = { line: 'Ligne', bar: 'Barres', radar: 'Radar', pie: 'Camembert', doughnut: 'Anneau', polarArea: 'Polaire' }
 
 const options = {
@@ -98,17 +105,13 @@ const options = {
     </div>
 
     <div class="stat-grid">
-      <StatCard label="Heures de l'équipe" :value="hoursToText(total.hours)" hint="Cette semaine" icon="timetable" />
-      <StatCard label="Moyenne par agent" :value="hoursToText(average)" hint="Cette semaine" icon="trend" />
-      <StatCard label="Heures sup" :value="hoursToText(total.overtime)" hint="Cette semaine" icon="increase" />
+      <StatCard label="Heures de l'équipe" :value="hours_to_text(total.hours)" hint="Cette semaine" icon="timetable" />
+      <StatCard label="Moyenne par agent" :value="hours_to_text(average)" hint="Cette semaine" icon="trend" />
+      <StatCard label="Heures sup" :value="hours_to_text(total.overtime)" hint="Cette semaine" icon="increase" />
       <StatCard label="Nuits" :value="total.nights" hint="Ce mois-ci" icon="schedule" />
     </div>
 
     <section>
-      <div class="mb-4 flex items-center gap-3 text-neutral-600">
-        <LogoIcon name="monitor" class="h-6 w-6" />
-        <h2 class="text-lg font-bold text-neutral-900">Statistiques de l'équipe</h2>
-      </div>
       <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <div v-for="chart in charts" :key="chart.key" class="rounded-2xl bg-white p-5 shadow-sm">
           <div class="card-title flex flex-wrap items-center gap-4">
@@ -119,12 +122,12 @@ const options = {
               <p class="font-semibold">{{ chart.title }}</p>
               <p class="text-sm text-neutral-400">{{ chart.subtitle }}</p>
             </div>
-            <select v-model="chartTypes[chart.key]" class="ml-auto rounded-lg border border-neutral-200 px-3 py-1.5 text-sm text-neutral-600">
+            <select v-model="chart_types[chart.key]" class="ml-auto rounded-lg border border-neutral-200 px-3 py-1.5 text-sm text-neutral-600">
               <option v-for="type in chart.types" :key="type" :value="type">{{ TYPE_LABELS[type] }}</option>
             </select>
           </div>
           <div class="mt-6 h-64">
-            <ChartInterface :key="chartTypes[chart.key]" :type="chartTypes[chart.key]" :chart-data="chart.data" :chart-options="options" />
+            <ChartInterface :key="chart_types[chart.key]" :type="chart_types[chart.key]" :chart-data="chart.data" :chart-options="options" />
           </div>
         </div>
       </div>

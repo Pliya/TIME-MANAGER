@@ -1,6 +1,6 @@
 import { reactive, watch } from 'vue'
-
-const STORAGE_KEY = 'timeManagerData'
+import { api } from './api'
+import { logged_user_id } from './session'
 
 const defaults = {
   rules: {
@@ -42,19 +42,62 @@ const defaults = {
   rightsHistory: [],
 }
 
-function load() {
+const copy = value => JSON.parse(JSON.stringify(value))
+
+export const store = reactive(copy(defaults))
+
+const KEYS = Object.keys(defaults)
+const synced = {}
+const pending = {}
+
+function assign(key, value)
+{
+  const v = key === 'rules' ? { ...defaults.rules, ...value } : value ?? copy(defaults[key])
+  synced[key] = JSON.stringify(v)
+  store[key] = v
+}
+
+export async function load_shared_data()
+{
+  if (!logged_user_id.value) return
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}
-    return { ...defaults, ...saved, rules: { ...defaults.rules, ...saved.rules } }
+    const { data } = await api.get('/data')
+    KEYS.forEach(key =>
+    {
+      if (key in data.data && !pending[key]) assign(key, data.data[key])
+    })
   } catch {
-    return { ...defaults }
+    return
   }
 }
 
-export const store = reactive(load())
+async function save(key)
+{
+  try {
+    const { data } = await api.put(`/data/${key}`, { value: store[key] })
+    assign(key, data.data)
+  } catch {
+    load_shared_data()
+  } finally {
+    pending[key] = null
+  }
+}
 
-watch(store, () => localStorage.setItem(STORAGE_KEY, JSON.stringify(store)), { deep: true })
+KEYS.forEach(key =>
+{
+  watch(() => store[key], value =>
+  {
+    if (!logged_user_id.value || JSON.stringify(value) === synced[key]) return
+    clearTimeout(pending[key])
+    pending[key] = setTimeout(() => save(key), 300)
+  }, { deep: true })
+})
 
-export function newId() {
+watch(logged_user_id, id => (id ? load_shared_data() : KEYS.forEach(key => assign(key, copy(defaults[key])))), { immediate: true })
+
+setInterval(load_shared_data, 15000)
+
+export function new_id()
+{
   return Date.now() + Math.floor(Math.random() * 1000)
 }

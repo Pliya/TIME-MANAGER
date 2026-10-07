@@ -42,6 +42,7 @@ team_name = "Brigade de nuit"
 
 # Nettoyage : les pointages, temps et appartenances aux équipes partent avec l'utilisateur
 Repo.delete_all(from t in Team, where: t.name == ^team_name)
+Repo.delete_all(Time_manager.SharedData.Entry)
 Repo.delete_all(from u in User, where: u.email in ^emails)
 
 users =

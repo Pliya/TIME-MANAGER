@@ -29,10 +29,9 @@ npm run dev -- --port 5174           # application sur http://localhost:5174
 Le front appelle l'API par `/api` : Vite relaie ces appels vers `localhost:4000`.
 Le front et l'API ont donc la même adresse, ce qui permet au cookie JWT (HttpOnly) de passer.
 
-> **Important : faire tout le test dans le même navigateur.**
-> Le planning, les absences, les demandes de correction, les justifications, les décisions sur les heures sup et les règles n'ont pas encore de route dans l'API.
-> Ils sont gardés dans le navigateur (`localStorage`, clé `timeManagerData`).
-> On change donc de compte en se déconnectant puis en se reconnectant, sans changer de navigateur.
+> Le planning, les absences, les demandes de correction, les justifications, les décisions sur les heures sup et les règles sont enregistrés dans l'API (`GET /api/data`, `PUT /api/data/:key`).
+> On peut donc tester avec plusieurs navigateurs ou plusieurs appareils en même temps : par exemple l'employé sur un téléphone et le manager sur un PC.
+> Les pages se mettent à jour à chaque changement de page, et toutes les 15 secondes.
 
 ---
 
@@ -176,8 +175,7 @@ Remettre Contraste et Texte A+ à zéro avant de continuer.
 
 ## 5. Remettre à zéro
 
-- **Données de l'API** : relancer `mix run priv/repo/demo_data.exs`. Les comptes de démo et leurs pointages sont recréés.
-- **Données du navigateur** : console → `localStorage.removeItem('timeManagerData')`, puis recharger.
+- Relancer `mix run priv/repo/demo_data.exs` : les comptes de démo et leurs pointages sont recréés, et les données partagées (planning, absences, corrections, justificatifs, règles…) sont effacées.
 
 ---
 
@@ -185,7 +183,6 @@ Remettre Contraste et Texte A+ à zéro avant de continuer.
 
 | Sujet | État |
 |---|---|
-| Planning, absences, corrections, justifications, règles | Gardés dans le navigateur en attendant les routes de l'API : non partagés entre navigateurs ni entre postes |
 | Mot de passe envoyé en clair | Le bootstrap du thème 5 demande de ne jamais l'envoyer en clair. Le hacher dans le front demande une décision commune avec le back, sinon les comptes existants ne peuvent plus se connecter. **À trancher en équipe.** |
 | Heure des pointages | L'API enregistre l'heure du serveur (UTC), ce qui donne un décalage d'une heure en France. Un correctif côté back (utiliser l'heure envoyée par le front) est prêt dans un stash de la branche `DevOpsCi-Cd`. |
 | Nommer un administrateur | Impossible depuis l'API, par choix de sécurité : seuls Employé et Manager s'attribuent. |

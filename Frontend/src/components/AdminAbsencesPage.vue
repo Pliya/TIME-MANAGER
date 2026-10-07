@@ -3,44 +3,47 @@ import { computed } from 'vue'
 import StatCard from '@/components/StatCard.vue'
 import Chip from '@/components/Chip.vue'
 import { store } from '@/store'
-import { hoursToText, dateKey, monthKey } from '@/utils/kpi'
-import { periodText, lengthText, statusColor } from '@/utils/absences'
+import { hours_to_text, date_key, month_key } from '@/utils/kpi'
+import { period_text, length_text, status_color } from '@/utils/absences'
 
-const today = dateKey()
-const month = monthKey()
-const monthName = new Date().toLocaleDateString('fr-FR', { month: 'long' })
-const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()
+const today = date_key()
+const month = month_key()
+const month_name = new Date().toLocaleDateString('fr-FR', { month: 'long' })
+const days_in_month = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()
 
 const requests = computed(() => [...store.absences].sort((a, b) => (b.status === 'En attente') - (a.status === 'En attente')))
 
-const isToday = a => a.start <= today && a.end >= today && a.status !== 'Refusé'
+const is_today = a => a.start <= today && a.end >= today && a.status !== 'Refusé'
 
 const pending = computed(() => store.absences.filter(a => a.status === 'En attente').length)
-const onLeave = computed(() => store.absences.filter(a => a.type === 'Congé' && a.status === 'Validé' && isToday(a)).length)
-const sick = computed(() => store.absences.filter(a => a.type === 'Arrêt maladie' && isToday(a)).length)
+const on_leave = computed(() => store.absences.filter(a => a.type === 'Congé' && a.status === 'Validé' && is_today(a)).length)
+const sick = computed(() => store.absences.filter(a => a.type === 'Arrêt maladie' && is_today(a)).length)
 
-const recoveryLeft = computed(() => {
+const recovery_left = computed(() =>
+{
   const earned = Object.values(store.overtimeDecisions).filter(d => d.choice === 'recover').reduce((s, d) => s + d.hours, 0)
   const taken = store.absences.filter(a => a.type === 'Récupération' && a.status !== 'Refusé').reduce((s, a) => s + a.hours, 0)
   return earned - taken
 })
 
-function decide(absence, status) {
+function decide(absence, status)
+{
   absence.status = status
 }
 
 const calendar = computed(() =>
   store.absences
     .filter(a => a.status !== 'Refusé' && a.start.slice(0, 7) <= month && a.end.slice(0, 7) >= month)
-    .map(a => {
+    .map(a =>
+    {
       const first = a.start.startsWith(month) ? Number(a.start.slice(8, 10)) : 1
-      const last = a.end.startsWith(month) ? Number(a.end.slice(8, 10)) : daysInMonth
+      const last = a.end.startsWith(month) ? Number(a.end.slice(8, 10)) : days_in_month
       return {
         id: a.id,
         name: a.userName,
         type: a.type,
-        left: (first - 1) / daysInMonth * 100,
-        width: (last - first + 1) / daysInMonth * 100,
+        left: (first - 1) / days_in_month * 100,
+        width: (last - first + 1) / days_in_month * 100,
       }
     })
 )
@@ -50,9 +53,9 @@ const calendar = computed(() =>
   <div class="space-y-6">
     <div class="stat-grid">
       <StatCard label="Demandes" :value="pending" hint="En attente" icon="list-interface-symbol" />
-      <StatCard label="En congé" :value="onLeave" hint="Aujourd'hui" icon="planning" />
+      <StatCard label="En congé" :value="on_leave" hint="Aujourd'hui" icon="planning" />
       <StatCard label="Arrêts maladie" :value="sick" hint="En cours" icon="data" />
-      <StatCard label="Récupérations" :value="hoursToText(recoveryLeft)" hint="À poser" icon="timetable" />
+      <StatCard label="Récupérations" :value="hours_to_text(recovery_left)" hint="À poser" icon="timetable" />
     </div>
 
     <div class="rounded-2xl bg-white p-5">
@@ -72,15 +75,15 @@ const calendar = computed(() =>
             <tr v-for="a in requests" :key="a.id" class="border-b border-neutral-100 last:border-0">
               <td class="px-3 py-3 font-medium">{{ a.userName }}</td>
               <td class="px-3 py-3">{{ a.type }}</td>
-              <td class="px-3 py-3">{{ periodText(a) }}</td>
-              <td class="px-3 py-3">{{ lengthText(a) }}</td>
+              <td class="px-3 py-3">{{ period_text(a) }}</td>
+              <td class="px-3 py-3">{{ length_text(a) }}</td>
               <td class="px-3 py-3">
                 <span v-if="a.status === 'En attente'" class="flex gap-1">
                   <button @click="decide(a, 'Validé')"><Chip color="dark">Valider</Chip></button>
                   <button @click="decide(a, 'Refusé')"><Chip>Refuser</Chip></button>
                 </span>
                 <button v-else-if="a.status === 'Déclaré'" @click="decide(a, 'Justificatif reçu')"><Chip color="outline">Justificatif reçu ?</Chip></button>
-                <Chip v-else :color="statusColor(a.status)">{{ a.status }}</Chip>
+                <Chip v-else :color="status_color(a.status)">{{ a.status }}</Chip>
               </td>
             </tr>
             <tr v-if="requests.length === 0">
@@ -92,7 +95,7 @@ const calendar = computed(() =>
     </div>
 
     <div class="rounded-2xl bg-white p-5">
-      <p class="card-title mb-4 font-medium">Calendrier des absences · {{ monthName }}</p>
+      <p class="card-title mb-4 font-medium">Calendrier des absences · {{ month_name }}</p>
       <div class="space-y-3 text-sm">
         <div v-for="bar in calendar" :key="bar.id" class="flex items-center gap-3">
           <span class="w-28 shrink-0 truncate" :title="bar.type">{{ bar.name }}</span>

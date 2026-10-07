@@ -2,51 +2,55 @@
 import { ref, computed, onMounted } from 'vue'
 import { X } from 'lucide-vue-next'
 import { api } from '@/api'
-import { isAdmin } from '@/session'
+import { is_admin } from '@/session'
 import StatCard from '@/components/StatCard.vue'
 import Chip from '@/components/Chip.vue'
 import { store } from '@/store'
-import { loadTeamMembers, computeAlerts } from '@/team'
-import { hoursToText, summarize, inWeek, inMonth } from '@/utils/kpi'
+import { load_team_members, compute_alerts } from '@/team'
+import { hours_to_text, summarize, in_week, in_month } from '@/utils/kpi'
 
 const members = ref([])
 const loading = ref(true)
 const error = ref('')
 
-const rows = computed(() => members.value.map(m => {
-  const week = summarize(inWeek(m.times))
-  return { ...m, week: week.total, overtime: week.overtime, nights: summarize(inMonth(m.times)).nights }
+const rows = computed(() => members.value.map(m =>
+{
+  const week = summarize(in_week(m.times))
+  return { ...m, week: week.total, overtime: week.overtime, nights: summarize(in_month(m.times)).nights }
 }))
 
-const presentCount = computed(() => rows.value.filter(m => m.present).length)
-const teamHours = computed(() => rows.value.reduce((sum, m) => sum + m.week, 0))
-const teamOvertime = computed(() => rows.value.reduce((sum, m) => sum + m.overtime, 0))
-const alertCount = computed(() => computeAlerts(members.value).length)
+const present_count = computed(() => rows.value.filter(m => m.present).length)
+const team_hours = computed(() => rows.value.reduce((sum, m) => sum + m.week, 0))
+const team_overtime = computed(() => rows.value.reduce((sum, m) => sum + m.overtime, 0))
+const alert_count = computed(() => compute_alerts(members.value).length)
 
-const justifications = computed(() => {
+const justifications = computed(() =>
+{
   const ids = members.value.map(m => m.id)
   return store.justifications.filter(j => ids.includes(j.userId)).slice(0, 5)
 })
 
 const teams = ref([])
 const users = ref([])
-const newTeam = ref({ name: '', managerId: '' })
-const toAdd = ref({})
+const new_team = ref({ name: '', managerId: '' })
+const to_add = ref({})
 const message = ref('')
 
 const managers = computed(() => users.value.filter(u => u.role !== 'Employee'))
 
-function candidates(team) {
-  const inTeam = team.users.map(u => u.id)
-  return users.value.filter(u => !inTeam.includes(u.id))
+function candidates(team)
+{
+  const in_team = team.users.map(u => u.id)
+  return users.value.filter(u => !in_team.includes(u.id))
 }
 
-async function load() {
+async function load()
+{
   try {
-    const [teamsRes, usersRes] = await Promise.all([api.get('/teams'), api.get('/users')])
-    teams.value = teamsRes.data.data
-    users.value = usersRes.data.data
-    members.value = await loadTeamMembers()
+    const [teams_res, users_res] = await Promise.all([api.get('/teams'), api.get('/users')])
+    teams.value = teams_res.data.data
+    users.value = users_res.data.data
+    members.value = await load_team_members()
   } catch {
     error.value = 'Impossible de charger les équipes.'
   } finally {
@@ -54,7 +58,8 @@ async function load() {
   }
 }
 
-async function run(action, success) {
+async function run(action, success)
+{
   message.value = ''
   try {
     await action()
@@ -65,26 +70,30 @@ async function run(action, success) {
   }
 }
 
-function createTeam() {
-  const team = { name: newTeam.value.name }
-  if (isAdmin()) team.manager_id = Number(newTeam.value.managerId)
+function create_team()
+{
+  const team = { name: new_team.value.name }
+  if (is_admin()) team.manager_id = Number(new_team.value.managerId)
   run(() => api.post('/teams', { team }), `Équipe « ${team.name} » créée.`)
-  newTeam.value = { name: '', managerId: '' }
+  new_team.value = { name: '', managerId: '' }
 }
 
-function deleteTeam(team) {
+function delete_team(team)
+{
   if (!confirm(`Supprimer l'équipe « ${team.name} » ?`)) return
   run(() => api.delete(`/teams/${team.id}`), `Équipe « ${team.name} » supprimée.`)
 }
 
-function addMember(team) {
-  const userId = toAdd.value[team.id]
-  if (!userId) return
-  run(() => api.post(`/teams/${team.id}/users/${userId}`), 'Agent ajouté.')
-  toAdd.value[team.id] = ''
+function add_member(team)
+{
+  const user_id = to_add.value[team.id]
+  if (!user_id) return
+  run(() => api.post(`/teams/${team.id}/users/${user_id}`), 'Agent ajouté.')
+  to_add.value[team.id] = ''
 }
 
-function removeMember(team, user) {
+function remove_member(team, user)
+{
   run(() => api.delete(`/teams/${team.id}/users/${user.id}`), `${user.username} retiré de « ${team.name} ».`)
 }
 
@@ -94,10 +103,10 @@ onMounted(load)
 <template>
   <div class="space-y-6">
     <div class="stat-grid">
-      <StatCard label="Présents" :value="`${presentCount} / ${rows.length}`" hint="En ce moment" icon="monitor" />
-      <StatCard label="Heures de l'équipe" :value="hoursToText(teamHours)" hint="Cette semaine" icon="timetable" />
-      <StatCard label="Heures sup" :value="hoursToText(teamOvertime)" hint="Cette semaine" icon="increase" />
-      <StatCard label="Alertes" :value="alertCount" hint="À traiter" icon="data" />
+      <StatCard label="Présents" :value="`${present_count} / ${rows.length}`" hint="En ce moment" icon="monitor" />
+      <StatCard label="Heures de l'équipe" :value="hours_to_text(team_hours)" hint="Cette semaine" icon="timetable" />
+      <StatCard label="Heures sup" :value="hours_to_text(team_overtime)" hint="Cette semaine" icon="increase" />
+      <StatCard label="Alertes" :value="alert_count" hint="À traiter" icon="data" />
     </div>
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
@@ -125,11 +134,11 @@ onMounted(load)
                   <router-link :to="`/workingTimes/${m.id}`" class="hover:underline">{{ m.name }}</router-link>
                 </td>
                 <td class="px-3 py-3">
-                  <Chip v-if="store.pauses[m.id]" color="outline">En pause</Chip>
+                  <Chip v-if="m.present && store.pauses[m.id]?.since" color="outline">En pause</Chip>
                   <Chip v-else :color="m.present ? 'dark' : 'gray'">{{ m.present ? 'Pointé' : 'Sorti' }}</Chip>
                 </td>
-                <td class="px-3 py-3">{{ hoursToText(m.week) }}</td>
-                <td class="px-3 py-3">{{ hoursToText(m.overtime) }}</td>
+                <td class="px-3 py-3">{{ hours_to_text(m.week) }}</td>
+                <td class="px-3 py-3">{{ hours_to_text(m.overtime) }}</td>
                 <td class="px-3 py-3">
                   <Chip v-if="m.nights > store.rules.maxNightsPerMonth" color="red">{{ m.nights }} / {{ store.rules.maxNightsPerMonth }}</Chip>
                   <template v-else>{{ m.nights }}</template>
@@ -155,9 +164,9 @@ onMounted(load)
     <div class="rounded-2xl bg-white p-5">
       <p class="card-title font-medium">Gérer les équipes</p>
 
-      <form class="flex flex-col gap-2 xl:flex-row" @submit.prevent="createTeam">
-        <input v-model.trim="newTeam.name" required placeholder="Nom de la nouvelle équipe" class="flex-1 rounded-xl border border-neutral-200 px-3 py-2 text-sm" />
-        <select v-if="isAdmin()" v-model="newTeam.managerId" required class="rounded-xl border border-neutral-200 px-3 py-2 text-sm">
+      <form class="flex flex-col gap-2 xl:flex-row" @submit.prevent="create_team">
+        <input v-model.trim="new_team.name" required placeholder="Nom de la nouvelle équipe" class="flex-1 rounded-xl border border-neutral-200 px-3 py-2 text-sm" />
+        <select v-if="is_admin()" v-model="new_team.managerId" required class="rounded-xl border border-neutral-200 px-3 py-2 text-sm">
           <option value="" disabled>Manager de l'équipe</option>
           <option v-for="u in managers" :key="u.id" :value="u.id">{{ u.username }}</option>
         </select>
@@ -170,23 +179,23 @@ onMounted(load)
         <div v-for="team in teams" :key="team.id" class="rounded-xl border border-neutral-200 p-4">
           <div class="flex items-center justify-between gap-2">
             <p class="font-semibold">{{ team.name }} <span class="text-sm font-normal text-neutral-400">({{ team.users.length }})</span></p>
-            <button class="text-xs font-medium text-red-600 hover:underline" @click="deleteTeam(team)">Supprimer</button>
+            <button class="text-xs font-medium text-red-600 hover:underline" @click="delete_team(team)">Supprimer</button>
           </div>
 
           <div class="mt-3 flex flex-wrap gap-2">
             <span v-for="u in team.users" :key="u.id" class="inline-flex items-center gap-1 rounded-full bg-neutral-100 py-1 pr-1 pl-3 text-xs font-medium">
               {{ u.username }}
-              <button class="rounded-full p-0.5 hover:bg-neutral-200" :aria-label="`Retirer ${u.username}`" @click="removeMember(team, u)"><X class="h-3 w-3" /></button>
+              <button class="rounded-full p-0.5 hover:bg-neutral-200" :aria-label="`Retirer ${u.username}`" @click="remove_member(team, u)"><X class="h-3 w-3" /></button>
             </span>
             <span v-if="team.users.length === 0" class="text-xs text-neutral-400">Aucun agent pour l'instant.</span>
           </div>
 
           <div class="mt-3 flex gap-2">
-            <select v-model="toAdd[team.id]" class="flex-1 rounded-xl border border-neutral-200 px-3 py-2 text-sm">
+            <select v-model="to_add[team.id]" class="flex-1 rounded-xl border border-neutral-200 px-3 py-2 text-sm">
               <option value="">Ajouter un agent…</option>
               <option v-for="u in candidates(team)" :key="u.id" :value="u.id">{{ u.username }}</option>
             </select>
-            <button class="rounded-full border-2 border-neutral-900 px-4 text-sm font-semibold" @click="addMember(team)">Ajouter</button>
+            <button class="rounded-full border-2 border-neutral-900 px-4 text-sm font-semibold" @click="add_member(team)">Ajouter</button>
           </div>
         </div>
         <p v-if="teams.length === 0 && !loading" class="text-sm text-neutral-400">Aucune équipe : crée la première ci-dessus.</p>

@@ -2,47 +2,54 @@
 import { ref, computed, onMounted } from 'vue'
 import { RadioTower, Send, ChevronLeft, ChevronRight, TriangleAlert } from 'lucide-vue-next'
 import { store } from '@/store'
-import { loadTeamMembers } from '@/team'
-import { startOfWeek, addDays, dateKey } from '@/utils/kpi'
-import { DAY_NAMES, shiftOf, setShift, weekDays, plannedNights, planningWarnings } from '@/utils/planning'
+import Chip from '@/components/Chip.vue'
+import { load_team_members } from '@/team'
+import { start_of_week, add_days, date_key } from '@/utils/kpi'
+import { DAY_NAMES, shift_of, set_shift, week_days, planned_nights, planning_warnings } from '@/utils/planning'
+import { absence_on, ABSENCE_SHORT } from '@/utils/absences'
 
 const members = ref([])
-const monday = ref(startOfWeek(addDays(new Date(), store.rules.planningNoticeDays)))
+const monday = ref(start_of_week(add_days(new Date(), store.rules.planningNoticeDays)))
 
-onMounted(async () => {
-  members.value = await loadTeamMembers().catch(() => [])
+onMounted(async () =>
+{
+  members.value = await load_team_members().catch(() => [])
 })
 
-const days = computed(() => weekDays(monday.value))
-const weekTitle = computed(() => monday.value.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }))
+const days = computed(() => week_days(monday.value))
+const week_title = computed(() => monday.value.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }))
 
 const SHIFT_STYLES = { J: 'bg-neutral-100', N: 'bg-neutral-900 text-white', A: 'border border-neutral-900 bg-white', R: 'bg-white', '': 'bg-white text-neutral-400' }
 
-const warnings = computed(() => members.value.flatMap(m => planningWarnings(m.id, monday.value, m.name)))
+const warnings = computed(() => members.value.flatMap(m => planning_warnings(m.id, monday.value, m.name)))
 
-const publishedOn = computed(() => store.published[dateKey(monday.value)])
-const daysAhead = computed(() => Math.round((monday.value - new Date()) / 86400000))
+const published_on = computed(() => store.published[date_key(monday.value)])
+const days_ahead = computed(() => Math.round((monday.value - new Date()) / 86400000))
 
-function publish() {
-  store.published[dateKey(monday.value)] = new Date().toISOString()
+function publish()
+{
+  store.published[date_key(monday.value)] = new Date().toISOString()
 }
 
-const month = computed(() => dateKey(monday.value).slice(0, 7))
-const nights = computed(() => members.value.map(m => ({ name: m.name, count: plannedNights(m.id, month.value) })))
+const month = computed(() => date_key(monday.value).slice(0, 7))
+const nights = computed(() => members.value.map(m => ({ name: m.name, count: planned_nights(m.id, month.value) })))
 const scale = computed(() => Math.max(store.rules.maxNightsPerMonth + 1, ...nights.value.map(n => n.count)))
 
 const sector = ref('')
 
-function trigger() {
+function trigger()
+{
   store.batSignal = { active: true, sector: sector.value || 'Gotham', since: new Date().toTimeString().slice(0, 5), mobilized: [] }
 }
 
-function stop() {
+function stop()
+{
   store.batSignal = { active: false, sector: '', since: '', mobilized: [] }
 }
 
-function mobilize() {
-  store.batSignal.mobilized = members.value.filter(m => shiftOf(m.id, new Date()) === 'A').map(m => m.name)
+function mobilize()
+{
+  store.batSignal.mobilized = members.value.filter(m => shift_of(m.id, new Date()) === 'A').map(m => m.name)
 }
 </script>
 
@@ -93,19 +100,19 @@ function mobilize() {
     <div class="rounded-2xl bg-white p-5">
       <div class="card-title mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div class="flex items-center gap-2">
-          <button class="rounded-lg p-1 hover:bg-neutral-100" @click="monday = addDays(monday, -7)"><ChevronLeft class="h-4 w-4" /></button>
-          <button class="rounded-lg p-1 hover:bg-neutral-100" @click="monday = addDays(monday, 7)"><ChevronRight class="h-4 w-4" /></button>
-          <p class="font-medium">Semaine du {{ weekTitle }}</p>
-          <span v-if="publishedOn" class="text-xs text-neutral-500">· publié le {{ new Date(publishedOn).toLocaleDateString('fr-FR') }}</span>
+          <button class="rounded-lg p-1 hover:bg-neutral-100" @click="monday = add_days(monday, -7)"><ChevronLeft class="h-4 w-4" /></button>
+          <button class="rounded-lg p-1 hover:bg-neutral-100" @click="monday = add_days(monday, 7)"><ChevronRight class="h-4 w-4" /></button>
+          <p class="font-medium">Semaine du {{ week_title }}</p>
+          <span v-if="published_on" class="text-xs text-neutral-500">· publié le {{ new Date(published_on).toLocaleDateString('fr-FR') }}</span>
         </div>
         <button class="inline-flex items-center justify-center gap-2 rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white" @click="publish">
-          <Send class="h-4 w-4" /> {{ publishedOn ? 'Republier' : 'Publier' }}
+          <Send class="h-4 w-4" /> {{ published_on ? 'Republier' : 'Publier' }}
         </button>
       </div>
 
-      <p v-if="daysAhead < store.rules.planningNoticeDays" class="mb-3 text-xs text-red-600">
+      <p v-if="days_ahead < store.rules.planningNoticeDays" class="mb-3 text-xs text-red-600">
         Les règles demandent de publier {{ store.rules.planningNoticeDays }} jours à l'avance
-        ({{ daysAhead > 0 ? `ici : ${daysAhead} jours` : 'cette semaine est déjà commencée' }}).
+        ({{ days_ahead > 0 ? `ici : ${days_ahead} jours` : 'cette semaine est déjà commencée' }}).
       </p>
 
       <div class="overflow-x-auto">
@@ -119,12 +126,12 @@ function mobilize() {
           <tbody>
             <tr v-for="m in members" :key="m.id" class="border-b border-neutral-100 last:border-0">
               <td class="px-3 py-3 font-medium">{{ m.name }}</td>
-              <td v-for="day in days" :key="dateKey(day)" class="px-2 py-2">
+              <td v-for="day in days" :key="date_key(day)" class="px-2 py-2">
                 <select
-                  :value="shiftOf(m.id, day)"
+                  :value="shift_of(m.id, day)"
                   class="rounded-full px-2 py-1 text-xs font-medium"
-                  :class="SHIFT_STYLES[shiftOf(m.id, day)]"
-                  @change="setShift(m.id, day, $event.target.value)"
+                  :class="SHIFT_STYLES[shift_of(m.id, day)]"
+                  @change="set_shift(m.id, day, $event.target.value)"
                 >
                   <option value="">—</option>
                   <option value="J">Jour</option>
@@ -132,6 +139,7 @@ function mobilize() {
                   <option value="A">Astr.</option>
                   <option value="R">Repos</option>
                 </select>
+                <Chip v-if="absence_on(m.id, date_key(day))" color="red" class="mt-1 block text-center">{{ ABSENCE_SHORT[absence_on(m.id, date_key(day)).type] }}</Chip>
               </td>
             </tr>
             <tr v-if="members.length === 0">

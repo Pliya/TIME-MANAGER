@@ -1,5 +1,5 @@
 import { store } from '@/store'
-import { dateKey, addDays, toDate } from './kpi'
+import { date_key, add_days, to_date } from './kpi'
 
 export const SHIFTS = {
   J: { label: 'Jour', start: '08:00', end: '16:00', hours: 8 },
@@ -10,53 +10,61 @@ export const SHIFTS = {
 
 export const DAY_NAMES = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 
-export function shiftOf(userId, date) {
-  return store.planning[userId]?.[dateKey(date)] || ''
+export function shift_of(user_id, date)
+{
+  return store.planning[user_id]?.[date_key(date)] || ''
 }
 
-export function setShift(userId, date, shift) {
-  store.planning[userId] = { ...store.planning[userId], [dateKey(date)]: shift }
+export function set_shift(user_id, date, shift)
+{
+  store.planning[user_id] = { ...store.planning[user_id], [date_key(date)]: shift }
 }
 
-export function weekDays(monday) {
-  return DAY_NAMES.map((_, i) => addDays(monday, i))
+export function week_days(monday)
+{
+  return DAY_NAMES.map((_, i) => add_days(monday, i))
 }
 
-export function plannedNights(userId, month) {
-  return Object.entries(store.planning[userId] || {})
+export function planned_nights(user_id, month)
+{
+  return Object.entries(store.planning[user_id] || {})
     .filter(([day, shift]) => shift === 'N' && day.startsWith(month)).length
 }
 
-export function planningWarnings(userId, monday, name) {
-  const { maxConsecutiveNights, maxNightsPerMonth, restAfterNight } = store.rules
+export function planning_warnings(user_id, monday, name)
+{
+  const { maxConsecutiveNights: max_consecutive_nights, maxNightsPerMonth: max_nights_per_month, restAfterNight: rest_after_night } = store.rules
   const warnings = []
   let run = 0
 
-  weekDays(monday).forEach((day, i) => {
-    const shift = shiftOf(userId, day)
+  week_days(monday).forEach((day, i) =>
+  {
+    const shift = shift_of(user_id, day)
     run = shift === 'N' ? run + 1 : 0
-    if (run === maxConsecutiveNights + 1) {
-      warnings.push(`${name} : plus de ${maxConsecutiveNights} nuits d'affilée (${DAY_NAMES[i]})`)
+    if (run === max_consecutive_nights + 1) {
+      warnings.push(`${name} : plus de ${max_consecutive_nights} nuits d'affilée (${DAY_NAMES[i]})`)
     }
-    if (restAfterNight && i > 0 && shiftOf(userId, addDays(day, -1)) === 'N' && shift && shift !== 'N' && shift !== 'R') {
+    if (rest_after_night && i > 0 && shift_of(user_id, add_days(day, -1)) === 'N' && shift && shift !== 'N' && shift !== 'R') {
       warnings.push(`${name} : pas de repos après la nuit de ${DAY_NAMES[i - 1]}`)
     }
   })
 
-  const month = dateKey(monday).slice(0, 7)
-  if (plannedNights(userId, month) > maxNightsPerMonth) {
-    warnings.push(`${name} : plus de ${maxNightsPerMonth} nuits prévues ce mois-ci`)
+  const month = date_key(monday).slice(0, 7)
+  if (planned_nights(user_id, month) > max_nights_per_month) {
+    warnings.push(`${name} : plus de ${max_nights_per_month} nuits prévues ce mois-ci`)
   }
   return warnings
 }
 
-export function plannedHours(userId, monday) {
-  return weekDays(monday).reduce((sum, day) => sum + (SHIFTS[shiftOf(userId, day)]?.hours || 0), 0)
+export function planned_hours(user_id, monday)
+{
+  return week_days(monday).reduce((sum, day) => sum + (SHIFTS[shift_of(user_id, day)]?.hours || 0), 0)
 }
 
-export function shiftTimes(shift, date) {
-  const day = dateKey(date)
+export function shift_times(shift, date)
+{
+  const day = date_key(date)
   const { start, end } = SHIFTS[shift]
-  const endDay = end <= start ? dateKey(addDays(toDate(`${day} 12:00:00`), 1)) : day
-  return { start: `${day} ${start}:00`, end: `${endDay} ${end}:00` }
+  const end_day = end <= start ? date_key(add_days(to_date(`${day} 12:00:00`), 1)) : day
+  return { start: `${day} ${start}:00`, end: `${end_day} ${end}:00` }
 }

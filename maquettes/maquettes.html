@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Time Manager · Maquettes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <style type="text/tailwindcss">
+    @theme { --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif; }
+    .card { @apply rounded-2xl bg-white p-5; }
+    .btn { @apply inline-flex items-center justify-center gap-2 rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-semibold whitespace-nowrap text-white; }
+    .btn-o { @apply inline-flex items-center justify-center gap-2 rounded-full border-2 border-neutral-900 bg-white px-5 py-2.5 text-sm font-semibold whitespace-nowrap; }
+    .btn-s { @apply inline-flex items-center justify-center gap-1 rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-medium whitespace-nowrap; }
+    .chip { @apply inline-block rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium whitespace-nowrap; }
+    .chip-d { @apply inline-block rounded-full bg-neutral-900 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-white; }
+    .chip-r { @apply inline-block rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-red-600; }
+    .chip-g { @apply inline-block rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-green-700; }
+    .field { @apply mt-1 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-500; }
+    .note { @apply rounded-xl border-l-4 border-neutral-900 bg-white px-4 py-2 text-sm; }
+    [data-lucide] { width: 1.15em; height: 1.15em; flex-shrink: 0; }
+  </style>
+</head>
+<body class="w-max bg-neutral-300 p-12 font-sans text-neutral-900">
+  <div id="app"></div>
+
+<script>
+const stat = (icon, label, value, hint) => `<div class="rounded-2xl bg-white p-4 @3xl:p-5"><div class="mb-4 flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-100"><i data-lucide="${icon}"></i></div><p class="text-sm text-neutral-500">${label}</p><p class="mt-1 text-2xl font-semibold @3xl:text-3xl">${value}</p><p class="mt-2 text-xs text-neutral-400">${hint}</p></div>`
+const stats = (...list) => `<div class="grid grid-cols-2 gap-4 @3xl:grid-cols-4 @3xl:gap-6">${list.map(s => stat(...s)).join('')}</div>`
+const table = (head, rows) => `<div class="overflow-x-auto"><table class="w-full min-w-max text-sm"><thead><tr class="bg-neutral-50 text-left text-neutral-500">${head.map(h => `<th class="px-3 py-3 font-medium first:rounded-l-lg last:rounded-r-lg">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr class="border-b border-neutral-100 last:border-0">${r.map((c, i) => `<td class="px-3 py-3 ${i ? '' : 'font-medium'}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`
+const chip = t => `<span class="chip">${t}</span>`
+const dark = t => `<span class="chip-d">${t}</span>`
+const red = t => `<span class="chip-r">${t}</span>`
+const green = t => `<span class="chip-g">${t}</span>`
+const toggle = on => `<span class="inline-flex h-5 w-9 items-center rounded-full px-0.5 ${on ? 'justify-end bg-neutral-900' : 'justify-start bg-neutral-300'}"><span class="h-4 w-4 rounded-full bg-white"></span></span>`
+const ic = name => `<i data-lucide="${name}"></i>`
+const bars = values => `<div class="flex h-40 items-end gap-3">${values.map(([l, v, light]) => `<div class="flex h-full flex-1 flex-col items-center justify-end gap-2"><div class="w-full rounded ${light ? 'bg-neutral-400' : 'bg-neutral-900'}" style="height:${v}%"></div><span class="text-xs text-neutral-400">${l}</span></div>`).join('')}</div>`
+const setting = (title, text, control) => `<div class="flex items-center justify-between gap-4 border-b border-neutral-100 py-3 last:border-0"><div><p class="text-sm font-medium">${title}</p><p class="text-xs text-neutral-500">${text}</p></div>${control}</div>`
+const value = t => `<span class="rounded-lg border border-neutral-200 px-3 py-1.5 text-sm font-semibold whitespace-nowrap">${t}</span>`
+
+const select = t => `<span class="ml-auto inline-flex items-center gap-2 rounded-lg border border-neutral-200 px-3 py-1.5 text-sm text-neutral-600">${t} ${ic('chevron-down')}</span>`
+const chartCard = (icon, color, title, subtitle, type, body) => `<div class="rounded-2xl bg-white p-5 shadow-sm"><div class="flex flex-wrap items-center gap-4"><div class="flex h-10 w-10 items-center justify-center rounded-xl ${color}">${ic(icon)}</div><div><p class="font-semibold">${title}</p><p class="text-sm text-neutral-400">${subtitle}</p></div>${select(type)}</div><div class="mt-6">${body}</div></div>`
+const secTitle = (icon, t) => `<div class="mb-4 flex items-center gap-3 text-neutral-500">${ic(icon)}<h2 class="text-lg font-bold text-neutral-900">${t}</h2></div>`
+const legend = items => `<div class="mb-3 flex flex-wrap justify-end gap-4 text-xs text-neutral-500">${items.map(([c, l]) => `<span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full" style="background:${c}"></span>${l}</span>`).join('')}</div>`
+const lineChart = (labels, a, b) => {
+  const x = i => 30 + i * (360 / (labels.length - 1))
+  const y = v => 150 - v / 24 * 140
+  const pts = list => list.map((v, i) => `${x(i)},${y(v)}`).join(' ')
+  const dots = (list, c) => list.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="4" fill="${c}"/>`).join('')
+  return legend([['#10b981', 'Clock In'], ['#ef4444', 'Clock Out']]) + `<svg viewBox="0 0 400 175" class="w-full">${[0, 8, 16, 24].map(h => `<line x1="30" x2="395" y1="${y(h)}" y2="${y(h)}" stroke="#f1f5f9"/><text x="0" y="${y(h) + 4}" font-size="10" fill="#9ca3af">${h}h</text>`).join('')}<polyline points="${pts(a)}" fill="none" stroke="#10b981" stroke-width="2.5"/><polyline points="${pts(b)}" fill="none" stroke="#ef4444" stroke-width="2.5"/>${dots(a, '#10b981')}${dots(b, '#ef4444')}${labels.map((l, i) => `<text x="${x(i)}" y="170" font-size="9" fill="#9ca3af" text-anchor="middle">${l}</text>`).join('')}</svg>`
+}
+const colBars = (labels, series, max, colors, names) => (names ? legend(names.map((n, i) => [colors[i], n])) : '') + `<div class="flex h-44 items-end gap-2 @3xl:gap-3">${labels.map((l, i) => `<div class="flex h-full flex-1 flex-col justify-end gap-2"><div class="flex flex-1 items-end justify-center gap-1">${series.map((list, k) => `<div class="w-full max-w-10 rounded-t" style="height:${list[i] / max * 100}%;background:${colors[k]}"></div>`).join('')}</div><span class="text-center text-[11px] text-neutral-400">${l}</span></div>`).join('')}</div>`
+const pie = parts => {
+  const total = parts.reduce((sum, p) => sum + p[1], 0)
+  let offset = 25
+  const slices = parts.map(([, v, c]) => { const pct = v / total * 100; const slice = `<circle cx="32" cy="32" r="15.9155" fill="none" stroke="${c}" stroke-width="31.8" stroke-dasharray="${pct} ${100 - pct}" stroke-dashoffset="${offset}"/>`; offset -= pct; return slice }).join('')
+  return `<div class="flex flex-col items-center gap-6 @md:flex-row @md:justify-center"><svg viewBox="0 0 64 64" class="h-44 w-44">${slices}</svg><div class="space-y-1 text-sm">${parts.map(([l, v, c]) => `<p class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full" style="background:${c}"></span>${l} (${Math.round(v / total * 100)}%)</p>`).join('')}</div></div>`
+}
+const radio = (label, on) => `<span class="inline-flex items-center gap-2 text-sm whitespace-nowrap"><span class="flex h-4 w-4 items-center justify-center rounded-full border-2 border-neutral-900">${on ? '<span class="h-2 w-2 rounded-full bg-neutral-900"></span>' : ''}</span>${label}</span>`
+
+const roles = {
+  employe: { name: 'Employé', user: 'John Doe', nav: [['clock', 'Pointage'], ['calendar-days', 'Mes temps'], ['calendar-range', 'Planning'], ['plane', 'Absences'], ['chart-column', 'Statistiques']] },
+  manager: { name: 'Manager', user: 'Jim Gordon', nav: [['users', 'Équipe'], ['bell', 'Alertes'], ['check-check', 'Validation'], ['calendar-range', 'Planning'], ['chart-column', 'Statistiques']] },
+  admin: { name: 'Administrateur / RH', user: 'Albert P.', nav: [['user-cog', 'Utilisateurs'], ['sliders-horizontal', 'Règles'], ['banknote', 'Paie'], ['plane', 'Absences']] },
+}
+
+const login = `<div class="flex flex-1 items-center justify-center p-4"><div class="w-full max-w-sm rounded-2xl bg-white p-8">
+  <div class="mb-8 flex items-center gap-3"><div class="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-900 text-white">${ic('clock')}</div><span class="text-xl font-bold">Time Manager</span></div>
+  <p class="text-2xl font-semibold">Connexion</p><p class="mt-1 text-sm text-neutral-400">Ville de Gotham · Espace agent</p>
+  <p class="mt-6 text-sm text-neutral-500">Email</p><div class="field">exemple@gotham.gov</div>
+  <p class="mt-3 text-sm text-neutral-500">Mot de passe</p><div class="field flex items-center justify-between"><span>••••••••••</span>${ic('eye')}</div>
+  <p class="mt-2 text-right text-sm font-medium underline">Mot de passe oublié ?</p>
+  <div class="btn mt-4 w-full py-3">Se connecter</div>
+  <div class="mt-6 rounded-2xl border-2 border-neutral-900 p-4"><p class="flex items-center gap-2 text-sm font-semibold">${ic('accessibility')} Accessibilité</p>
+    <div class="mt-3 grid grid-cols-3 gap-2 text-center text-[11px] leading-tight"><div class="rounded-lg bg-neutral-900 px-1 py-2 text-white">Contraste élevé</div><div class="rounded-lg bg-neutral-100 py-2">Texte A+</div><div class="rounded-lg bg-neutral-100 py-2">Lecture vocale</div></div></div>
+  <p class="mt-6 flex items-center justify-center gap-2 text-sm text-neutral-500">${ic('circle-help')} Première connexion ? Suivre le tutoriel</p>
+</div></div>`
+
+const screens = [
+  { role: 'employe', title: 'Connexion', login: true,
+    notes: ['<b>Employé malvoyant</b> : contraste, taille du texte et lecture vocale dès la connexion.', '<b>Employé senior</b> : accès sécurisé par mot de passe, avec récupération en cas d\'oubli.', '<b>Employé senior, Syndicat</b> : tutoriel guidé, aucune compétence informatique requise.'] },
+
+  { role: 'employe', title: 'Pointage',
+    notes: ['<b>Jardinier, éboueurs, policiers</b> : pointage sur téléphone, même sans réseau.', '<b>Lettre de plainte</b> : un seul bouton, aucune saisie ligne par ligne.', '<b>Pause déjeuner, contractuel du campus</b> : pause et trajet déclarés en un clic.', '<b>John Doe</b> : bouton Incident pour justifier un retard dû à Batman.', '<b>Jardinier sans téléphone</b> : « Journée conforme au planning » en un clic depuis la borne de l\'entrepôt.'],
+    html: `<div class="grid grid-cols-1 gap-6 @3xl:grid-cols-3">
+      <div class="space-y-6">
+        <div class="card flex flex-col items-center p-6 @3xl:p-8">${dark('En cours')}
+          <p class="mt-6 text-5xl font-bold tracking-tight tabular-nums @3xl:text-6xl">03:25:17</p>
+          <p class="mt-2 text-sm text-neutral-400">Depuis 08:02</p>
+          <div class="btn-o mt-6 w-full py-3 text-base">Pointer la sortie</div>
+          <div class="mt-3 grid w-full grid-cols-3 gap-2 text-xs"><div class="flex flex-col items-center gap-1 rounded-xl bg-neutral-100 py-2">${ic('coffee')}Pause</div><div class="flex flex-col items-center gap-1 rounded-xl bg-neutral-100 py-2">${ic('footprints')}Trajet</div><div class="flex flex-col items-center gap-1 rounded-xl bg-neutral-100 py-2">${ic('triangle-alert')}Incident</div></div>
+          <div class="btn-s mt-3 w-full py-2.5">${ic('calendar-check')} Journée conforme au planning (05:00 – 13:00)</div>
+        </div>
+        <div class="card"><div class="flex items-center justify-between"><p class="font-medium">Objectif du jour</p><span class="text-sm text-neutral-400">49%</span></div>
+          <p class="mt-4 text-3xl font-semibold">3h 25m <span class="text-base font-normal text-neutral-400">/ 7h</span></p>
+          <div class="mt-4 h-2 rounded-full bg-neutral-100"><div class="h-2 w-[49%] rounded-full bg-neutral-900"></div></div>
+          <p class="mt-3 text-sm text-neutral-500">Tu peux partir à 15:37</p></div>
+      </div>
+      <div class="space-y-6 @3xl:col-span-2">
+        <div class="card"><p class="mb-4 font-medium">Dernières sessions</p>${table(['Date', 'Arrivée', 'Sortie', 'Durée'], [['2026-09-29', '08:10', '12:04', '3h 54m'], ['2026-09-28', '13:20', '17:31', '4h 11m'], ['2026-09-28', '08:12', '12:07', '3h 55m'], ['2026-09-25', '22:00', '04:00 ' + dark('Nuit'), '6h 00m']])}</div>
+        <div class="card flex items-center gap-3 text-sm text-neutral-500">${ic('wifi-off')} Pas de réseau ? Le pointage est gardé sur l'appareil et envoyé au retour de la connexion.</div>
+      </div></div>` },
+
+  { role: 'employe', title: 'Mes temps',
+    notes: ['<b>Manager de nuit</b> : l\'employé ne modifie plus ses heures lui-même, il consulte et propose.', '<b>Manager (oubli de pointage)</b> : sortie manquante signalée, correction demandée en quelques clics.', '<b>Jardinier</b> : heures non pointées déclarées après coup, puis décidées par le manager.', '<b>Syndicat</b> : historique visible par l\'employé, refus toujours motivé.'],
+    html: `<div class="space-y-6">${stats(['clock', 'Heures totales', '319h 44m', 'Depuis le début'], ['calendar-check', 'Jours travaillés', '44', 'Depuis le début'], ['trending-up', 'Moyenne par jour', '7h 16m', 'Depuis le début'], ['inbox', 'Corrections', '1', 'En attente'])}
+      <div class="grid grid-cols-1 gap-6 @3xl:grid-cols-3">
+        <div class="space-y-6">
+          <div class="card"><p class="mb-1 font-medium">Demander une correction</p><p class="mb-4 text-xs text-neutral-500">Ton manager accepte, modifie ou refuse sous 48 h.</p>
+            <p class="text-sm text-neutral-500">Session concernée</p><div class="field">mar. 29 sept. · arrivée 08:02</div>
+            <p class="mt-3 text-sm text-neutral-500">Type de demande</p><div class="field flex items-center justify-between text-neutral-900">Pointage oublié ${ic('chevron-down')}</div>
+            <p class="mt-3 text-sm text-neutral-500">Heure de sortie proposée</p><div class="field text-neutral-900">17:00</div>
+            <p class="mt-3 text-sm text-neutral-500">Motif</p><div class="field text-neutral-900">J'ai oublié de pointer en partant.</div>
+            <div class="btn mt-4 w-full">Envoyer la demande</div></div>
+          <div class="card"><p class="mb-3 font-medium">Historique</p><div class="space-y-3 text-xs text-neutral-500"><p><span class="font-medium text-neutral-900">30 sept.</span> · Sortie du 21 sept. fixée à 17:00 par Jim Gordon, à ta demande.</p><p><span class="font-medium text-neutral-900">24 sept.</span> · Demande refusée : « Le planning indiquait un repos ce jour-là. »</p></div></div>
+        </div>
+        <div class="card @3xl:col-span-2"><div class="mb-4 flex flex-wrap items-center justify-between gap-2"><p class="font-medium">Mes sessions <span class="text-neutral-400">(84)</span></p><span class="flex items-center gap-1 text-xs text-neutral-500">${ic('lock')} Lecture seule</span></div>
+          ${table(['Date', 'Horaires', 'Durée', 'Statut', ''], [['mar. 29 sept.', '08:02 → ?', '—', red('Sortie manquante'), dark('Corriger')], ['lun. 28 sept.', '08:10 → 17:31', '8h 05m', chip('Pointée'), ''], ['ven. 25 sept.', '22:00 → 04:00', '6h 00m', dark('Nuit'), ''], ['mer. 23 sept.', '05:00 → 14:30', '9h 30m', chip('Correction en attente'), ''], ['mar. 22 sept.', '05:00 → 13:00', '8h 00m', chip('Déclarée'), ''], ['lun. 21 sept.', '08:18 → 17:00', '8h 42m', green('Corrigée par J. Gordon'), '']])}</div>
+      </div></div>` },
+
+  { role: 'employe', title: 'Planning',
+    notes: ['<b>Policier père de famille</b> : planning publié à l\'avance pour organiser sa vie de famille.', '<b>Équipe sanitaire, commissaire Gordon</b> : compteur de nuits avec plafond, repos après une nuit.', '<b>Manager (astreintes)</b> : astreintes distinguées des heures sup.'],
+    html: `<div class="space-y-6">
+      <div class="card flex flex-wrap items-center justify-between gap-3"><p class="flex items-center gap-2 text-sm">${ic('calendar-check')} Semaine du 5 octobre · publié le 21 septembre, 2 semaines à l'avance</p><div class="flex gap-2">${chip('Jour')}${dark('Nuit')}<span class="chip border border-neutral-900 bg-white">Astreinte</span></div></div>
+      <div class="grid grid-cols-1 gap-3 @3xl:grid-cols-7">${[['Lun 5', '08:00 – 16:00', 'Jour', 'bg-white'], ['Mar 6', '08:00 – 16:00', 'Jour', 'bg-white'], ['Mer 7', '22:00 – 06:00', 'Nuit', 'bg-neutral-900 text-white'], ['Jeu 8', 'Repos', 'Après une nuit', 'border-2 border-dashed border-neutral-400 text-neutral-500'], ['Ven 9', '18:00 – 08:00', 'Astreinte', 'border-2 border-neutral-900 bg-white'], ['Sam 10', '—', 'Repos', 'text-neutral-400'], ['Dim 11', '—', 'Repos', 'text-neutral-400']].map(d => `<div class="flex items-center justify-between rounded-2xl p-4 @3xl:block @3xl:min-h-32 ${d[3]}"><p class="text-sm font-semibold">${d[0]}</p><div class="text-right @3xl:mt-6 @3xl:text-left"><p class="text-sm font-medium">${d[1]}</p><p class="text-xs opacity-70">${d[2]}</p></div></div>`).join('')}</div>
+      ${stats(['moon', 'Nuits ce mois-ci', '3 / 6', 'Plafond fixé par les règles'], ['repeat', 'Nuits consécutives', '1 / 2', 'Maximum autorisé'], ['phone-call', 'Astreintes', '1', 'Non comptées en heures sup'], ['clock', 'Heures prévues', '32h', 'Cette semaine'])}
+    </div>` },
+
+  { role: 'employe', title: 'Absences',
+    notes: ['<b>Employée RH</b> : congés, jours off et arrêts maladie gérés dans l\'app, sans paperasse.', '<b>DRH</b> : heures à récupérer (non payées) visibles par l\'employé.'],
+    html: `<div class="space-y-6">${stats(['plane', 'Congés restants', '14 j', 'Sur 25 jours'], ['hourglass', 'Récupération', '6h 30m', 'Heures à récupérer'], ['thermometer', 'Arrêts maladie', '1', 'Cette année'], ['inbox', 'Demandes', '1', 'En attente'])}
+      <div class="flex flex-col gap-3 @3xl:flex-row"><div class="btn py-3">${ic('plane')} Demander un congé</div><div class="btn-o py-3">${ic('thermometer')} Déclarer un arrêt maladie</div><div class="btn-o py-3">${ic('hourglass')} Poser une récupération</div></div>
+      <div class="card"><p class="mb-4 font-medium">Mes demandes</p>${table(['Période', 'Type', 'Durée', 'Statut'], [['12 – 16 oct.', 'Congé', '5 jours', green('Validé')], ['2 nov.', 'Récupération', '6h 30m', chip('En attente')], ['7 sept.', 'Arrêt maladie', '1 jour', chip('Justificatif reçu')]])}</div></div>` },
+
+  { role: 'employe', title: 'Statistiques',
+    notes: ['<b>Tweets anonymes</b> : l\'outil sert d\'abord l\'employé, aucun classement entre collègues.', '<b>Sujet</b> : graphiques configurables, le type de chaque graphique se change.', '<b>Managers (heures sup non payées)</b> : les heures sup restent visibles par l\'employé.', '<b>John Doe, DRH</b> : impact sur la fiche de paie affiché clairement.'],
+    html: `<div class="space-y-8">
+      <div>${secTitle('clock', 'Statistiques des Pointages')}<div class="grid grid-cols-1 gap-6 @3xl:grid-cols-2">
+        ${chartCard('clock', 'bg-blue-50 text-blue-600', 'Horaires de pointage', "Heures d'arrivée et de départ sur 7 jours", 'Ligne', lineChart(['lun. 21', 'mar. 22', 'mer. 23', 'jeu. 24', 'ven. 25', 'sam. 26', 'lun. 28'], [8.2, 8.5, 8.1, 8.3, 8.2, 9.3, 8.1], [17.5, 17.2, 17.8, 17.5, 17.3, 12.5, 17.5]))}
+        ${chartCard('chart-column', 'bg-indigo-50 text-indigo-600', 'Fréquence des pointages', 'Nombre de Clock In / Clock Out par heure', 'Barres', colBars(['07h', '08h', '09h', '12h', '13h', '17h'], [[1, 40, 4, 0, 40, 0], [0, 0, 0, 44, 0, 40]], 44, ['#10b981', '#ef4444'], ['Clock In', 'Clock Out']))}
+      </div></div>
+      <div>${secTitle('calendar-days', 'Statistiques des Temps de Travail')}<div class="grid grid-cols-1 gap-6 @3xl:grid-cols-2">
+        ${chartCard('calendar-days', 'bg-sky-50 text-sky-600', 'Durée travaillée par jour', 'Heures cumulées par journée de travail', 'Barres', colBars(['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'], [[62, 59, 61, 60, 61, 13]], 70, ['#2563eb'], ['Heures travaillées (h)']))}
+        ${chartCard('chart-pie', 'bg-purple-50 text-purple-600', 'Répartition du temps travaillé', 'Proportion (%) du temps total par jour', 'Camembert', pie([['Lundi', 62, '#2563eb'], ['Mardi', 59, '#38bdf8'], ['Mercredi', 61, '#818cf8'], ['Jeudi', 60, '#c084fc'], ['Vendredi', 61, '#f43f5e'], ['Samedi', 13, '#10b981']]))}
+      </div></div>
+      <div class="card"><p class="mb-3 font-medium">Ma fiche de paie estimée · septembre</p>
+        <div class="grid grid-cols-2 gap-4 text-sm @3xl:grid-cols-4"><div><p class="text-neutral-500">Heures normales</p><p class="text-xl font-semibold">129h 30m</p></div><div><p class="text-neutral-500">Nuit (× 1,5)</p><p class="text-xl font-semibold">24h 00m</p></div><div><p class="text-neutral-500">Heures sup (× 2)</p><p class="text-xl font-semibold">2h 40m</p></div><div><p class="text-neutral-500">À récupérer</p><p class="text-xl font-semibold">6h 30m</p></div></div>
+        <p class="mt-4 flex items-start gap-2 text-xs text-neutral-500">${ic('lock')} Ces chiffres sont pour toi. Aucune comparaison avec tes collègues.</p></div>
+    </div>` },
+
+  { role: 'manager', title: 'Équipe',
+    notes: ['<b>Chef de service</b> : vue d\'ensemble de l\'équipe au lieu de profils à ouvrir un par un.', '<b>Managers intermédiaires</b> : heures sup affichées à part.', '<b>John Doe</b> : les justifications sont visibles par le manager et le chef d\'équipe.'],
+    html: `<div class="space-y-6">${stats(['users', 'Présents', '9 / 12', 'En ce moment'], ['clock', 'Heures de l\'équipe', '386h', 'Cette semaine'], ['timer', 'Heures sup', '14h 20m', 'Cette semaine'], ['bell', 'Alertes', '3', 'À traiter'])}
+      <div class="grid grid-cols-1 gap-6 @3xl:grid-cols-3">
+        <div class="card @3xl:col-span-2"><p class="mb-4 font-medium">Mon équipe</p>${table(['Agent', 'Statut', 'Semaine', 'Heures sup', 'Nuits (mois)'], [['John Doe', dark('Pointé'), '18h 10m', '0h', '5'], ['Selina Kyle', dark('Pointé'), '34h 00m', '3h 20m', red('7 / 6')], ['Harvey Dent', chip('Congé'), '16h 00m', '0h', '2'], ['Renee Montoya', dark('Pointé'), '36h 30m', '5h 00m', '4'], ['Lucius Fox', chip('Sorti'), '35h 00m', '0h', '0']])}</div>
+        <div class="card"><p class="mb-4 font-medium">Justifications reçues</p>
+          <div class="space-y-3 text-sm"><div class="rounded-xl bg-neutral-50 p-3"><p class="font-medium">John Doe · Période creuse</p><p class="text-xs text-neutral-500">« Peu d'interventions prévues du 21 au 30 sept. » Signalé à l'avance.</p><p class="mt-2 text-xs text-neutral-400">Vu par : manager, chef d'équipe</p></div>
+          <div class="rounded-xl bg-neutral-50 p-3"><p class="font-medium">Renee Montoya · Incident</p><p class="text-xs text-neutral-500">« Route bloquée après une intervention de Batman, 40 min. »</p></div></div></div>
+      </div></div>` },
+
+  { role: 'manager', title: 'Alertes',
+    notes: ['<b>Manager (oubli de pointage)</b> : session restée ouverte détectée, relance ou correction en un clic.', '<b>Commissaire Gordon</b> : alerte quand un agent dépasse le plafond de nuits.', '<b>Manager de nuit</b> : durée déclarée anormale signalée pour vérification.', '<b>Blague affichée aux RH</b> : une seule relance par oubli, pas de harcèlement.'],
+    html: `<div class="space-y-4">
+      <div class="card flex flex-col gap-4 @3xl:flex-row @3xl:items-center"><div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">${ic('log-out')}</div><div class="flex-1"><p class="font-medium">Pointage de sortie oublié · John Doe</p><p class="text-sm text-neutral-500">Session ouverte depuis le 30 sept. à 22:00. Bloque la validation du mois.</p></div><div class="flex gap-2"><span class="btn">Corriger</span><span class="btn-o">Relancer (1 fois)</span></div></div>
+      <div class="card flex flex-col gap-4 @3xl:flex-row @3xl:items-center"><div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">${ic('moon')}</div><div class="flex-1"><p class="font-medium">Trop de nuits · Selina Kyle</p><p class="text-sm text-neutral-500">3 nuits consécutives cette semaine, 7 nuits ce mois-ci (plafond : 6).</p></div><div class="flex gap-2"><span class="btn">Modifier le planning</span></div></div>
+      <div class="card flex flex-col gap-4 @3xl:flex-row @3xl:items-center"><div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-neutral-100">${ic('search')}</div><div class="flex-1"><p class="font-medium">Durée inhabituelle · Équipe de nuit</p><p class="text-sm text-neutral-500">8h déclarées le 28 sept. Moyenne de l'équipe ce soir-là : 4h 30m.</p></div><div class="flex gap-2"><span class="btn-o">Vérifier</span><span class="btn-o">Valider</span></div></div>
+      <div class="card flex flex-col gap-4 @3xl:flex-row @3xl:items-center"><div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-neutral-100">${ic('timer')}</div><div class="flex-1"><p class="font-medium">Heures sup élevées · Renee Montoya</p><p class="text-sm text-neutral-500">45h cette semaine, dont 5h au-delà de 40h.</p></div><div class="flex gap-2"><span class="btn-o">Voir le détail</span></div></div>
+    </div>` },
+
+  { role: 'manager', title: 'Validation',
+    notes: ['<b>Manager de nuit</b> : chaque demande s\'affiche avec le planning prévu et la moyenne de l\'équipe.', '<b>Chef de service</b> : validation groupée, demandes acceptées en un clic, pointage d\'équipe.', '<b>Managers intermédiaires, DRH</b> : les heures sup sont payées ou récupérées, jamais effacées.', '<b>Syndicat</b> : un refus doit être motivé et reste visible par l\'agent.', '<b>Rôles</b> : seul le manager crée, modifie ou supprime un temps de travail.'],
+    html: `<div class="space-y-6">
+      <div class="card flex flex-col gap-4 @3xl:flex-row @3xl:items-center @3xl:justify-between"><div><p class="font-medium">Septembre 2026 · 12 agents</p><p class="text-sm text-neutral-500">10 feuilles prêtes, 2 à corriger, 2 demandes en attente</p></div><div class="flex flex-col gap-2 @3xl:flex-row"><span class="btn">${ic('check-check')} Tout valider (10)</span><span class="btn-o">${ic('users')} Pointage d'équipe</span><span class="btn-o">${ic('plus')} Ajouter un temps</span></div></div>
+      <div class="card"><div class="mb-4 flex flex-wrap items-center justify-between gap-2"><p class="font-medium">Demandes de correction <span class="text-neutral-400">(2)</span></p><span class="btn-s">Accepter les 2</span></div>
+        <div class="space-y-4">
+          <div class="rounded-xl bg-neutral-50 p-4"><div class="flex flex-col gap-3 @3xl:flex-row @3xl:items-start @3xl:justify-between"><div class="text-sm"><p class="font-medium">John Doe · mardi 29 sept. · Pointage oublié</p><p class="mt-1 text-neutral-600">Arrivée 08:02, sortie proposée <b>17:00</b> (8h 58m)</p><p class="text-neutral-500">Motif : « J'ai oublié de pointer en partant. »</p><p class="mt-2 text-xs text-neutral-500">Planning prévu : 08:00 – 17:00 · Moyenne de l'équipe ce jour : 8h 40m</p></div><div class="flex flex-wrap gap-2"><span class="btn">Accepter</span><span class="btn-o">Modifier l'heure</span><span class="btn-o">Refuser</span></div></div></div>
+          <div class="rounded-xl bg-neutral-50 p-4"><div class="flex flex-col gap-3 @3xl:flex-row @3xl:items-start @3xl:justify-between"><div class="text-sm"><p class="font-medium">Tom Green (jardinier) · mercredi 23 sept. · Heures non pointées</p><p class="mt-1 text-neutral-600">Heures proposées <b>05:00 → 14:30</b> (9h 30m)</p><p class="text-neutral-500">Motif : « Arbre tombé au parc Robinson, fin à 14h30. »</p><p class="mt-2 text-xs text-red-600">Planning prévu : 05:00 – 13:00 · Écart : + 1h 30m</p></div><div class="flex flex-wrap gap-2"><span class="btn">Accepter</span><span class="btn-o">Modifier l'heure</span><span class="btn-o">Refuser</span></div></div></div>
+        </div></div>
+      <div class="card"><p class="mb-1 font-medium">Heures supplémentaires à décider</p><p class="mb-4 text-xs text-neutral-500">Elles sont payées ou récupérées. Elles ne peuvent pas être effacées, et l'agent voit la décision.</p>
+        ${table(['Agent', 'Heures sup', 'Décision', ''], [['Renee Montoya', '5h 00m', radio('Payées (× 2)', 1) + ' &nbsp; ' + radio('À récupérer', 0), ''], ['Selina Kyle', '3h 20m', radio('Payées (× 2)', 0) + ' &nbsp; ' + radio('À récupérer', 1), ''], ['John Doe', '2h 40m', radio('Payées (× 2)', 0) + ' &nbsp; ' + radio('À récupérer', 0), red('À décider')]])}</div>
+      <div class="card"><p class="mb-4 font-medium">Feuilles du mois</p>${table(['Agent', 'Normales', 'Nuit', 'Heures sup', 'Astreinte', 'Statut', ''], [['Selina Kyle', '128h', '42h', '3h 20m', '12h', green('Prêt'), `<span class=\"inline-flex items-center gap-2 whitespace-nowrap\">${chip('Valider')}${ic('pencil')}</span>`], ['Renee Montoya', '140h', '24h', '5h 00m', '0h', green('Prêt'), `<span class=\"inline-flex items-center gap-2 whitespace-nowrap\">${chip('Valider')}${ic('pencil')}</span>`], ['Lucius Fox', '151h', '0h', '0h', '0h', green('Prêt'), `<span class=\"inline-flex items-center gap-2 whitespace-nowrap\">${chip('Valider')}${ic('pencil')}</span>`], ['John Doe', '52h', '96h', '2h 40m', '24h', red('Demande en attente'), `<span class=\"inline-flex items-center gap-2 whitespace-nowrap\">${chip('Corriger')}${ic('pencil')}</span>`], ['Tom Green', '118h', '0h', '0h', '0h', red('Demande en attente'), `<span class=\"inline-flex items-center gap-2 whitespace-nowrap\">${chip('Corriger')}${ic('pencil')}</span>`]])}</div>
+    </div>` },
+
+  { role: 'manager', title: 'Planning',
+    notes: ['<b>Commission de la mairie</b> : Bat-signal relié à l\'app pour mobiliser les bonnes équipes au bon moment.', '<b>Équipe sanitaire</b> : nuits réparties équitablement entre les agents.', '<b>Policier, assistante du maire</b> : planning publié à l\'avance, nuits consécutives limitées.'],
+    html: `<div class="space-y-6">
+      <div class="grid grid-cols-1 gap-6 @3xl:grid-cols-3">
+        <div class="rounded-2xl bg-neutral-900 p-5 text-white"><p class="flex items-center gap-2 text-sm font-medium">${ic('radio-tower')} Bat-signal</p><p class="mt-3 text-3xl font-semibold">Actif</p><p class="mt-1 text-sm text-neutral-300">Secteur Narrows · depuis 21:42</p><div class="mt-4 rounded-full bg-white py-2 text-center text-sm font-semibold text-neutral-900">Mobiliser l'équipe d'astreinte</div></div>
+        <div class="card @3xl:col-span-2"><p class="font-medium">Répartition des nuits ce mois-ci</p><p class="mb-4 text-sm text-neutral-400">Plafond : 6 nuits par agent</p>
+          <div class="space-y-3 text-sm">${[['Selina Kyle', 7, 1], ['John Doe', 5], ['Renee Montoya', 4], ['Harvey Dent', 2], ['Lucius Fox', 0]].map(a => `<div class="flex items-center gap-3"><span class="w-28 shrink-0">${a[0]}</span><div class="h-2 flex-1 rounded-full bg-neutral-100"><div class="h-2 rounded-full ${a[2] ? 'bg-red-500' : 'bg-neutral-900'}" style="width:${Math.min(100, a[1] / 7 * 100)}%"></div></div><span class="w-8 text-right ${a[2] ? 'font-semibold text-red-600' : ''}">${a[1]}</span></div>`).join('')}</div></div>
+      </div>
+      <div class="card"><div class="mb-4 flex flex-col gap-3 @3xl:flex-row @3xl:items-center @3xl:justify-between"><p class="font-medium">Semaine du 5 octobre</p><span class="btn">${ic('send')} Publier (2 semaines à l'avance)</span></div>
+        ${table(['Agent', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'], [['John Doe', chip('Jour'), chip('Jour'), dark('Nuit'), 'Repos', chip('Astr.'), '—', '—'], ['Selina Kyle', chip('Jour'), chip('Jour'), chip('Jour'), chip('Jour'), chip('Jour'), '—', '—'], ['Renee Montoya', dark('Nuit'), 'Repos', chip('Jour'), chip('Jour'), dark('Nuit'), 'Repos', '—'], ['Harvey Dent', chip('Jour'), dark('Nuit'), 'Repos', chip('Jour'), chip('Jour'), '—', chip('Astr.')]])}</div>
+    </div>` },
+
+  { role: 'manager', title: 'Statistiques',
+    notes: ['<b>Commissaire Gordon</b> : la vue d\'ensemble de l\'équipe, avec les nuits par agent.', '<b>Chef de service</b> : plus besoin d\'ouvrir les profils un par un.', '<b>Managers intermédiaires</b> : heures sup visibles dans la répartition.', '<b>Tweets, lettre de plainte</b> : aucun classement, et la vue par agent montre seulement ce que l\'agent voit lui-même.'],
+    html: `<div class="space-y-8">
+      <div class="card flex flex-col gap-3 @3xl:flex-row @3xl:items-center @3xl:justify-between"><div class="flex flex-wrap gap-2">${dark('Toute l\'équipe')}${chip('John Doe')}${chip('Selina Kyle')}${chip('Renee Montoya')}${chip('Harvey Dent')}${chip('Lucius Fox')}</div><p class="flex items-center gap-2 text-xs text-neutral-500">${ic('eye')} Par agent : les mêmes graphiques que ceux de l'agent.</p></div>
+      ${stats(['clock', 'Heures de l\'équipe', '386h', 'Cette semaine'], ['trending-up', 'Moyenne par agent', '32h 10m', 'Cette semaine'], ['timer', 'Heures sup', '14h 20m', 'Cette semaine'], ['moon', 'Nuits', '18', 'Ce mois-ci'])}
+      <div>${secTitle('users', 'Statistiques de l\'équipe')}<div class="grid grid-cols-1 gap-6 @3xl:grid-cols-2">
+        ${chartCard('calendar-days', 'bg-sky-50 text-sky-600', 'Heures de l\'équipe par jour', 'Heures cumulées de tous les agents', 'Barres', colBars(['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'], [[82, 78, 80, 76, 58, 8, 4]], 90, ['#2563eb'], ['Heures travaillées (h)']))}
+        ${chartCard('chart-column', 'bg-indigo-50 text-indigo-600', 'Heures par agent', 'Total de la semaine, par ordre alphabétique', 'Barres', colBars(['Dent', 'Doe', 'Fox', 'Kyle', 'Montoya'], [[16, 18, 35, 34, 36.5]], 45, ['#2563eb'], ['Heures de la semaine (h)']))}
+        ${chartCard('chart-pie', 'bg-purple-50 text-purple-600', 'Répartition des heures', 'Jour, nuit et heures supplémentaires', 'Camembert', pie([['Jour', 290, '#2563eb'], ['Nuit', 82, '#818cf8'], ['Heures sup', 14, '#f43f5e']]))}
+        ${chartCard('moon', 'bg-blue-50 text-blue-600', 'Nuits par agent', 'Ce mois-ci, plafond de 6 nuits (en rouge au-delà)', 'Barres', colBars(['Dent', 'Doe', 'Fox', 'Kyle', 'Montoya'], [[2, 5, 0, 0, 4], [0, 0, 0, 7, 0]], 8, ['#2563eb', '#ef4444'], ['Sous le plafond', 'Au-dessus du plafond']))}
+      </div></div>
+    </div>` },
+
+  { role: 'admin', title: 'Utilisateurs',
+    notes: ['<b>Direction</b> : donner ou retirer des droits aux managers.', '<b>Transparence</b> : chaque changement de droits est tracé dans un historique.', '<b>Assistante du maire</b> : le poste réellement occupé est enregistré, pas seulement le titre officiel.'],
+    html: `<div class="space-y-6">
+      <div class="flex flex-col gap-3 @3xl:flex-row @3xl:items-center @3xl:justify-between"><div class="field mt-0 flex items-center gap-2 @3xl:w-80">${ic('search')} Rechercher un agent</div><span class="btn">${ic('user-plus')} Ajouter un utilisateur</span></div>
+      <div class="card">${table(['Nom', 'Rôle', 'Contrat', 'Poste réel', 'Valider les heures', 'Modifier le planning'], [['Jim Gordon', dark('Manager'), 'Jour / Nuit', 'Commissaire', toggle(1), toggle(1)], ['Selina Kyle', chip('Employé'), 'Nuit', 'Agent sanitaire', toggle(0), toggle(0)], ['Harleen Q.', dark('Manager'), 'Jour', 'Chef de service', toggle(1), toggle(0)], ['John Doe', chip('Employé'), 'Horaire', 'Nettoyage scènes de crime', toggle(0), toggle(0)], ['Barbara G.', chip('Employé'), 'Jour', 'Assistante + cheffe de projet', toggle(0), toggle(0)]])}</div>
+      <div class="card"><p class="mb-4 font-medium">Historique des droits</p>${table(['Date', 'Par', 'Action'], [['29 sept. 10:12', 'Albert P.', 'Retrait du droit « Modifier le planning » à Harleen Q.'], ['22 sept. 16:40', 'Albert P.', 'Rôle Manager attribué à Jim Gordon']])}</div>
+    </div>` },
+
+  { role: 'admin', title: 'Règles',
+    notes: ['<b>Manager (définition des heures sup)</b> : règle claire et visible, soir et week-end.', '<b>DRH, assistante du maire</b> : majorations de nuit et d\'heures sup paramétrées.', '<b>Pause déjeuner, contractuel du campus</b> : règles sur les pauses et les trajets.', '<b>John Doe</b> : quota de 70 % ajusté quand une justification est acceptée.', '<b>Rôles</b> : règles des demandes de correction fixées par l\'administrateur.'],
+    html: `<div class="grid grid-cols-1 gap-6 @3xl:grid-cols-2">
+      <div class="card"><p class="mb-2 font-medium">Heures supplémentaires</p>${setting('Seuil hebdomadaire', 'Au-delà, les heures sont majorées', value('40 h'))}${setting('Majoration', 'Taux appliqué aux heures sup', value('× 2'))}${setting('Heures tardives', 'Rester tard le soir compte comme heure sup', toggle(1))}${setting('Week-end', 'Le travail du week-end compte comme heure sup', toggle(1))}${setting('Astreinte', 'Non comptée comme heure sup', toggle(1))}</div>
+      <div class="card"><p class="mb-2 font-medium">Travail de nuit</p>${setting('Plage de nuit', 'Heures considérées comme nuit', value('22h – 6h'))}${setting('Majoration de nuit', 'Taux appliqué', value('× 1,5'))}${setting('Nuits consécutives', 'Maximum avant alerte', value('2'))}${setting('Nuits par mois', 'Plafond par agent', value('6'))}${setting('Repos après une nuit', 'Jour de repos imposé', toggle(1))}</div>
+      <div class="card"><p class="mb-2 font-medium">Pauses et trajets</p>${setting('Pause déjeuner', 'Durée déduite par défaut', value('30 min'))}${setting('Pause travaillée', 'Non déduite si l\'agent la déclare travaillée', toggle(1))}${setting('Trajets entre sites', 'Comptés comme temps de travail', toggle(1))}${setting('Kilométrage', 'Saisie des kilomètres pour les frais', toggle(1))}</div>
+      <div class="card"><p class="mb-2 font-medium">Suivi</p>${setting('Quota minimum', 'Part du temps à justifier', value('70 %'))}${setting('Justification acceptée', 'Une période creuse validée ajuste le quota', toggle(1))}${setting('Relances', 'Nombre maximum par oubli', value('1'))}${setting('Demande de correction', 'Possible jusqu\'à la validation du mois', toggle(1))}${setting('Réponse du manager', 'Délai maximum pour décider', value('48 h'))}${setting('Refus motivé', 'Motif obligatoire, visible par l\'agent', toggle(1))}${setting('Planning', 'Délai de publication', value('14 jours'))}</div>
+    </div>` },
+
+  { role: 'admin', title: 'Paie',
+    notes: ['<b>DRH</b> : heures à × 1,5 (nuit), à × 2 (heures sup) et à récupérer affichées séparément.', '<b>Managers intermédiaires</b> : heures facturables et non facturables distinguées.', '<b>Comptabilité</b> : export direct, sans ressaisie.'],
+    html: `<div class="space-y-6">${stats(['clock', 'Heures normales', '1 642h', 'Septembre 2026'], ['moon', 'Nuit × 1,5', '312h', 'Septembre 2026'], ['timer', 'Heures sup × 2', '38h', 'Au-delà de 40h / semaine'], ['hourglass', 'À récupérer', '21h', 'Non payées'])}
+      <div class="card"><div class="mb-4 flex flex-col gap-3 @3xl:flex-row @3xl:items-center @3xl:justify-between"><p class="font-medium">Détail par agent</p><span class="btn">${ic('download')} Exporter pour la comptabilité</span></div>
+        ${table(['Agent', 'Normales', 'Nuit × 1,5', 'Sup × 2', 'Récupération', 'Facturable', 'Non facturable'], [['Selina Kyle', '128h', '42h', '3h 20m', '0h', '160h', '13h'], ['Renee Montoya', '140h', '24h', '5h 00m', '4h', '150h', '23h'], ['John Doe', '52h', '96h', '0h', '6h 30m', '120h', '34h'], ['Lucius Fox', '151h', '0h', '0h', '0h', '151h', '0h'], ['Harvey Dent', '120h', '8h', '0h', '2h', '118h', '12h']])}</div>
+    </div>` },
+
+  { role: 'admin', title: 'Absences',
+    notes: ['<b>Employée RH</b> : congés, jours off et arrêts maladie au même endroit, fin de la paperasse.', '<b>Managers</b> : les absences validées apparaissent dans le planning.'],
+    html: `<div class="space-y-6">${stats(['inbox', 'Demandes', '4', 'En attente'], ['plane', 'En congé', '3', 'Aujourd\'hui'], ['thermometer', 'Arrêts maladie', '1', 'En cours'], ['hourglass', 'Récupérations', '21h', 'À poser'])}
+      <div class="card"><p class="mb-4 font-medium">Demandes à traiter</p>${table(['Agent', 'Type', 'Période', 'Durée', 'Décision'], [['John Doe', 'Récupération', '2 nov.', '6h 30m', dark('Valider') + ' ' + chip('Refuser')], ['Selina Kyle', 'Congé', '19 – 23 oct.', '5 jours', dark('Valider') + ' ' + chip('Refuser')], ['Renee Montoya', 'Arrêt maladie', '30 sept. – 2 oct.', '3 jours', chip('Justificatif reçu')], ['Harvey Dent', 'Congé', '28 sept. – 2 oct.', '5 jours', green('Validé')]])}</div>
+      <div class="card"><p class="mb-4 font-medium">Calendrier des absences · octobre</p><div class="space-y-3 text-sm">${[['Harvey Dent', 0, 8], ['Selina Kyle', 58, 16], ['John Doe', 3, 4], ['Renee Montoya', 0, 6]].map(a => `<div class="flex items-center gap-3"><span class="w-28 shrink-0">${a[0]}</span><div class="relative h-6 flex-1 rounded-lg bg-neutral-100"><div class="absolute top-0 h-6 rounded-lg bg-neutral-900" style="left:${a[1]}%;width:${a[2]}%"></div></div></div>`).join('')}</div></div>
+    </div>` },
+]
+
+function sidebarNav(role, active) {
+  return roles[role].nav.map(([icon, label]) => `<div class="flex items-center gap-3 rounded-full px-4 py-3 text-base ${label === active ? 'bg-neutral-900 font-semibold text-white' : 'text-neutral-500'}">${ic(icon)} ${label}</div>`).join('')
+}
+
+function userBadge(role, mobile) {
+  const user = roles[role].user
+  return `<div class="flex items-center gap-3 text-neutral-500">${ic('accessibility')}${ic('circle-help')}<div class="flex items-center gap-2 rounded-xl border border-neutral-200 px-3 py-1.5 text-neutral-900"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-200 text-sm font-semibold">${user[0]}</span>${mobile ? '' : `<span class="text-sm font-medium">${user}</span>`}${ic('chevron-down')}</div></div>`
+}
+
+function web(s) {
+  if (s.login) return `<div class="flex min-h-[720px] w-[1280px] overflow-hidden rounded-2xl bg-neutral-200 shadow-xl">${login}</div>`
+  return `<div class="flex min-h-[720px] w-[1280px] overflow-hidden rounded-2xl bg-neutral-200 shadow-xl">
+    <aside class="flex w-72 shrink-0 flex-col border-r border-neutral-200 bg-white px-5 py-7">
+      <div class="mb-10 flex items-center gap-3 px-2"><div class="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-900 text-white">${ic('clock')}</div><span class="text-xl font-bold">Time Manager</span></div>
+      <p class="mb-3 px-3 text-sm font-medium tracking-wider text-neutral-400 uppercase">${roles[s.role].name}</p>
+      <nav class="flex flex-col gap-2">${sidebarNav(s.role, s.title)}</nav>
+      <div class="mt-auto flex items-center gap-3 px-4 py-3 text-neutral-500">${ic('log-out')} Se déconnecter</div>
+    </aside>
+    <div class="flex min-w-0 flex-1 flex-col">
+      <header class="flex h-16 shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-8"><h1 class="text-xl font-semibold">${s.title}</h1>${userBadge(s.role)}</header>
+      <main class="@container flex-1 p-8">${s.html}</main>
+    </div></div>`
+}
+
+function mobile(s) {
+  const frame = 'flex min-h-[800px] w-[390px] flex-col overflow-hidden rounded-[2.5rem] border-[10px] border-neutral-900 bg-neutral-200 shadow-xl'
+  if (s.login) return `<div class="${frame}">${login}</div>`
+  return `<div class="${frame}">
+    <header class="flex h-16 shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-4"><div class="flex items-center gap-3">${ic('menu')}<h1 class="text-lg font-semibold">${s.title}</h1></div>${userBadge(s.role, true)}</header>
+    <main class="@container flex-1 p-4">${s.html}</main></div>`
+}
+
+let lastRole = ''
+document.getElementById('app').innerHTML = `
+  <header class="mb-12"><p class="text-sm font-medium tracking-wider text-neutral-500 uppercase">Time Manager · Ville de Gotham</p><h1 class="mt-1 text-4xl font-bold">Maquettes par rôle : web et mobile</h1><p class="mt-2 text-neutral-600">Chaque écran indique les besoins utilisateurs auxquels il répond.</p></header>` +
+  screens.map((s, index) => {
+    const roleTitle = s.role !== lastRole ? `<h2 class="mt-20 mb-8 border-b-4 border-neutral-900 pb-3 text-3xl font-bold">Rôle : ${roles[s.role].name}</h2>` : ''
+    lastRole = s.role
+    return `${roleTitle}<section class="mb-16">
+      <h3 class="text-xl font-semibold">${roles[s.role].name} · ${s.title}</h3>
+      <div class="mt-3 mb-6 flex max-w-[1710px] flex-wrap gap-2">${s.notes.map(n => `<p class="note">${n}</p>`).join('')}</div>
+      <div class="flex items-start gap-10"><div><p class="mb-2 text-sm font-medium text-neutral-500">Web</p>${web(s)}</div><div><p class="mb-2 text-sm font-medium text-neutral-500">Mobile</p>${mobile(s)}</div></div>
+    </section>`
+  }).join('')
+lucide.createIcons()
+</script>
+</body>
+</html>
