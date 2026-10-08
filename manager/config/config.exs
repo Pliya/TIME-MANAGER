@@ -1,45 +1,33 @@
-# This file is responsible for configuring your application
-# and its dependencies with the aid of the Config module.
-#
-# This configuration file is loaded before any dependency and
-# is restricted to this project.
-
-# General application configuration
 import Config
 
-config :manager,
-  namespace: Time_manager,
-  ecto_repos: [Time_manager.Repo],
-  generators: [timestamp_type: :utc_datetime]
+# Configure your database
+#
+# The MIX_TEST_PARTITION environment variable can be used
+# to provide built-in test partitioning in CI environment.
+# Run `mix help test` for more information.
+config :manager, Time_manager.Repo,
+  username: "postgres",
+  password: "postgres",
+  hostname: System.get_env("DB_HOST", "localhost"),
+  database: "manager_test#{System.get_env("MIX_TEST_PARTITION")}",
+  pool: Ecto.Adapters.SQL.Sandbox,
+  pool_size: 10
 
-# Configures the endpoint
+# We don't run a server during test. If one is required,
+# you can enable the server option below.
 config :manager, Time_managerWeb.Endpoint,
-  url: [host: "localhost"],
-  adapter: Phoenix.Endpoint.Cowboy2Adapter,
-  render_errors: [
-    formats: [json: Time_managerWeb.ErrorJSON],
-    layout: false
-  ],
-  pubsub_server: Time_manager.PubSub,
-  live_view: [signing_salt: "qG1WAeAj"]
+  http: [ip: {127, 0, 0, 1}, port: 4002],
+  secret_key_base: "L8jsOZeZKaWQr+Ea2NaVBpUoPOn5jts2OQong7OoZ3AVRs/uyFoq9J4FG/IeAnft",
+  server: false
 
-# Configures the mailer
-#
-# By default it uses the "Local" adapter which stores the emails
-# locally. You can see the emails in your browser, at "/dev/mailbox".
-#
-# For production it's recommended to configure a different adapter
-# at the `config/runtime.exs`.
-config :manager, Time_manager.Mailer, adapter: Swoosh.Adapters.Local
+# In test we don't send emails.
+config :manager, Time_manager.Mailer, adapter: Swoosh.Adapters.Test
 
-# Configures Elixir's Logger
-config :logger, :console,
-  format: "$time $metadata[$level] $message\n",
-  metadata: [:request_id]
+# Disable swoosh api client as it is only required for production adapters.
+config :swoosh, :api_client, false
 
-# Use Jason for JSON parsing in Phoenix
-config :phoenix, :json_library, Jason
+# Print only warnings and errors during test
+config :logger, level: :warning
 
-# Import environment specific config. This must remain at the bottom
-# of this file so it overrides the configuration defined above.
-import_config "#{config_env()}.exs"
+# Initialize plugs at runtime for faster test compilation
+config :phoenix, :plug_init_mode, :runtime
