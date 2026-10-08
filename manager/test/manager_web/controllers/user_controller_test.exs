@@ -15,7 +15,7 @@ defmodule Time_managerWeb.UserControllerTest do
 
   describe "index" do
     test "lists all users", %{conn: conn} do
-      conn = get(conn, ~p"/api/users")
+      conn = get(again(conn), ~p"/api/users")
       assert json_response(conn, 200)["data"] == []
     end
 
@@ -23,7 +23,7 @@ defmodule Time_managerWeb.UserControllerTest do
       user = user_fixture(%{username: "alice"})
       user_fixture(%{username: "bob"})
 
-      conn = get(conn, ~p"/api/users?#{[email: user.email, username: "alice"]}")
+      conn = get(again(conn), ~p"/api/users?#{[email: user.email, username: "alice"]}")
       assert [%{"id" => id}] = json_response(conn, 200)["data"]
       assert id == user.id
     end
@@ -31,10 +31,10 @@ defmodule Time_managerWeb.UserControllerTest do
 
   describe "create user" do
     test "renders user when data is valid", %{conn: conn} do
-      conn = post(conn, ~p"/api/users", user: @create_attrs)
+      conn = post(again(conn), ~p"/api/users", user: @create_attrs)
       assert %{"id" => id} = json_response(conn, 201)["data"]
 
-      conn = get(conn, ~p"/api/users/#{id}")
+      conn = get(again(conn), ~p"/api/users/#{id}")
 
       assert %{
                "id" => ^id,
@@ -44,14 +44,14 @@ defmodule Time_managerWeb.UserControllerTest do
     end
 
     test "renders errors when data is invalid", %{conn: conn} do
-      conn = post(conn, ~p"/api/users", user: @invalid_attrs)
+      conn = post(again(conn), ~p"/api/users", user: @invalid_attrs)
       assert json_response(conn, 422)["errors"] != %{}
     end
   end
 
   describe "show user" do
     test "renders 404 when the user does not exist", %{conn: conn} do
-      conn = get(conn, ~p"/api/users/-1")
+      conn = get(again(conn), ~p"/api/users/-1")
       assert json_response(conn, 404)
     end
   end
@@ -60,10 +60,10 @@ defmodule Time_managerWeb.UserControllerTest do
     setup [:create_user]
 
     test "renders user when data is valid", %{conn: conn, user: %User{id: id} = user} do
-      conn = put(conn, ~p"/api/users/#{user}", user: @update_attrs)
+      conn = put(again(conn), ~p"/api/users/#{user}", user: @update_attrs)
       assert %{"id" => ^id} = json_response(conn, 200)["data"]
 
-      conn = get(conn, ~p"/api/users/#{id}")
+      conn = get(again(conn), ~p"/api/users/#{id}")
 
       assert %{
                "id" => ^id,
@@ -73,7 +73,7 @@ defmodule Time_managerWeb.UserControllerTest do
     end
 
     test "renders errors when data is invalid", %{conn: conn, user: user} do
-      conn = put(conn, ~p"/api/users/#{user}", user: @invalid_attrs)
+      conn = put(again(conn), ~p"/api/users/#{user}", user: @invalid_attrs)
       assert json_response(conn, 422)["errors"] != %{}
     end
   end
@@ -82,10 +82,10 @@ defmodule Time_managerWeb.UserControllerTest do
     setup [:create_user]
 
     test "deletes chosen user", %{conn: conn, user: user} do
-      conn = delete(conn, ~p"/api/users/#{user}")
+      conn = delete(again(conn), ~p"/api/users/#{user}")
       assert response(conn, 204)
 
-      conn = get(conn, ~p"/api/users/#{user}")
+      conn = get(again(conn), ~p"/api/users/#{user}")
       assert json_response(conn, 404)
     end
 
@@ -93,7 +93,7 @@ defmodule Time_managerWeb.UserControllerTest do
       Time_manager.AttendanceFixtures.clock_fixture(user.id)
       Time_manager.WorkDurationFixtures.working_time_fixture(user.id)
 
-      conn = delete(conn, ~p"/api/users/#{user}")
+      conn = delete(again(conn), ~p"/api/users/#{user}")
       assert response(conn, 204)
     end
   end

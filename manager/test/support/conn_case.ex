@@ -33,7 +33,7 @@ defmodule Time_managerWeb.ConnCase do
 
   setup tags do
     Time_manager.DataCase.setup_sandbox(tags)
-    {:ok, conn: Phoenix.ConnTest.build_conn()}
+    {:ok, conn: log_in(Phoenix.ConnTest.build_conn(), 0)}
   end
 
   def log_in(conn, user_id, role \\ "Administrator") do

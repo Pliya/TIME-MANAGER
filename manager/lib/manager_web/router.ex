@@ -98,7 +98,10 @@ defmodule Time_managerWeb.Router do
       get "/:userID", ClockController, :index
       post "/:userID", ClockController, :create
     end
+  end
 
+  scope "/api" do
+    pipe_through :api
     get "/openapi", OpenApiSpex.Plug.RenderSpec, []
   end
 
