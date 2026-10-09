@@ -2,7 +2,7 @@
 
 L'application mobile (`Mobile/`) est une application **Cordova + Vue 3** pour Android. Elle affiche **les mêmes vues que le web** : elles sont importées directement depuis `Frontend/src`, sans copie et sans modifier `Frontend/`.
 
-Les tests du mobile se font **à la main, sur l'émulateur Android**, en suivant les scénarios ci-dessous. Chaque scénario donne les actions à faire et le résultat attendu. Compter environ 40 minutes.
+Les tests du mobile se font **à la main**, sur l'émulateur Android **ou sur un vrai téléphone**, en suivant les scénarios ci-dessous. Chaque scénario donne les actions à faire et le résultat attendu. Compter environ 40 minutes.
 
 ---
 
@@ -11,9 +11,15 @@ Les tests du mobile se font **à la main, sur l'émulateur Android**, en suivant
 ### L'API et les données de démonstration
 
 ```bash
-docker compose up -d --build
+docker-compose up -d --build        # ou "docker compose up -d --build", selon la version de Docker
 docker exec time_manager_backend mix run priv/repo/demo_data.exs   # comptes de démo (voir GUIDE_TEST.md)
 curl -i http://localhost:4000/api/users/me                          # doit répondre 401 : l'API tourne
+```
+
+Avant de tester le mobile, vérifier que le backend passe ses tests (dont les 4 tests de la connexion mobile) :
+
+```bash
+docker exec -e MIX_ENV=test -e DB_HOST=db time_manager_backend mix test   # attendu : 59 tests, 0 failures
 ```
 
 Les comptes de démonstration sont décrits dans `GUIDE_TEST.md` (mot de passe : **`Gotham2026!`**) :
@@ -49,6 +55,74 @@ cordova run android               # 5. installe et lance l'application
 | Une modification du code n'apparaît pas | `www/` n'a pas été reconstruit | `npm run build` avant `cordova run android` |
 | `MISSING_EXPORT` pendant le build | Un nom a changé dans `Frontend/` | Voir la section 2, « Les copies à garder à jour » |
 
+### Sur un vrai téléphone, sans câble (en Wi-Fi)
+
+Le téléphone utilise l'API qui tourne sur le PC. Le PC et le téléphone doivent être **sur le même Wi-Fi**.
+
+**1. Trouver l'adresse du PC sur le Wi-Fi**
+
+```bash
+hostname -I
+```
+
+Prendre la première adresse, du type `192.168.x.x` (dans la suite : `IP_DU_PC`). Les adresses en `172.17…` ou `172.21…` sont les réseaux internes de Docker : ne pas les utiliser.
+
+**2. Vérifier que le téléphone voit l'API**
+
+Sur le téléphone, ouvrir Chrome à l'adresse `http://IP_DU_PC:4000/api/users/me`. La page doit afficher :
+
+```
+{"errors":{"detail":"Authentification requise."}}
+```
+
+Si la page ne charge pas, ouvrir le port dans le pare-feu du PC (Fedora) : `sudo firewall-cmd --add-port=4000/tcp`.
+
+**3. Construire l'APK avec l'adresse du PC**
+
+```bash
+cd Mobile
+VITE_API_URL=http://IP_DU_PC:4000/api npm run build
+cordova build android
+```
+
+L'APK de test est créé ici : `Mobile/platforms/android/app/build/outputs/apk/debug/app-debug.apk`.
+
+**4. Mettre l'APK sur le téléphone**
+
+Le plus simple est de le télécharger depuis le PC, puisque le téléphone le voit déjà :
+
+```bash
+cp platforms/android/app/build/outputs/apk/debug/app-debug.apk ~/time-manager.apk
+cd ~
+sudo firewall-cmd --add-port=8000/tcp
+python3 -m http.server 8000
+```
+
+Sur le téléphone, ouvrir `http://IP_DU_PC:8000/time-manager.apk` dans Chrome, puis ouvrir le fichier téléchargé et **autoriser l'installation depuis des sources inconnues**. Arrêter ensuite le serveur avec `Ctrl + C` et refermer le port : `sudo firewall-cmd --remove-port=8000/tcp`.
+
+Autres façons de transférer l'APK : Google Drive, ou WhatsApp en l'envoyant comme *document*. Gmail bloque les fichiers `.apk`.
+
+**5. Se connecter** avec un compte de démonstration, puis suivre les scénarios de la section 4. Pour couper le réseau, désactiver **le Wi-Fi et les données mobiles** (ou activer le mode avion).
+
+### Autres façons de tester sur un téléphone
+
+| Méthode | Commandes | Quand l'utiliser |
+|---|---|---|
+| **Câble USB** | Activer le « débogage USB » sur le téléphone, puis `adb reverse tcp:4000 tcp:4000`, `npm run build`, `cordova run android --device` | Pas de Wi-Fi commun ; même fonctionnement que l'émulateur |
+| **Serveur déployé** | `VITE_API_URL=http://35.208.70.76:4000/api npm run build`, puis `cordova build android` | Pour que chacun installe l'APK sans le PC. Le serveur doit avoir la version du backend avec la connexion mobile (déployée par Travis après un push). |
+
+**Après un test sur téléphone**, reconstruire sans `VITE_API_URL` (`npm run build`) pour revenir à l'émulateur avec `adb reverse`.
+
+### Si quelque chose ne marche pas sur le téléphone
+
+| Symptôme | Cause | Solution |
+|---|---|---|
+| L'étape 2 ne charge pas sur le téléphone | Le pare-feu du PC bloque le port 4000, ou le téléphone n'est pas sur le même Wi-Fi | `sudo firewall-cmd --add-port=4000/tcp` ; vérifier le Wi-Fi du téléphone |
+| `adb install` installe sur l'émulateur, pas sur le téléphone | `adb` envoie vers l'émulateur s'il est ouvert | `adb devices`, puis `adb -s <numéro du téléphone> install -r …/app-debug.apk` |
+| Connexion réussie, puis « Authentification requise » partout | Le backend n'a pas la connexion mobile (en-tête `Authorization`) | Reconstruire le backend (`docker-compose up -d --build`) ; vérifier que `mix test` passe |
+| L'application ne joint plus l'API après un redémarrage de la box | L'adresse du PC a changé | `hostname -I`, puis reconstruire l'APK avec la nouvelle adresse |
+| L'installation de l'APK est refusée | Une ancienne version est installée avec une autre signature | Désinstaller l'ancienne application, puis réinstaller |
+
 ---
 
 ## 2. Comment ça marche
@@ -72,7 +146,7 @@ cordova run android               # 5. installe et lance l'application
 | `src/services/db.js` | Base locale LokiJS : `cache` (dernière réponse de chaque GET) et `queue` (file FIFO) |
 | `src/services/offline.js` | Détection du réseau, file d'attente, synchronisation avec le spinner natif |
 | `src/services/pending.js` | Affiche tout de suite les modifications en attente |
-| `src/services/http.js` | Client axios : URL de l'API, en-tête XSRF, gestion du 401 |
+| `src/services/http.js` | Client axios : adresse de l'API (`VITE_API_URL` au build), en-têtes XSRF et `Authorization`, gestion du 401 |
 | `src/services/tables.js` | Sur petit écran, transforme les tableaux en cartes |
 | `src/polyfills.js` | Fonctions JavaScript absentes de la vieille WebView |
 | `old-webview-css.mjs` | Convertit le CSS de Tailwind v4 pour la WebView d'Android 9 |
@@ -92,7 +166,18 @@ cordova run android               # 5. installe et lance l'application
 2. **Écriture (POST, PUT, DELETE)** : sans réseau, la requête est ajoutée à la **file FIFO**. La vue reçoit une réponse immédiate, et la modification apparaît tout de suite dans les listes, avec un identifiant temporaire négatif.
 3. **Retour du réseau** : le spinner natif s'affiche et les requêtes partent **dans l'ordre**. Quand le serveur crée un objet (une équipe, par exemple), son vrai identifiant remplace l'identifiant temporaire dans les requêtes suivantes.
 4. **Refus du serveur** : si une requête est refusée (erreur 4xx autre que 401), **toute la file est annulée** et l'application recharge les données du serveur. Le serveur fait foi.
-5. **Pointage** : l'heure réelle du pointage est envoyée (`clock.time` en ISO 8601). Le serveur l'enregistre donc à l'heure du pointage, et non à l'heure de la synchronisation.
+5. **Pointage** : comme sur le web, l'heure du clic est envoyée (`clock.time`, au format `AAAA-MM-JJ hh:mm:ss`). Le serveur l'enregistre donc à l'heure du pointage, et non à l'heure de la synchronisation.
+
+### La connexion du mobile (jeton dans l'en-tête `Authorization`)
+
+Le web garde son jeton de connexion (JWT) dans un cookie `SameSite=Lax`. L'application mobile est servie depuis `http://localhost` : quand l'API est sur une autre adresse (le PC en Wi-Fi, ou le serveur), le téléphone **n'envoie pas** ce cookie. Le mobile utilise donc un en-tête :
+
+1. Le mobile ajoute `x-client: mobile` à ses requêtes.
+2. Seulement dans ce cas, `POST /api/users/sign_in` renvoie aussi le JWT dans sa réponse (`data.token`). Le web ne le reçoit jamais.
+3. Le mobile garde ce jeton et l'envoie dans `Authorization: Bearer <jwt>`. Le jeton XSRF (`x-xsrf-token`) reste obligatoire.
+4. Côté API, `AuthPlug` lit le jeton dans l'en-tête `Authorization` s'il est présent, sinon dans le cookie.
+
+Tests correspondants dans `manager/test/manager_web/controllers/user_controller_test.exs` : jeton renvoyé seulement au mobile, accès avec l'en-tête sans cookie, refus sans jeton XSRF (403), refus d'un faux jeton (401).
 
 ---
 
@@ -100,8 +185,8 @@ cordova run android               # 5. installe et lance l'application
 
 | Outil | Comment |
 |---|---|
-| **Couper le réseau** | Sur l'émulateur, glisser depuis le haut de l'écran et activer le **mode avion** |
-| **Inspecter l'application** | Dans Chrome sur le PC, ouvrir `chrome://inspect`, puis cliquer sur **inspect** sous `com.timemanager.app`. On obtient la console, les requêtes (onglet Network) et le stockage. |
+| **Couper le réseau** | Glisser depuis le haut de l'écran et activer le **mode avion**. Sur un vrai téléphone, vérifier que le Wi-Fi est bien coupé aussi. |
+| **Inspecter l'application** | Dans Chrome sur le PC, ouvrir `chrome://inspect`, puis cliquer sur **inspect** sous `com.timemanager.app`. On obtient la console, les requêtes (onglet Network) et le stockage. Marche aussi pour un vrai téléphone branché en USB (débogage USB activé). |
 | **Voir la base locale** | Dans l'inspecteur : **Application → Local Storage → `timemanager.db`**. On y trouve le cache des GET et la file d'attente (`queue`). |
 | **Repartir de zéro** | `adb shell pm clear com.timemanager.app` efface les données de l'application (session, cache, file d'attente) |
 | **Comparer avec le web** | Ouvrir `http://localhost:5174` sur le PC avec le même compte |
@@ -182,8 +267,6 @@ Toujours en employé et en mode avion.
 | 6.5 | Regarder le bandeau | Le bandeau disparaît : plus rien en attente |
 | 6.6 | Web : Pointage de John Doe | L'arrivée est enregistrée à l'heure **du pointage** (6.1), et non à l'heure de la synchronisation (6.4) |
 
-> **Rappel :** le web affiche les heures de l'API (en UTC) comme des heures locales. En France ou au Bénin, l'heure affichée a donc 1 h d'écart avec l'heure du téléphone. Ce décalage existe aussi pour un pointage fait en ligne. Ce qui compte au 6.6, c'est l'écart de 2 à 3 minutes avec la synchronisation.
-
 ### Étape 7 · Hors ligne : plusieurs actions dans l'ordre (file FIFO)
 
 Se connecter en manager (`gordon@gotham.gov`), ouvrir **Équipe**, puis activer le **mode avion**.
@@ -252,11 +335,25 @@ La WebView d'Android 9 est un vieux Chrome (version 66 à 69). Tailwind v4 gén�
 | 12.3 | Désactiver le mode avion, attendre la synchro, puis Se déconnecter | Pas de dialogue ; retour à la page de connexion |
 | 12.4 | Inspecteur : `timemanager.db` | Cache et file vidés : un autre agent peut utiliser le téléphone |
 
+### Étape 13 · Vrai téléphone, sans câble
+
+Suivre « Sur un vrai téléphone, sans câble » (section 1), puis :
+
+| # | Action | Résultat attendu |
+|---|---|---|
+| 13.1 | Chrome du téléphone : `http://IP_DU_PC:4000/api/users/me` | `{"errors":{"detail":"Authentification requise."}}` : le téléphone atteint l'API |
+| 13.2 | Installer l'APK, ouvrir **Time Manager**, se connecter avec `john.doe@gotham.gov` | Arrivée sur Pointage ; les pages suivantes se chargent (le jeton passe dans l'en-tête `Authorization`) |
+| 13.3 | Ouvrir Mes temps, Planning, Absences | Données du serveur affichées |
+| 13.4 | Couper le Wi-Fi et les données, puis **Pointer l'arrivée** | Bandeau orange « Hors ligne · 1 modification(s) en attente » |
+| 13.5 | Rallumer le Wi-Fi | Spinner, puis « 1 modification(s) synchronisée(s) » ; sur le web, l'arrivée est à l'heure du clic |
+| 13.6 | Comparer l'affichage avec l'émulateur | Même rendu : le téléphone récent utilise le CSS normal, l'émulateur Android 9 le CSS converti |
+
 ---
 
 ## 5. Ce qui n'est pas testé automatiquement
 
 - Le mobile n'a pas de tests automatiques dans le dépôt : tous les scénarios ci-dessus se font à la main.
+- Seule la partie serveur de la connexion mobile est testée automatiquement : 4 tests dans `user_controller_test.exs` (59 tests au total pour le backend).
 - Une piste possible : des tests de bout en bout avec **Playwright**. Ils lanceraient le build (`npm run build` puis `vite preview`) dans un navigateur en taille téléphone, avec une fausse API. Playwright sait couper le réseau (`context.setOffline(true)`), ce qui permet de rejouer automatiquement les étapes 5 à 10.
 - La vraie vieille WebView (étape 11) ne peut se vérifier que sur l'émulateur Android 9 ou sur un vrai téléphone.
 
@@ -264,7 +361,6 @@ La WebView d'Android 9 est un vieux Chrome (version 66 à 69). Tailwind v4 gén�
 
 | Limite | Détail |
 |---|---|
-| Décalage d'1 h sur les heures affichées | Vient du web : l'API renvoie l'heure en UTC, le web l'affiche comme une heure locale. À corriger dans `Frontend/` (fonction `to_date`). |
 | Espacement icône + texte | Sur une WebView sans `gap` en flex (avant Chrome 84), l'espace entre une icône et un texte seul est un peu plus petit que sur le web |
 | Première ouverture sans réseau | Une page jamais ouverte avec réseau n'a pas de cache : elle affiche une erreur tant qu'on n'est pas reconnecté |
 | Dashboard | Absent du mobile, comme le demande le sujet. La page Pointage sert d'accueil pour l'employé. |
