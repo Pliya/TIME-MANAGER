@@ -66,10 +66,8 @@ defmodule Time_managerWeb.ClockController do
   )
 
   def create(conn, %{"userID" => user_id} = params) do
-    time = parse_time(get_in(params, ["clock", "time"]))
-
     with %{} = user <- Account.get_user(user_id),
-         {:ok, %Clock{} = clock} <- Attendance.create_clock(user.id, time) do
+         {:ok, %Clock{} = clock} <- Attendance.create_clock(user.id, params["clock"] || %{}) do
       conn
       |> put_status(:created)
       |> put_resp_header("location", ~p"/api/clocks/#{clock.user_id}")
@@ -79,13 +77,4 @@ defmodule Time_managerWeb.ClockController do
       {:error, _} = error -> error
     end
   end
-
-  defp parse_time(value) when is_binary(value) do
-    case DateTime.from_iso8601(value) do
-      {:ok, datetime, _offset} -> DateTime.truncate(datetime, :second)
-      _ -> nil
-    end
-  end
-
-  defp parse_time(_), do: nil
 end

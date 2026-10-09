@@ -189,7 +189,7 @@ defmodule Time_managerWeb.UserController do
               max_age: 60 * 60 * 24 * 30,
               path: "/"
             )
-            |> render(:auth, user: user, csrf_token: csrf_token)
+            |> render(:auth, user: user, csrf_token: csrf_token, token: mobile_token(conn, jwt))
 
           {:error, _reason} ->
             conn
@@ -212,6 +212,13 @@ defmodule Time_managerWeb.UserController do
     end
   end
 
+    # Le JWT n'est renvoyé dans la réponse que pour l'application mobile (en-tête
+  # "x-client: mobile"), qui l'envoie ensuite dans "Authorization: Bearer".
+  # Le web ne le voit jamais : pour lui, il reste dans le cookie HttpOnly.
+  defp mobile_token(conn, jwt) do
+    if get_req_header(conn, "x-client") == ["mobile"], do: jwt, else: nil
+  end
+  
   def sign_out(conn, _params) do
     conn
     |> delete_resp_cookie(

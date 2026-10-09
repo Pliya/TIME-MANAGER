@@ -11,13 +11,13 @@ defmodule Time_managerWeb.UserJSON do
   def auth(%{
         user: user,
         csrf_token: csrf_token
-      }) do
-    %{
-      data: %{
-        user: data(user),
-        xsrf_token: csrf_token
-      }
-    }
+      } = assigns) do
+    data = %{user: data(user), xsrf_token: csrf_token}
+
+    # Jeton JWT ajouté seulement pour l'application mobile (voir UserController.sign_in)
+    data = if assigns[:token], do: Map.put(data, :token, assigns[:token]), else: data
+
+    %{data: data}
   end
 
   @doc """

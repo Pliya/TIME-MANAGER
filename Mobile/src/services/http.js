@@ -1,8 +1,29 @@
 import axios from 'axios'
-import { xsrf_token, clear_session } from '@/session'
+import { watch } from 'vue'
+import { xsrf_token, clear_session, logged_user_id } from '@/session'
 
-// Même adresse qu'avant : l'émulateur atteint l'API via "adb reverse tcp:4000 tcp:4000"
-const API_URL = 'http://localhost:4000/api'
+// Adresse de l'API, choisie au moment du build :
+//   npm run build                                              -> http://localhost:4000/api
+//     (émulateur ou téléphone branché en USB, avec "adb reverse tcp:4000 tcp:4000")
+//   VITE_API_URL=http://35.208.70.76:4000/api npm run build    -> serveur déployé
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
+
+// Le cookie de connexion (SameSite=Lax) n'est pas envoyé quand l'API n'est pas
+// sur localhost. Le mobile garde donc le JWT et l'envoie dans l'en-tête
+// "Authorization: Bearer". L'API ne le donne qu'aux requêtes "x-client: mobile".
+const TOKEN_KEY = 'authToken'
+let authToken = localStorage.getItem(TOKEN_KEY)
+
+function setAuthToken(token) {
+  authToken = token || null
+  if (authToken) localStorage.setItem(TOKEN_KEY, authToken)
+  else localStorage.removeItem(TOKEN_KEY)
+}
+
+// Déconnexion (quelle que soit la page qui la déclenche) : on oublie le jeton
+watch(logged_user_id, (id) => {
+  if (!id) setAuthToken(null)
+})
 
 export const http = axios.create({
   baseURL: API_URL,
@@ -12,15 +33,22 @@ export const http = axios.create({
 })
 
 http.interceptors.request.use((config) => {
+  config.headers['x-client'] = 'mobile'
   if (xsrf_token.value) config.headers['x-xsrf-token'] = xsrf_token.value
+  if (authToken) config.headers.Authorization = `Bearer ${authToken}`
   return config
 })
 
 http.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Connexion réussie : l'API renvoie le JWT pour le mobile
+    if (response.config?.url?.includes('/users/sign_in')) setAuthToken(response.data?.data?.token)
+    return response
+  },
   (error) => {
     if (error.response?.status === 401 && !error.config?.url?.includes('/users/sign_in')) {
       clear_session()
+      setAuthToken(null)
       window.location.hash = '#/sign_in'
     }
     return Promise.reject(error)

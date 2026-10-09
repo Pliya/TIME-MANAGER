@@ -26,7 +26,7 @@ function applyOne(getUrl, body, it, ctx) {
     // Le serveur alterne arrivée/sortie : le statut est l'inverse du dernier pointage
     if (list && g[0] === 'clocks' && same(g[1], a)) {
       const last = [...list].sort(byTime).pop()
-      list.push({ id: it.tempId, time: it.at, status: !last?.status, user_id: Number(a), pending: true })
+      list.push({ id: it.tempId, time: it.data?.clock?.time || it.at, status: !last?.status, user_id: Number(a), pending: true })
     }
   }
 
@@ -105,6 +105,9 @@ export function entityFor(item, ctx) {
     const base = ctx.findUser(a) || { id: Number(a) }
     const u = item.data?.user || {}
     return b === 'role' ? { ...base, role: u.role } : { ...base, ...u }
+  }
+  if (item.method === 'put' && res === 'data') {
+    return item.data?.value
   }
   if (item.method === 'put' && res === 'workingtime') {
     return { id: Number(a), ...(item.data?.working_time || {}), pending: true }

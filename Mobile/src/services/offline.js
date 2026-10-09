@@ -15,8 +15,10 @@ export const syncVersion = ref(0)
 
 export const updatePending = () => (pendingCount.value = queue.count())
 
-// Format des dates renvoyées par l'API : "YYYY-MM-DD hh:mm:ss" en UTC
-export const toApiTime = (d) => d.toISOString().slice(0, 19).replace('T', ' ')
+// Heure locale au format de l'API, comme le web : "YYYY-MM-DD hh:mm:ss"
+const pad = (n) => String(n).padStart(2, '0')
+export const toApiTime = (d) =>
+  `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 
 let seq = 0
 const tempId = () => -(Date.now() * 10 + (seq++ % 10))
@@ -38,10 +40,13 @@ export async function enqueue(method, url, data) {
     tempId: method === 'post' ? tempId() : null,
     at: toApiTime(now),
   }
-  // Pointage : on envoie l'heure réelle du pointage (ISO 8601) pour que le
-  // serveur l'enregistre à cette heure-là et non à l'heure de la synchro.
+    // Pointage : les vues web envoient déjà l'heure du clic ({ clock: { time } }).
+  // Si elle manque, on ajoute l'heure actuelle. Le serveur enregistre donc
+  // l'heure du pointage, et non l'heure de la synchronisation.
   if (method === 'post' && url.startsWith('/clocks/')) {
-    item.data = { clock: { ...(data?.clock || {}), time: now.toISOString() } }
+    const clock = { ...(data?.clock || {}) }
+    if (!clock.time) clock.time = item.at
+    item.data = { clock }
   }
   const saved = queue.insert(item)
   await flush()
