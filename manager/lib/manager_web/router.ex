@@ -14,6 +14,16 @@ defmodule Time_managerWeb.Router do
     plug Time_managerWeb.AuthPlug
   end
 
+  pipeline :sign_in_limit do
+    plug Time_managerWeb.RateLimitPlug, name: :sign_in_ip, limit: 10, window_ms: 60_000, by: :ip
+
+    plug Time_managerWeb.RateLimitPlug,
+      name: :sign_in_email,
+      limit: 5,
+      window_ms: 60_000,
+      by: {:param, ["user", "email"]}
+  end
+
   pipeline :manager_access do
     plug Time_managerWeb.RolePlug, roles: ["Manager"]
   end
@@ -26,6 +36,8 @@ defmodule Time_managerWeb.Router do
     pipe_through :api
 
     scope "/users" do
+      pipe_through :sign_in_limit
+
       post "/sign_in", UserController, :sign_in
     end
 

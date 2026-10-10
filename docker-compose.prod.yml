@@ -21,8 +21,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    ports:
-      - "4000:4000"
+    expose:
+      - "4000"
     depends_on:
       db:
         condition: service_healthy
