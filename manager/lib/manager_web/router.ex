@@ -112,14 +112,16 @@ defmodule Time_managerWeb.Router do
     end
   end
 
-  scope "/api" do
-    pipe_through :api
-    get "/openapi", OpenApiSpex.Plug.RenderSpec, []
-  end
+  if Application.compile_env(:manager, :dev_routes) do
+    scope "/api" do
+      pipe_through :api
+      get "/openapi", OpenApiSpex.Plug.RenderSpec, []
+    end
 
-  scope "/swagger" do
-    pipe_through :browser
-    get "/swaggerui", OpenApiSpex.Plug.SwaggerUI, path: "/api/openapi"
+    scope "/swagger" do
+      pipe_through :browser
+      get "/swaggerui", OpenApiSpex.Plug.SwaggerUI, path: "/api/openapi"
+    end
   end
 
   if Application.compile_env(:manager, :dev_routes) do
