@@ -29,7 +29,6 @@
       "android"
     ],
     "plugins": {
-      "com.filfatstudios.spinnerdialog": {},
       "cordova-plugin-dialogs": {},
       "cordova-plugin-network-information": {}
     }

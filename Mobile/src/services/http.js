@@ -3,9 +3,8 @@ import { watch } from 'vue'
 import { xsrf_token, clear_session, logged_user_id } from '@/session'
 
 // Adresse de l'API, choisie au moment du build :
-//   npm run build                                              -> http://localhost:4000/api
-//     (émulateur ou téléphone branché en USB, avec "adb reverse tcp:4000 tcp:4000")
-//   VITE_API_URL=http://35.208.70.76:4000/api npm run build    -> serveur déployé
+//   npm run build   -> https://gotham-manager.duckdns.org/api  (valeur de .env.production)
+//   npm run dev     -> http://localhost:4000/api               (émulateur/USB + "adb reverse tcp:4000 tcp:4000")
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
 
 // Le cookie de connexion (SameSite=Lax) n'est pas envoyé quand l'API n'est pas

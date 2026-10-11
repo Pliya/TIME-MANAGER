@@ -109,9 +109,10 @@ Autres façons de transférer l'APK : Google Drive, ou WhatsApp en l'envoyant co
 | Méthode | Commandes | Quand l'utiliser |
 |---|---|---|
 | **Câble USB** | Activer le « débogage USB » sur le téléphone, puis `adb reverse tcp:4000 tcp:4000`, `npm run build`, `cordova run android --device` | Pas de Wi-Fi commun ; même fonctionnement que l'émulateur |
-| **Serveur déployé** | `VITE_API_URL=http://35.208.70.76:4000/api npm run build`, puis `cordova build android` | Pour que chacun installe l'APK sans le PC. Le serveur doit avoir la version du backend avec la connexion mobile (déployée par Travis après un push). |
+| **Serveur déployé** | `npm run build`, puis `cordova build android` | Pour que chacun installe l'APK sans le PC. `npm run build` cible automatiquement `https://gotham-manager.duckdns.org/api` (voir `.env.production`). Le serveur doit avoir le HTTPS en place et la version du backend avec la connexion mobile. |
 
-**Après un test sur téléphone**, reconstruire sans `VITE_API_URL` (`npm run build`) pour revenir à l'émulateur avec `adb reverse`.
+**Pour tester en local** (émulateur avec `adb reverse`, ou PC sur le même Wi-Fi), construire en forçant l'adresse locale, sinon l'app appellera le serveur déployé :
+`VITE_API_URL=http://localhost:4000/api npm run build` (ou l'IP du PC à la place de `localhost`).
 
 ### Si quelque chose ne marche pas sur le téléphone
 
