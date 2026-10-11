@@ -14,6 +14,16 @@ defmodule Time_managerWeb.Router do
     plug Time_managerWeb.AuthPlug
   end
 
+  pipeline :sign_in_limit do
+    plug Time_managerWeb.RateLimitPlug, name: :sign_in_ip, limit: 10, window_ms: 60_000, by: :ip
+
+    plug Time_managerWeb.RateLimitPlug,
+      name: :sign_in_email,
+      limit: 5,
+      window_ms: 60_000,
+      by: {:param, ["user", "email"]}
+  end
+
   pipeline :manager_access do
     plug Time_managerWeb.RolePlug, roles: ["Manager"]
   end
@@ -26,6 +36,8 @@ defmodule Time_managerWeb.Router do
     pipe_through :api
 
     scope "/users" do
+      pipe_through :sign_in_limit
+
       post "/sign_in", UserController, :sign_in
     end
 
@@ -100,14 +112,16 @@ defmodule Time_managerWeb.Router do
     end
   end
 
-  scope "/api" do
-    pipe_through :api
-    get "/openapi", OpenApiSpex.Plug.RenderSpec, []
-  end
+  if Application.compile_env(:manager, :dev_routes) do
+    scope "/api" do
+      pipe_through :api
+      get "/openapi", OpenApiSpex.Plug.RenderSpec, []
+    end
 
-  scope "/swagger" do
-    pipe_through :browser
-    get "/swaggerui", OpenApiSpex.Plug.SwaggerUI, path: "/api/openapi"
+    scope "/swagger" do
+      pipe_through :browser
+      get "/swaggerui", OpenApiSpex.Plug.SwaggerUI, path: "/api/openapi"
+    end
   end
 
   if Application.compile_env(:manager, :dev_routes) do

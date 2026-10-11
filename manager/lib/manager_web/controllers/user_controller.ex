@@ -162,7 +162,7 @@ defmodule Time_managerWeb.UserController do
         "time_manager_token",
         jwt,
         http_only: true,
-        secure: false,
+        secure: secure_cookie?(),
         same_site: "Lax",
         max_age: 60 * 60 * 24 * 30,
         path: "/"
@@ -184,7 +184,7 @@ defmodule Time_managerWeb.UserController do
               "time_manager_token",
               jwt,
               http_only: true,
-              secure: false,
+              secure: secure_cookie?(),
               same_site: "Lax",
               max_age: 60 * 60 * 24 * 30,
               path: "/"
@@ -268,5 +268,10 @@ defmodule Time_managerWeb.UserController do
       {:error, changeset} ->
         {:error, changeset}
     end
+  end
+
+  # Cookie envoyé uniquement en HTTPS quand COOKIE_SECURE=true (production)
+  defp secure_cookie? do
+    System.get_env("COOKIE_SECURE") == "true"
   end
 end

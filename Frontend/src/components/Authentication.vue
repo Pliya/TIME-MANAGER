@@ -48,7 +48,10 @@ async function sign_in()
     save_session(data.data.user, data.data.xsrf_token)
     router.push('/')
   } catch (err) {
-    error.value = err.response?.status === 401 ? 'Email ou mot de passe incorrect.' : "Impossible de contacter l'API."
+	const status = err.response?.status
+    if (status === 401) error.value = 'Email ou mot de passe incorrect.'
+    else if (status === 429) error.value = 'Trop de tentatives. Réessayez dans une minute.'
+    else error.value = "Impossible de contacter l'API."
   } finally {
     loading.value = false
   }
