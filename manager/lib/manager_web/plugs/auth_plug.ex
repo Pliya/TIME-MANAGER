@@ -11,13 +11,34 @@ defmodule Time_managerWeb.AuthPlug do
     |> authenticate()
   end
 
+  # defp authenticate(conn) do
+  #   case conn.cookies["time_manager_token"] do
+  #     nil ->
+  #       unauthorized(conn)
+
+  #     token ->
+  #       verify_token(conn, token)
+  #   end
+  # end
+
   defp authenticate(conn) do
-    case conn.cookies["time_manager_token"] do
+    case token_from(conn) do
       nil ->
         unauthorized(conn)
 
       token ->
         verify_token(conn, token)
+    end
+  end
+
+  # Le web envoie le JWT dans le cookie HttpOnly "time_manager_token".
+  # L'application mobile l'envoie dans l'en-tête "Authorization: Bearer <jwt>" :
+  # elle est servie depuis http://localhost, et le cookie (SameSite=Lax) n'est pas
+  # envoyé vers une API sur une autre adresse. Le jeton XSRF reste obligatoire.
+  defp token_from(conn) do
+    case get_req_header(conn, "authorization") do
+      ["Bearer " <> token | _] when token != "" -> token
+      _ -> conn.cookies["time_manager_token"]
     end
   end
 

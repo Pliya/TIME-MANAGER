@@ -101,4 +101,65 @@ defmodule Time_managerWeb.UserControllerTest do
   defp create_user(_) do
     %{user: user_fixture()}
   end
+    # Connexion de l'application mobile : le JWT passe dans l'en-tête Authorization
+  @password "motdepasse123"
+
+  defp sign_in(conn, user) do
+    post(conn, ~p"/api/users/sign_in", user: %{email: user.email, password: @password})
+  end
+
+  defp mobile_sign_in(user) do
+    Phoenix.ConnTest.build_conn()
+    |> put_req_header("x-client", "mobile")
+    |> sign_in(user)
+    |> json_response(200)
+    |> Map.fetch!("data")
+  end
+
+  describe "connexion de l'application mobile (jeton dans l'en-tête Authorization)" do
+    setup do
+      %{user: user_fixture(%{password: @password})}
+    end
+
+    test "le jeton n'est renvoyé qu'au mobile", %{user: user} do
+      web = Phoenix.ConnTest.build_conn() |> sign_in(user) |> json_response(200)
+      refute Map.has_key?(web["data"], "token")
+
+      assert %{"token" => token, "xsrf_token" => _} = mobile_sign_in(user)
+      assert is_binary(token)
+    end
+
+    test "le jeton dans l'en-tête Authorization suffit, sans cookie", %{user: user} do
+      %{"token" => token, "xsrf_token" => xsrf} = mobile_sign_in(user)
+
+      conn =
+        Phoenix.ConnTest.build_conn()
+        |> put_req_header("authorization", "Bearer " <> token)
+        |> put_req_header("x-xsrf-token", xsrf)
+        |> get(~p"/api/users/me")
+
+      assert json_response(conn, 200)["data"]["id"] == user.id
+    end
+
+    test "sans jeton XSRF, la requête est refusée (403)", %{user: user} do
+      %{"token" => token} = mobile_sign_in(user)
+
+      conn =
+        Phoenix.ConnTest.build_conn()
+        |> put_req_header("authorization", "Bearer " <> token)
+        |> get(~p"/api/users/me")
+
+      assert json_response(conn, 403)
+    end
+
+    test "un faux jeton est refusé (401)" do
+      conn =
+        Phoenix.ConnTest.build_conn()
+        |> put_req_header("authorization", "Bearer pas-un-vrai-jeton")
+        |> put_req_header("x-xsrf-token", "abc")
+        |> get(~p"/api/users/me")
+
+      assert json_response(conn, 401)
+    end
+  end
 end
