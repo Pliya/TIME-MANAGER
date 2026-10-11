@@ -63,6 +63,9 @@ if admin_email && admin_password do
         user
 
       user ->
+        # L'admin existe déjà : on remet son mot de passe à la valeur du .env
+        {:ok, user} = Time_manager.Account.update_user(user, %{"password" => admin_password})
+        IO.puts("Mot de passe de #{admin_email} mis à jour.")
         user
     end
 
