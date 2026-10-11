@@ -89,3 +89,4 @@ Elle renouvelle le certificat si besoin et recharge Nginx, sans coupure.
 | `manager/.../user_controller.ex` | Cookie `secure` piloté par `COOKIE_SECURE` |
 | `manager/.../endpoint.ex` | Origines CORS pilotées par `CORS_ORIGINS` |
 | `.travis.yml`, `Dockerfile`, `.env.example` | URL mise à jour vers le domaine HTTPS |
+
