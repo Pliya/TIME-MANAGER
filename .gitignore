@@ -8,6 +8,6 @@ Thumbs.db
 </> gitignore
 .env
 
-travis_deploy_key*
+id_rsa_travis*
 key.b64
 test_key

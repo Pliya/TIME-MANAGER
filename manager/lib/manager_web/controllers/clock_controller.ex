@@ -65,9 +65,9 @@ defmodule Time_managerWeb.ClockController do
     ]
   )
 
-  def create(conn, %{"userID" => user_id}) do
+  def create(conn, %{"userID" => user_id} = params) do
     with %{} = user <- Account.get_user(user_id),
-         {:ok, %Clock{} = clock} <- Attendance.create_clock(user.id) do
+         {:ok, %Clock{} = clock} <- Attendance.create_clock(user.id, params["clock"] || %{}) do
       conn
       |> put_status(:created)
       |> put_resp_header("location", ~p"/api/clocks/#{clock.user_id}")

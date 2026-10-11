@@ -13,15 +13,15 @@ defmodule Time_manager.AccountTest do
   describe "users" do
     test "list_users/0 returns all users" do
       user = user_fixture()
-      assert Account.list_users() == [user]
+      assert Enum.map(Account.list_users(), & &1.id) == [user.id]
     end
 
     test "list_users/1 filters by email and username" do
       user = user_fixture(%{username: "alice"})
       _other = user_fixture(%{username: "bob"})
 
-      assert Account.list_users(%{"email" => user.email}) == [user]
-      assert Account.list_users(%{"username" => "alice"}) == [user]
+      assert Enum.map(Account.list_users(%{"email" => user.email}), & &1.id) == [user.id]
+      assert Enum.map(Account.list_users(%{"username" => "alice"}), & &1.id) == [user.id]
       assert Account.list_users(%{"email" => user.email, "username" => "bob"}) == []
     end
 

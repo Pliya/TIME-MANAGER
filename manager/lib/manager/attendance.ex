@@ -21,6 +21,7 @@ defmodule Time_manager.Attendance do
   def list_clocks(user_id) do
     Clock
     |> where(user_id: ^user_id)
+    |> order_by(asc: :time, asc: :id)
     |> Repo.all()
   end
 
@@ -52,7 +53,7 @@ defmodule Time_manager.Attendance do
       {:error, %Ecto.Changeset{}}
 
   """
-  def create_clock(user_id) do
+  def create_clock(user_id, attrs \\ %{}) do
     last_clock =
       from(c in Clock,
         where: c.user_id == ^user_id,
@@ -66,13 +67,17 @@ defmodule Time_manager.Attendance do
 
     Repo.transaction(fn ->
       clock =
-        %Clock{user_id: user_id, status: not clocking_out?, time: now}
-        |> Clock.changeset(%{})
+        %Clock{user_id: user_id, status: not clocking_out?}
+        |> Clock.changeset(%{time: attrs["time"] || now})
         |> Repo.insert()
         |> unwrap_or_rollback()
 
-      if clocking_out? and DateTime.compare(last_clock.time, now) == :lt do
-        WorkDuration.create_working_time(%{user_id: user_id, start: last_clock.time, end: now})
+      if clocking_out? and DateTime.compare(last_clock.time, clock.time) == :lt do
+        WorkDuration.create_working_time(%{
+          user_id: user_id,
+          start: last_clock.time,
+          end: clock.time
+        })
         |> unwrap_or_rollback()
       end
 

@@ -29,11 +29,11 @@ defmodule Time_manager.WorkDurationTest do
         })
 
       assert WorkDuration.list_working_times_for_user(user.id, %{
-               "start" => "2026-09-22T00:00:00Z"
+               "start" => "2026-09-22 00:00:00"
              }) == [day2]
 
       assert WorkDuration.list_working_times_for_user(user.id, %{
-               "end" => "2026-09-21T23:59:59Z"
+               "end" => "2026-09-21 23:59:59"
              }) == [day1]
     end
 
@@ -44,7 +44,7 @@ defmodule Time_manager.WorkDurationTest do
     end
 
     test "create_working_time/1 with valid data creates a working_time", %{user: user} do
-      attrs = %{start: "2026-09-21T08:00:00Z", end: "2026-09-21T17:00:00Z", user_id: user.id}
+      attrs = %{start: "2026-09-21 08:00:00", end: "2026-09-21 17:00:00", user_id: user.id}
 
       assert {:ok, %WorkingTime{} = working_time} = WorkDuration.create_working_time(attrs)
       assert working_time.start == ~U[2026-09-21 08:00:00Z]

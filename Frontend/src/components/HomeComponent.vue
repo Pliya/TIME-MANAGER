@@ -1,173 +1,188 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { Clock, CalendarCheck, TrendingUp, History } from 'lucide-vue-next'
-import api from '@/api'
-import StatCard from './StatCard.vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { Lock } from 'lucide-vue-next'
+import { api } from '@/api'
 import ChartInterface from './ChartInterface.vue'
-import { DARK, chartOptions } from '@/utils/charts'
-import {
-  WEEK_DAYS, workingTimesToSessions, summarize, localDateKey, formatTime,
-  formatDuration, formatDecimalHours, hoursBetween, weekdayIndex, startOfWeek,
-} from '@/utils/date'
+import StatCard from './StatCard.vue'
+import { compute_kpi, hours_to_text, start_of_week, is_night, sort_by_time } from '@/utils/kpi'
 
-const props = defineProps({ userId: { type: Number, required: true } })
+const props = defineProps({ userId: { required: true } })
 
-const HEATMAP_SLOTS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22]
+const DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 
-const sessions = ref([])
-const error = ref('')
+const clocks = ref([])
+const working_times = ref([])
 
-async function loadSessions() {
-  try {
-    const { data } = await api.get(`/workingtime/${props.userId}`)
-    sessions.value = workingTimesToSessions(data.data)
-    error.value = ''
-  } catch {
-    sessions.value = []
-    error.value = 'Impossible de charger les temps de travail.'
-  }
+async function load_data()
+{
+  const [clocks_res, times_res] = await Promise.all([
+    api.get(`/clocks/${props.userId}`).catch(() => ({ data: { data: [] } })),
+    api.get(`/workingtime/${props.userId}`).catch(() => ({ data: { data: [] } })),
+  ])
+  clocks.value = sort_by_time(clocks_res.data.data || [], 'time')
+  working_times.value = sort_by_time(times_res.data.data || [], 'start')
 }
 
-watch(() => props.userId, loadSessions, { immediate: true })
+function to_date(time)
+{
+  return new Date(time.replace(' ', 'T'))
+}
 
-const weekSessions = computed(() => sessions.value.filter(s => s.start >= startOfWeek()))
+function hour_text(time)
+{
+  return time.slice(11, 16)
+}
 
-const stats = computed(() => summarize(weekSessions.value))
+const sessions = computed(() =>
+{
+  const result = []
+  let start = null
+  clocks.value.forEach(c =>
+  {
+    if (c.status) start = c.time
+    else if (start) {
+      result.push({ id: c.id, start, end: c.time })
+      start = null
+    }
+  })
+  return result
+})
 
-const lastSession = computed(() => sessions.value.at(-1))
+const last_clock = computed(() => clocks.value[clocks.value.length - 1])
+const is_clocked_in = computed(() => Boolean(last_clock.value?.status))
 
-const weekHours = computed(() => {
+const week_entries = computed(() =>
+{
+  const monday = start_of_week()
+  const times = working_times.value.filter(wt => to_date(wt.start) >= monday)
+  return times.length ? times : sessions.value.filter(s => to_date(s.start) >= monday)
+})
+
+const kpi = computed(() => compute_kpi(week_entries.value))
+
+const last_working_time = computed(() =>
+{
+  const last = working_times.value[working_times.value.length - 1]
+  return last ? { time: hour_text(last.end), date: last.end.slice(0, 10) } : { time: '--:--', date: 'Aucun' }
+})
+
+const chart_data = computed(() =>
+{
   const hours = [0, 0, 0, 0, 0, 0, 0]
-  weekSessions.value.forEach(s => { hours[weekdayIndex(s.start)] += hoursBetween(s.start, s.end) })
-  const today = weekdayIndex(new Date())
-  return hours.map((h, day) => (day <= today ? Number(h.toFixed(1)) : null))
+  week_entries.value.forEach(entry =>
+  {
+    const start = to_date(entry.start)
+    const day = (start.getDay() + 6) % 7
+    hours[day] += (to_date(entry.end) - start) / 3600000
+  })
+  return {
+    labels: DAYS,
+    datasets: [{ label: 'Heures travaillées', data: hours.map(h => Number(h.toFixed(1))), backgroundColor: '#262b5e', borderRadius: 6 }],
+  }
 })
 
-const weekTotal = computed(() => formatDecimalHours(weekHours.value.reduce((a, b) => a + b, 0)))
-
-const weekChart = computed(() => ({
-  labels: WEEK_DAYS,
-  datasets: [{
-    label: 'Heures',
-    data: weekHours.value,
-    borderColor: DARK,
-    backgroundColor: DARK,
-    borderWidth: 3,
-    tension: 0.35,
-    pointRadius: 4,
-  }],
-}))
-
-const heatmap = computed(() => {
-  const counts = HEATMAP_SLOTS.map(() => [0, 0, 0, 0, 0, 0, 0])
-  sessions.value.forEach(s => { counts[Math.floor(s.start.getHours() / 2)][weekdayIndex(s.start)]++ })
-  return counts
-})
-
-const peakSlot = computed(() => {
-  const totals = heatmap.value.map(row => row.reduce((a, b) => a + b, 0))
-  const max = Math.max(...totals)
-  const slot = HEATMAP_SLOTS[totals.indexOf(max)]
-  return max ? `${slot}h - ${slot + 2}h` : '--'
-})
-
-function heatColor(count) {
-  if (count >= 3) return 'bg-neutral-900'
-  if (count === 2) return 'bg-neutral-500'
-  if (count === 1) return 'bg-neutral-300'
-  return 'bg-neutral-100'
+const chart_options = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: { callbacks: { label: context => hours_to_text(context.raw) } },
+  },
+  scales: {
+    y: { beginAtZero: true, max: 24, ticks: { stepSize: 4, callback: v => v + 'h' }, grid: { color: '#f1f5f9' } },
+    x: { grid: { display: false } },
+  },
 }
 
-const recentSessions = computed(() => {
-  const list = sessions.value.slice(-6).reverse()
-  const longest = Math.max(1, ...list.map(s => s.end - s.start))
-  return list.map(s => ({
+const recent_sessions = computed(() =>
+  sessions.value.slice(-6).reverse().map(s => ({
     id: s.id,
-    date: localDateKey(s.start),
-    start: formatTime(s.start),
-    end: formatTime(s.end),
-    duration: formatDuration(s.end - s.start),
-    percent: Math.round(((s.end - s.start) / longest) * 100),
+    date: s.start.slice(0, 10),
+    clockIn: hour_text(s.start),
+    clockOut: hour_text(s.end),
+    duration: hours_to_text((to_date(s.end) - to_date(s.start)) / 3600000),
+    night: is_night(s.start),
   }))
-})
+)
+
+onMounted(load_data)
+watch(() => props.userId, load_data)
 </script>
 
 <template>
   <div class="space-y-6">
-    <p v-if="error" class="rounded-xl bg-red-50 px-3 py-3 sm:px-4 text-sm text-red-600">{{ error }}</p>
-
-    <div class="grid grid-cols-2 gap-4 lg:gap-6 xl:grid-cols-4">
-      <StatCard label="Heures cette semaine" :value="stats.total" hint="Depuis lundi" :icon="Clock" />
-      <StatCard label="Jours travaillés" :value="stats.days" hint="Cette semaine" :icon="CalendarCheck" />
-      <StatCard label="Moyenne par jour" :value="stats.average" hint="Cette semaine" :icon="TrendingUp" />
-      <StatCard
-        label="Dernière session"
-        :value="lastSession ? formatTime(lastSession.end) : '--:--'"
-        :hint="lastSession ? localDateKey(lastSession.end) : 'Aucune session'"
-        :icon="History"
-      />
+    <div class="stat-grid">
+      <StatCard label="Heures cette semaine" :value="kpi.totalHours" hint="Depuis lundi" icon="timetable" />
+      <StatCard label="Jours travaillés" :value="kpi.daysWorked" hint="Cette semaine" icon="schedule" />
+      <StatCard label="Moyenne par jour" :value="kpi.avgHours" hint="Cette semaine" icon="trend" />
+      <StatCard label="Dernier temps de travail" :value="last_working_time.time" :hint="last_working_time.date" icon="list" />
     </div>
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
-      <div class="rounded-2xl bg-white p-6 xl:col-span-2">
-        <p class="font-medium">Heures de la semaine</p>
-        <p class="mt-4 text-3xl font-semibold">{{ weekTotal }}</p>
-        <p class="text-sm text-neutral-400">travaillées depuis lundi</p>
-        <div class="mt-6 h-64">
-          <ChartInterface type="line" :chart-data="weekChart" :chart-options="chartOptions({ suffix: 'h', max: 24, stepSize: 4, formatValue: formatDecimalHours })" />
+      <div class="flex flex-col rounded-2xl bg-white p-6 text-center">
+        <p class="card-title text-left font-medium">Pointage</p>
+        <div class="flex flex-1 flex-col items-center justify-center">
+        <span v-if="is_clocked_in" class="rounded-full bg-neutral-900 px-2.5 py-1 text-xs font-medium text-white">En cours</span>
+        <span v-else class="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium">Pas pointé</span>
+
+        <p class="mt-6 text-4xl font-bold">{{ is_clocked_in ? hour_text(last_clock.time) : '--:--' }}</p>
+        <p class="mt-2 text-sm text-neutral-400">{{ is_clocked_in ? 'Arrivée pointée' : "Tu n'as pas encore pointé" }}</p>
+
+        <router-link
+          :to="`/clock/${props.userId}`"
+          class="mt-6 w-full rounded-full border-2 border-neutral-900 py-3 font-semibold hover:bg-neutral-50"
+        >
+          {{ is_clocked_in ? 'Pointer la sortie' : "Pointer l'arrivée" }}
+        </router-link>
         </div>
       </div>
 
-      <div class="rounded-2xl bg-white p-6">
-        <p class="font-medium">Heures d'arrivée</p>
-        <p class="mt-4 text-3xl font-semibold">{{ peakSlot }}</p>
-        <p class="text-sm text-neutral-400">créneau d'arrivée le plus fréquent</p>
-        <div class="mt-6 grid grid-cols-[2.5rem_repeat(7,1fr)] gap-1 text-xs text-neutral-400">
-          <template v-for="(row, index) in heatmap" :key="index">
-            <span class="flex items-center">{{ HEATMAP_SLOTS[index] }}h</span>
-            <div v-for="(count, day) in row" :key="day" class="h-5 rounded" :class="heatColor(count)"></div>
-          </template>
-          <span></span>
-          <span v-for="day in WEEK_DAYS" :key="day" class="text-center">{{ day }}</span>
+      <div class="rounded-2xl bg-white p-6 xl:col-span-2">
+        <p class="card-title font-medium">Heures de la semaine</p>
+        <p class="mt-4 text-3xl font-semibold">{{ kpi.totalHours }}</p>
+        <p class="text-sm text-neutral-400">travaillées depuis lundi</p>
+        <div class="mt-6 h-64">
+          <ChartInterface type="bar" :chart-data="chart_data" :chart-options="chart_options" />
         </div>
       </div>
     </div>
 
     <div class="rounded-2xl bg-white p-6">
-      <div class="mb-4 flex items-center justify-between">
-        <p class="font-medium">Sessions récentes</p>
-        <router-link to="/workingTimes" class="text-sm font-medium text-neutral-900 hover:underline">Voir tout</router-link>
+      <div class="card-title mb-4 flex items-center justify-between">
+        <p class="font-medium">Dernières sessions</p>
+        <router-link :to="`/workingTimes/${props.userId}`" class="text-sm font-medium hover:underline">Voir tous les temps</router-link>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full min-w-max text-sm">
           <thead>
             <tr class="bg-neutral-50 text-left text-neutral-500">
-              <th class="rounded-l-lg px-3 py-3 sm:px-4 font-medium">Date</th>
-              <th class="px-3 py-3 sm:px-4 font-medium">Arrivée</th>
-              <th class="px-3 py-3 sm:px-4 font-medium">Départ</th>
-              <th class="rounded-r-lg px-3 py-3 sm:px-4 font-medium">Durée</th>
+              <th class="rounded-l-lg px-3 py-3 font-medium sm:px-4">Date</th>
+              <th class="px-3 py-3 font-medium sm:px-4">Arrivée</th>
+              <th class="px-3 py-3 font-medium sm:px-4">Sortie</th>
+              <th class="rounded-r-lg px-3 py-3 font-medium sm:px-4">Durée</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="session in recentSessions" :key="session.id" class="border-b border-neutral-100 last:border-0">
-              <td class="px-3 py-3 sm:px-4 font-medium">{{ session.date }}</td>
-              <td class="px-3 py-3 sm:px-4">{{ session.start }}</td>
-              <td class="px-3 py-3 sm:px-4">{{ session.end }}</td>
+            <tr v-for="item in recent_sessions" :key="item.id" class="border-b border-neutral-100 last:border-0">
+              <td class="px-3 py-3 font-medium sm:px-4">{{ item.date }}</td>
+              <td class="px-3 py-3 sm:px-4">{{ item.clockIn }}</td>
               <td class="px-3 py-3 sm:px-4">
-                <div class="flex items-center gap-3">
-                  <div class="hidden h-2 w-32 rounded-full bg-neutral-200 sm:block">
-                    <div class="h-2 rounded-full bg-neutral-900" :style="{ width: `${session.percent}%` }"></div>
-                  </div>
-                  <span>{{ session.duration }}</span>
-                </div>
+                {{ item.clockOut }}
+                <span v-if="item.night" class="ml-2 rounded-full bg-neutral-900 px-2.5 py-1 text-xs font-medium text-white">Nuit</span>
               </td>
+              <td class="px-3 py-3 sm:px-4">{{ item.duration }}</td>
             </tr>
-            <tr v-if="recentSessions.length === 0">
-              <td colspan="4" class="px-4 py-8 text-center text-neutral-400">Aucune session enregistrée.</td>
+            <tr v-if="recent_sessions.length === 0">
+              <td colspan="4" class="px-4 py-8 text-center text-neutral-400">Aucune session récente.</td>
             </tr>
           </tbody>
         </table>
       </div>
+      <p class="mt-4 flex items-center gap-2 text-xs text-neutral-500">
+        <Lock class="h-4 w-4" />
+        Ces chiffres sont pour toi. Aucune comparaison avec tes collègues.
+      </p>
     </div>
+
   </div>
 </template>

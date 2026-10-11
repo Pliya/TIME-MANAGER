@@ -20,6 +20,13 @@ defmodule Time_manager.AttendanceTest do
       assert Attendance.list_clocks(user.id) == [clock]
     end
 
+    test "list_clocks/1 returns the clocks sorted by time", %{user: user} do
+      {:ok, later} = Attendance.create_clock(user.id, %{"time" => "2026-09-29 12:00:00"})
+      {:ok, earlier} = Attendance.create_clock(user.id, %{"time" => "2026-09-29 08:00:00"})
+
+      assert Enum.map(Attendance.list_clocks(user.id), & &1.id) == [earlier.id, later.id]
+    end
+
     test "get_clock!/1 returns the clock with given id", %{user: user} do
       clock = clock_fixture(user.id)
       assert Attendance.get_clock!(clock.id) == clock
@@ -36,6 +43,11 @@ defmodule Time_manager.AttendanceTest do
       clock_in_an_hour_ago(user.id)
 
       assert {:ok, %Clock{status: false}} = Attendance.create_clock(user.id)
+    end
+
+    test "create_clock/2 uses the time sent by the client", %{user: user} do
+      assert {:ok, clock} = Attendance.create_clock(user.id, %{"time" => "2026-09-29 08:30:00"})
+      assert clock.time == ~U[2026-09-29 08:30:00Z]
     end
 
     test "clocking in alone does not create a working time", %{user: user} do
