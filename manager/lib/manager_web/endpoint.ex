@@ -46,7 +46,11 @@ defmodule Time_managerWeb.Endpoint do
   plug Plug.Head
   plug Plug.Session, @session_options
   plug Corsica,
-  origins: ["http://localhost:5174", "http://127.0.0.1:5174"],
+  origins:
+    (case System.get_env("CORS_ORIGINS") do
+       nil -> ["http://localhost:5174", "http://127.0.0.1:5174", "https://gotham-manager.duckdns.org"]
+       value -> String.split(value, ",", trim: true)
+     end),
   allow_headers: :all,
   allow_methods: :all,
   allow_credentials: true
