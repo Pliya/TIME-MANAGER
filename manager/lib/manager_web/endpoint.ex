@@ -48,8 +48,18 @@ defmodule Time_managerWeb.Endpoint do
   plug Corsica,
   origins:
     (case System.get_env("CORS_ORIGINS") do
-       nil -> ["http://localhost:5174", "http://127.0.0.1:5174", "https://gotham-manager.duckdns.org"]
-       value -> String.split(value, ",", trim: true)
+       nil ->
+         [
+           "http://localhost:5174",
+           "http://127.0.0.1:5174",
+           "https://gotham-manager.duckdns.org",
+           # Origines du webview de l'application mobile (Cordova)
+           "http://localhost",
+           "https://localhost"
+         ]
+
+       value ->
+         String.split(value, ",", trim: true)
      end),
   allow_headers: :all,
   allow_methods: :all,
