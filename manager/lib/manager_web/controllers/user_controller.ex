@@ -230,6 +230,17 @@ defmodule Time_managerWeb.UserController do
 
   # GET /api/users/me — tout utilisateur authentifié
   # Lit le user_id depuis les claims du JWT (mis par AuthPlug dans conn.assigns)
+  # L'utilisateur connecté modifie son propre profil (sans changer son rôle)
+  def me_update(conn, %{"user" => user_params}) do
+    params = Map.drop(user_params, ["role", "role_id"])
+    update(conn, %{"userID" => to_string(conn.assigns.current_user_id), "user" => params})
+  end
+
+  # L'utilisateur connecté supprime son propre compte
+  def me_delete(conn, _params) do
+    delete(conn, %{"userID" => to_string(conn.assigns.current_user_id)})
+  end
+
   def me(conn, _params) do
     user_id = conn.assigns.current_user_id
 

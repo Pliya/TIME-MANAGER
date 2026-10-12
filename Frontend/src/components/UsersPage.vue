@@ -1,12 +1,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { Search, UserPlus } from 'lucide-vue-next'
+import { Search, UserPlus, Trash2 } from 'lucide-vue-next'
 import { api } from '@/api'
 import Toggle from '@/components/Toggle.vue'
 import Chip from '@/components/Chip.vue'
 import DataTable from '@/components/DataTable.vue'
 import { store } from '@/store'
-import { username } from '@/session'
+import { username, logged_user_id } from '@/session'
 
 const ROLES = { Employee: 'Employé', Manager: 'Manager', Administrator: 'Administrateur' }
 const ASSIGNABLE = { Employee: 'Employé', Manager: 'Manager' }
@@ -47,6 +47,18 @@ function set_permission(user, name, value)
 {
   store.permissions[user.id] = { validate: permission(user, 'validate'), plan: permission(user, 'plan'), [name]: value }
   log(`${value ? 'Ajout' : 'Retrait'} du droit « ${PERMISSIONS[name]} » à ${user.username}`)
+}
+
+async function remove_user(user)
+{
+  if (!confirm(`Supprimer définitivement l'utilisateur « ${user.username} » ?`)) return
+  try {
+    await api.delete(`/users/${user.id}`)
+    users.value = users.value.filter(u => u.id !== user.id)
+    log(`Utilisateur ${user.username} supprimé`)
+  } catch {
+    error.value = "La suppression a échoué."
+  }
 }
 
 async function change_role(user, event)
@@ -134,6 +146,7 @@ onMounted(load_users)
                 <span class="flex gap-1">
                   <router-link :to="`/workingTimes/${user.id}`"><Chip>{{ $t('Temps') }}</Chip></router-link>
                   <router-link :to="`/chartManager/${user.id}`"><Chip>{{ $t('Statistiques') }}</Chip></router-link>
+                  <button v-if="user.id !== logged_user_id" type="button" :title="$t('Supprimer')" class="text-red-600 hover:text-red-700" @click="remove_user(user)"><Trash2 class="h-4 w-4" /></button>
                 </span>
               </td>
             </tr>

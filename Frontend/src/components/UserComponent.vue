@@ -264,6 +264,10 @@ watch(() => props.userId, (new_id) =>
         </div>
       </div>
 
+      <button class="mb-4 flex w-full items-center justify-center gap-2 rounded-full border-2 border-neutral-900 py-2 text-sm font-semibold hover:bg-neutral-100" @click="open = false; router.push('/profil')">
+        {{ $t('Mon profil') }}
+      </button>
+
       <p v-if="loading" class="mb-4 text-sm text-neutral-400">{{ $t('Chargement...') }}</p>
 
       <div v-if="error" class="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">

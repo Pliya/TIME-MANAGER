@@ -469,3 +469,12 @@ addMessages({
 })
 
 addMessages({"Sessions": "Sessions"})
+
+addMessages({
+  "Mon profil": "My profile",
+  "Nom d'utilisateur": "Username",
+  "Nouveau mot de passe": "New password",
+  "Laisser vide pour ne pas changer": "Leave empty to keep it",
+  "Supprimer mon compte": "Delete my account",
+  "Cette action est définitive : tes données seront effacées.": "This action is permanent: your data will be erased."
+})

@@ -3,6 +3,7 @@ import HomeComponent from '../components/HomeComponent.vue'
 import ClockManager from '../components/ClockManager.vue'
 import ChartManager from '../components/ChartManager.vue'
 import WorkingTimes from '../components/WorkingTimes.vue'
+import ProfilePage from '../components/ProfilePage.vue'
 import WorkingTime from '../components/WorkingTime.vue'
 import Authentication from '../components/Authentication.vue'
 import PlanningPage from '../components/PlanningPage.vue'
@@ -46,6 +47,8 @@ const routes = [
   { path: '/regles', component: RulesPage, meta: { title: 'Règles', roles: ADMIN } },
   { path: '/paie', component: PayrollPage, meta: { title: 'Paie', roles: ADMIN } },
   { path: '/absences-rh', component: AdminAbsencesPage, meta: { title: 'Absences', roles: ADMIN } },
+
+  { path: '/profil', component: ProfilePage, meta: { title: 'Mon profil' } },
 
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
