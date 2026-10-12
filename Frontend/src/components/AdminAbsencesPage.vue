@@ -11,18 +11,21 @@ const month = month_key()
 const month_name = new Date().toLocaleDateString('fr-FR', { month: 'long' })
 const days_in_month = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()
 
-const requests = computed(() => [...store.absences].sort((a, b) => (b.status === 'En attente') - (a.status === 'En attente')))
+// On ignore les entrées incomplètes (ex. donnée corrompue) pour ne pas planter la page
+const absences = computed(() => store.absences.filter(a => a && a.start && a.end && a.userName))
+
+const requests = computed(() => [...absences.value].sort((a, b) => (b.status === 'En attente') - (a.status === 'En attente')))
 
 const is_today = a => a.start <= today && a.end >= today && a.status !== 'Refusé'
 
-const pending = computed(() => store.absences.filter(a => a.status === 'En attente').length)
-const on_leave = computed(() => store.absences.filter(a => a.type === 'Congé' && a.status === 'Validé' && is_today(a)).length)
-const sick = computed(() => store.absences.filter(a => a.type === 'Arrêt maladie' && is_today(a)).length)
+const pending = computed(() => absences.value.filter(a => a.status === 'En attente').length)
+const on_leave = computed(() => absences.value.filter(a => a.type === 'Congé' && a.status === 'Validé' && is_today(a)).length)
+const sick = computed(() => absences.value.filter(a => a.type === 'Arrêt maladie' && is_today(a)).length)
 
 const recovery_left = computed(() =>
 {
   const earned = Object.values(store.overtimeDecisions).filter(d => d.choice === 'recover').reduce((s, d) => s + d.hours, 0)
-  const taken = store.absences.filter(a => a.type === 'Récupération' && a.status !== 'Refusé').reduce((s, a) => s + a.hours, 0)
+  const taken = absences.value.filter(a => a.type === 'Récupération' && a.status !== 'Refusé').reduce((s, a) => s + (a.hours || 0), 0)
   return earned - taken
 })
 
@@ -32,7 +35,7 @@ function decide(absence, status)
 }
 
 const calendar = computed(() =>
-  store.absences
+  absences.value
     .filter(a => a.status !== 'Refusé' && a.start.slice(0, 7) <= month && a.end.slice(0, 7) >= month)
     .map(a =>
     {
