@@ -32,8 +32,8 @@ watch(() => route.path, () => { accessibilityOpen.value = false })
   <router-view v-if="route.meta.public" />
 
   <div v-else class="flex h-dvh flex-col bg-[#F0F0F0] font-sans text-neutral-900">
-    <header class="shrink-0 bg-[#aec0cc] pt-[env(safe-area-inset-top)] text-neutral-900">
-      <div class="flex h-16 items-center justify-between gap-3 px-4">
+    <header class="shrink-0 bg-[#aec0cc] text-neutral-900">
+      <div class="flex h-14 items-center justify-between gap-3 px-4">
         <div class="flex min-w-0 items-center gap-2">
           <button v-if="isSubPage" class="-ml-1 p-1" aria-label="Retour" @click="router.back()">
             <ChevronLeft class="h-6 w-6" />
