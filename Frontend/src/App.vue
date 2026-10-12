@@ -30,6 +30,14 @@ const all_sections = computed(() => [
     ],
   },
   {
+    title: 'Mon espace',
+    roles: ['Manager', 'Administrator'],
+    links: [
+      { to: '/', label: 'Dashboard', logo: 'dashboard' },
+      { to: `/clock/${logged_user_id}`, label: 'Pointage', logo: 'timetable' },
+    ],
+  },
+  {
     title: 'Administrateur / RH',
     roles: ['Administrator'],
     links: [

@@ -27,9 +27,9 @@ const EMPLOYEE_AND_MANAGER = ['Employee', 'Manager', 'Administrator']
 
 const routes = [
   { path: '/sign_in', component: Authentication, meta: { title: 'Connexion', public: true } },
-  { path: '/', component: HomeComponent, meta: { title: 'Dashboard', roles: EMPLOYEE } },
+  { path: '/', component: HomeComponent, meta: { title: 'Dashboard', roles: EMPLOYEE_AND_MANAGER } },
 
-  { path: '/clock/:userid', component: ClockManager, meta: { title: 'Pointage', roles: EMPLOYEE } },
+  { path: '/clock/:userid', component: ClockManager, meta: { title: 'Pointage', roles: EMPLOYEE_AND_MANAGER } },
   { path: '/workingTimes/:userID', component: WorkingTimes, meta: { title: 'Mes temps', roles: EMPLOYEE_AND_MANAGER } },
   { path: '/chartManager/:userid', component: ChartManager, meta: { title: 'Statistiques', roles: EMPLOYEE_AND_MANAGER } },
   { path: '/planning', component: PlanningPage, meta: { title: 'Planning', roles: EMPLOYEE } },

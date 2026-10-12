@@ -85,19 +85,12 @@ defmodule Time_managerWeb.Router do
       get "/", TeamController, :index
       get "/:teamID", TeamController, :show
 
-      # Créer / modifier / supprimer une équipe : administrateur uniquement
       scope "/" do
-        pipe_through :admin_access
+        pipe_through :manager_access
 
         post "/", TeamController, :create
         put "/:teamID", TeamController, :update
         delete "/:teamID", TeamController, :delete
-      end
-
-      # Ajouter / retirer un agent : manager et administrateur
-      scope "/" do
-        pipe_through :manager_access
-
         post "/:teamID/users/:userID", TeamController, :add_user
         delete "/:teamID/users/:userID", TeamController, :remove_user
       end

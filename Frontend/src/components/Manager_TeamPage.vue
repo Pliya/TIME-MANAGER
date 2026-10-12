@@ -163,9 +163,8 @@ onMounted(load)
     </div>
     <div class="rounded-2xl bg-white p-5">
       <p class="card-title font-medium">{{ $t('Gérer les équipes') }}</p>
-      <p v-if="!is_admin()" class="mb-2 text-xs text-neutral-400">{{ $t('Seul l’administrateur crée les équipes et nomme les managers.') }}</p>
 
-      <form v-if="is_admin()" class="flex flex-col gap-2 xl:flex-row" @submit.prevent="create_team">
+      <form class="flex flex-col gap-2 xl:flex-row" @submit.prevent="create_team">
         <input v-model.trim="new_team.name" required placeholder="Nom de la nouvelle équipe" class="flex-1 rounded-xl border border-neutral-200 px-3 py-2 text-sm" />
         <select v-if="is_admin()" v-model="new_team.managerId" required class="rounded-xl border border-neutral-200 px-3 py-2 text-sm">
           <option value="" disabled>{{ $t('Manager de l\'équipe') }}</option>
@@ -180,7 +179,7 @@ onMounted(load)
         <div v-for="team in teams" :key="team.id" class="rounded-xl border border-neutral-200 p-4">
           <div class="flex items-center justify-between gap-2">
             <p class="font-semibold">{{ team.name }} <span class="text-sm font-normal text-neutral-400">({{ team.users.length }})</span></p>
-            <button v-if="is_admin()" class="text-xs font-medium text-red-600 hover:underline" @click="delete_team(team)">{{ $t('Supprimer') }}</button>
+            <button class="text-xs font-medium text-red-600 hover:underline" @click="delete_team(team)">{{ $t('Supprimer') }}</button>
           </div>
 
           <div class="mt-3 flex flex-wrap gap-2">
