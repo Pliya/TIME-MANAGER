@@ -98,7 +98,7 @@ watch(() => route.path, () =>
 
       <nav class="flex-1 overflow-y-auto pt-8 pb-6">
         <div v-for="section in navigation" :key="section.title" class="mb-5">
-          <p class="mb-3 px-6 text-xs font-semibold tracking-widest text-[#a7abcf] uppercase">{{ section.title }}</p>
+          <p class="mb-3 px-6 text-xs font-semibold tracking-widest text-[#a7abcf] uppercase">{{ $t(section.title) }}</p>
           <router-link
             v-for="item in section.links"
             :key="item.to"
@@ -107,7 +107,7 @@ watch(() => route.path, () =>
             :class="is_active(item.to) ? 'bg-brand font-semibold text-white' : 'text-white/85 hover:bg-white/10'"
           >
             <LogoIcon :name="item.logo" class="h-5 w-5 invert" />
-            {{ item.label }}
+            {{ $t(item.label) }}
           </router-link>
         </div>
       </nav>
@@ -118,7 +118,7 @@ watch(() => route.path, () =>
         @click="disconnect"
       >
         <LogOut class="h-5 w-5" />
-        Se déconnecter
+        {{ $t('Se déconnecter') }}
       </button>
     </aside>
 
@@ -128,7 +128,7 @@ watch(() => route.path, () =>
           <button class="text-neutral-900 lg:hidden" @click="menu_open = true">
             <Menu class="h-6 w-6" />
           </button>
-          <h1 class="text-lg font-bold tracking-wide uppercase lg:text-xl">{{ route.meta.title }}</h1>
+          <h1 class="text-lg font-bold tracking-wide uppercase lg:text-xl">{{ $t(route.meta.title) }}</h1>
         </div>
         <div class="flex items-center gap-3 text-neutral-900">
           <div class="relative">
