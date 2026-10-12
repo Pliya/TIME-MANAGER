@@ -480,3 +480,5 @@ addMessages({
 })
 
 addMessages({"Seul l’administrateur crée les équipes et nomme les managers.": "Only the administrator creates teams and names the managers."})
+
+addMessages({"Toutes les équipes": "All teams"})

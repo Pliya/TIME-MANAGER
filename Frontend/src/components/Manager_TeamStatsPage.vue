@@ -7,7 +7,7 @@ import Chip from '@/components/Chip.vue'
 import ChartInterface from '@/components/ChartInterface.vue'
 import LogoIcon from '@/components/LogoIcon.vue'
 import { store } from '@/store'
-import { load_team_members } from '@/team'
+import { load_teams } from '@/team'
 import { hours_to_text, hours_of, summarize, in_week, in_month, to_date } from '@/utils/kpi'
 import { DAY_NAMES } from '@/utils/planning'
 
@@ -16,10 +16,24 @@ const GREEN = '#10b981'
 const RED = '#ef4444'
 const PALETTE = ['#2f6496', '#38bdf8', '#818cf8', '#c084fc', '#f43f5e', '#10b981', '#f59e0b']
 
-const members = ref([])
+const teams = ref([])
+const selected_id = ref('all')
+
 onMounted(async () =>
 {
-  members.value = await load_team_members().catch(() => [])
+  teams.value = await load_teams().catch(() => [])
+  if (teams.value.length === 1) selected_id.value = teams.value[0].id
+})
+
+// Membres de l'équipe choisie (ou de toutes les équipes)
+const members = computed(() =>
+{
+  if (selected_id.value === 'all') {
+    const all = new Map()
+    teams.value.forEach(team => team.members.forEach(m => all.set(m.id, m)))
+    return [...all.values()].sort((a, b) => a.name.localeCompare(b.name))
+  }
+  return teams.value.find(team => team.id === selected_id.value)?.members || []
 })
 
 const rows = computed(() => members.value.map(m => ({
@@ -93,6 +107,12 @@ const options = {
 
 <template>
   <div class="space-y-8">
+    <div v-if="teams.length > 1" class="flex flex-wrap items-center gap-2 rounded-2xl bg-white p-5">
+      <span class="mr-1 text-sm font-medium">{{ $t('Équipe') }} :</span>
+      <button type="button" @click="selected_id = 'all'"><Chip :color="selected_id === 'all' ? 'dark' : 'gray'">{{ $t('Toutes les équipes') }}</Chip></button>
+      <button v-for="team in teams" :key="team.id" type="button" @click="selected_id = team.id"><Chip :color="selected_id === team.id ? 'dark' : 'gray'">{{ team.name }}</Chip></button>
+    </div>
+
     <div class="flex flex-col gap-3 rounded-2xl bg-white p-5 xl:flex-row xl:items-center xl:justify-between">
       <div class="flex flex-wrap gap-2">
         <Chip color="dark">{{ $t('Toute l\'équipe') }}</Chip>

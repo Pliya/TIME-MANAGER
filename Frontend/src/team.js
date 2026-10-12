@@ -35,6 +35,16 @@ export async function load_team_members()
   return by_name(await Promise.all([...users.values()].map(with_data)))
 }
 
+export async function load_teams()
+{
+  const { data } = await api.get('/teams')
+  return Promise.all(data.data.map(async team => ({
+    id: team.id,
+    name: team.name,
+    members: by_name(await Promise.all(team.users.map(with_data))),
+  })))
+}
+
 export async function load_all_users()
 {
   const { data } = await api.get('/users')

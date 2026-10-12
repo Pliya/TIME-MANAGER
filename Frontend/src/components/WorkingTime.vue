@@ -1,11 +1,12 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/api'
-import { X } from 'lucide-vue-next'
+import { X, ChevronLeft } from 'lucide-vue-next'
 import { hours_to_text } from '@/utils/kpi'
 
 const route = useRoute()
+const router = useRouter()
 
 const props = defineProps({
   userId: {
@@ -270,7 +271,11 @@ defineExpose({
 </script>
 
 <template>
-  <div class="w-full max-w-xl rounded-2xl bg-white p-6">
+  <div class="w-full max-w-xl space-y-4">
+    <button type="button" @click="router.back()" class="inline-flex items-center gap-2 rounded-full border-2 border-neutral-900 bg-white px-5 py-2 text-sm font-semibold hover:bg-neutral-100">
+      <ChevronLeft class="h-4 w-4" /> {{ $t('Retour') }}
+    </button>
+  <div class="w-full rounded-2xl bg-white p-6">
     <div class="card-title mb-6 flex items-center justify-between">
       <p class="font-medium">{{ is_edit_mode ? `Modifier la plage #${working_time_id}` : 'Create a Working Time' }}</p>
       <button v-if="is_edit_mode" type="button" class="text-neutral-400 hover:text-neutral-600" title="Annuler le mode édition" @click="cancel_edit">
@@ -317,5 +322,6 @@ defineExpose({
         <button type="button" class="flex-1 rounded-full bg-red-50 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100" @click="on_delete">{{ $t('Supprimer') }}</button>
       </div>
     </form>
+    </div>
   </div>
 </template>
