@@ -478,3 +478,5 @@ addMessages({
   "Supprimer mon compte": "Delete my account",
   "Cette action est définitive : tes données seront effacées.": "This action is permanent: your data will be erased."
 })
+
+addMessages({"Seul l’administrateur crée les équipes et nomme les managers.": "Only the administrator creates teams and names the managers."})
