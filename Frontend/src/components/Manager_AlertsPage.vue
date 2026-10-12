@@ -54,8 +54,8 @@ onMounted(load)
 <template>
   <div class="space-y-4">
     <p v-if="message" class="rounded-xl bg-white px-4 py-3 text-sm text-neutral-600">{{ message }}</p>
-    <p v-if="loading" class="text-sm text-neutral-400">Chargement...</p>
-    <p v-else-if="alerts.length === 0" class="rounded-2xl bg-white p-5 text-sm text-neutral-500">Aucune alerte : tout est en ordre.</p>
+    <p v-if="loading" class="text-sm text-neutral-400">{{ $t('Chargement...') }}</p>
+    <p v-else-if="alerts.length === 0" class="rounded-2xl bg-white p-5 text-sm text-neutral-500">{{ $t('Aucune alerte : tout est en ordre.') }}</p>
 
     <div v-for="alert in alerts" :key="alert.key" class="flex flex-col gap-4 rounded-2xl bg-white p-5 xl:flex-row xl:items-center">
       <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" :class="alert.red ? 'bg-red-50 text-red-600' : 'bg-neutral-100'">
@@ -68,27 +68,27 @@ onMounted(load)
 
       <div class="flex flex-wrap gap-2">
         <template v-if="alert.kind === 'open'">
-          <button class="rounded-full border-2 border-neutral-900 bg-neutral-900 px-5 py-2 text-sm font-semibold text-white" @click="close_session(alert)">Corriger</button>
+          <button class="rounded-full border-2 border-neutral-900 bg-neutral-900 px-5 py-2 text-sm font-semibold text-white" @click="close_session(alert)">{{ $t('Corriger') }}</button>
           <button
             class="rounded-full border-2 border-neutral-900 bg-white px-5 py-2 text-sm font-semibold disabled:opacity-40"
             :disabled="reminders(alert) >= store.rules.maxReminders"
             @click="remind(alert)"
           >
-            {{ reminders(alert) >= store.rules.maxReminders ? 'Relancé' : `Relancer (${store.rules.maxReminders} fois)` }}
+            {{ reminders(alert) >= store.rules.maxReminders ? $t('Relancé') : $t('Relancer ({n} fois)', { n: store.rules.maxReminders }) }}
           </button>
         </template>
 
         <router-link v-else-if="alert.kind === 'nights'" to="/planning-equipe" class="rounded-full border-2 border-neutral-900 bg-neutral-900 px-5 py-2 text-sm font-semibold text-white">
-          Modifier le planning
+          {{ $t('Modifier le planning') }}
         </router-link>
 
         <template v-else-if="alert.kind === 'unusual'">
-          <router-link :to="`/workingTime/${alert.member.id}/${alert.wt.id}`" class="rounded-full border-2 border-neutral-900 bg-white px-5 py-2 text-sm font-semibold">Vérifier</router-link>
-          <button class="rounded-full border-2 border-neutral-900 bg-white px-5 py-2 text-sm font-semibold" @click="dismiss(alert)">Valider</button>
+          <router-link :to="`/workingTime/${alert.member.id}/${alert.wt.id}`" class="rounded-full border-2 border-neutral-900 bg-white px-5 py-2 text-sm font-semibold">{{ $t('Vérifier') }}</router-link>
+          <button class="rounded-full border-2 border-neutral-900 bg-white px-5 py-2 text-sm font-semibold" @click="dismiss(alert)">{{ $t('Valider') }}</button>
         </template>
 
         <router-link v-else :to="`/workingTimes/${alert.member.id}`" class="rounded-full border-2 border-neutral-900 bg-white px-5 py-2 text-sm font-semibold">
-          Voir le détail
+          {{ $t('Voir le détail') }}
         </router-link>
       </div>
     </div>

@@ -43,3 +43,9 @@ export const i18n = {
 }
 
 export const isEnglish = computed(() => locale.value === 'en')
+
+// Locale pour les dates (noms de mois/jours selon la langue)
+export function dateLocale()
+{
+  return locale.value === 'en' ? 'en-US' : 'fr-FR'
+}

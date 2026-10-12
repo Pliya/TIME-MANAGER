@@ -1,4 +1,5 @@
 import { store } from '@/store'
+import { dateLocale } from '../i18n'
 import { hours_to_text, add_days, to_date } from './kpi'
 
 export const LEAVE_DAYS_PER_YEAR = 25
@@ -33,7 +34,7 @@ export function leave_taken(user_id)
 
 export function period_text(a)
 {
-  const format = day => to_date(`${day} 12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+  const format = day => to_date(`${day} 12:00:00`).toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short' })
   return a.start === a.end ? format(a.start) : `${format(a.start)} – ${format(a.end)}`
 }
 

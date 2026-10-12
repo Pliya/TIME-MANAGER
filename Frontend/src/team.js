@@ -1,4 +1,5 @@
 import { api } from './api'
+import { t } from './i18n'
 import { store } from './store'
 import { to_date, hours_of, hours_to_text, in_month, in_week, summarize, max_consecutive_nights, date_key, month_key, start_of_week, sort_by_time } from './utils/kpi'
 
@@ -58,8 +59,8 @@ export function compute_alerts(members)
     if (m.present && (Date.now() - to_date(m.since)) > 12 * 3600000) {
       alerts.push({
         key: `open-${m.id}-${m.since}`, kind: 'open', red: true, member: m,
-        title: `Pointage de sortie oublié · ${m.name}`,
-        text: `Session ouverte depuis le ${m.since.slice(0, 16)}. Bloque la validation du mois.`,
+        title: t('Pointage de sortie oublié · {name}', { name: m.name }),
+        text: t('Session ouverte depuis le {since}. Bloque la validation du mois.', { since: m.since.slice(0, 16) }),
       })
     }
 
@@ -69,8 +70,8 @@ export function compute_alerts(members)
     if (nights > max_nights_per_month || run > max_run) {
       alerts.push({
         key: `nights-${m.id}-${month_key()}-${nights}`, kind: 'nights', red: true, member: m,
-        title: `Trop de nuits · ${m.name}`,
-        text: `${run} nuits consécutives au plus, ${nights} nuits ce mois-ci (plafond : ${max_nights_per_month}).`,
+        title: t('Trop de nuits · {name}', { name: m.name }),
+        text: t('{run} nuits consécutives au plus, {nights} nuits ce mois-ci (plafond : {cap}).', { run, nights, cap: max_nights_per_month }),
       })
     }
 
@@ -78,8 +79,8 @@ export function compute_alerts(members)
     if (week.total > week_hours) {
       alerts.push({
         key: `overtime-${m.id}-${date_key(start_of_week())}`, kind: 'overtime', red: false, member: m,
-        title: `Heures sup élevées · ${m.name}`,
-        text: `${hours_to_text(week.total)} cette semaine, dont ${hours_to_text(week.total - week_hours)} au-delà de ${week_hours}h.`,
+        title: t('Heures sup élevées · {name}', { name: m.name }),
+        text: t('{total} cette semaine, dont {over} au-delà de {h}h.', { total: hours_to_text(week.total), over: hours_to_text(week.total - week_hours), h: week_hours }),
       })
     }
 
@@ -91,8 +92,8 @@ export function compute_alerts(members)
       if (average && hours_of(wt) > average * 1.5) {
         alerts.push({
           key: `unusual-${wt.id}`, kind: 'unusual', red: false, member: m, wt,
-          title: `Durée inhabituelle · ${m.name}`,
-          text: `${hours_to_text(hours_of(wt))} déclarées le ${day}. Moyenne de l'équipe ce jour-là : ${hours_to_text(average)}.`,
+          title: t('Durée inhabituelle · {name}', { name: m.name }),
+          text: t('{dur} déclarées le {day}. Moyenne de l\'équipe ce jour-là : {avg}.', { dur: hours_to_text(hours_of(wt)), day, avg: hours_to_text(average) }),
         })
       }
     })

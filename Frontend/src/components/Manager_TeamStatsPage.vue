@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { t } from '@/i18n'
 import { Eye } from 'lucide-vue-next'
 import StatCard from '@/components/StatCard.vue'
 import Chip from '@/components/Chip.vue'
@@ -54,7 +55,7 @@ const charts = computed(() =>
     {
       key: 'perDay', title: "Heures de l'équipe par jour", subtitle: 'Heures cumulées de tous les agents, cette semaine',
       logo: 'schedule', types: ['bar', 'line', 'radar'],
-      data: { labels: DAY_NAMES, datasets: [{ label: 'Heures travaillées (h)', data: per_day.map(round), backgroundColor: BLUE, borderColor: BLUE, borderRadius: 4 }] },
+      data: { labels: DAY_NAMES.map(d => t(d)), datasets: [{ label: 'Heures travaillées (h)', data: per_day.map(round), backgroundColor: BLUE, borderColor: BLUE, borderRadius: 4 }] },
     },
     {
       key: 'perAgent', title: 'Heures par agent', subtitle: 'Total de la semaine, par ordre alphabétique',
@@ -67,7 +68,7 @@ const charts = computed(() =>
       data: { labels: ['Jour', 'Nuit', 'Heures sup'], datasets: [{ data: [day, total.value.night, total.value.overtime].map(round), backgroundColor: [PALETTE[0], PALETTE[1], PALETTE[4]], borderColor: '#ffffff' }] },
     },
     {
-      key: 'nights', title: 'Nuits par agent', subtitle: `Ce mois-ci, plafond de ${limit} nuits (en rouge au-delà)`,
+      key: 'nights', title: 'Nuits par agent', subtitle: t('Ce mois-ci, plafond de {n} nuits (en rouge au-delà)', { n: limit }),
       logo: 'schedule', types: ['bar', 'line', 'radar'],
       data: {
         labels: names,
@@ -94,13 +95,13 @@ const options = {
   <div class="space-y-8">
     <div class="flex flex-col gap-3 rounded-2xl bg-white p-5 xl:flex-row xl:items-center xl:justify-between">
       <div class="flex flex-wrap gap-2">
-        <Chip color="dark">Toute l'équipe</Chip>
+        <Chip color="dark">{{ $t('Toute l\'équipe') }}</Chip>
         <router-link v-for="m in members" :key="m.id" :to="`/chartManager/${m.id}`">
           <Chip>{{ m.name }}</Chip>
         </router-link>
       </div>
       <p class="flex items-center gap-2 text-xs text-neutral-500">
-        <Eye class="h-4 w-4 shrink-0" /> Par agent : les mêmes graphiques que ceux de l'agent.
+        <Eye class="h-4 w-4 shrink-0" /> {{ $t('Par agent : les mêmes graphiques que ceux de l\'agent.') }}
       </p>
     </div>
 
@@ -119,11 +120,11 @@ const options = {
               <LogoIcon :name="chart.logo" class="h-6 w-6" />
             </div>
             <div>
-              <p class="font-semibold">{{ chart.title }}</p>
-              <p class="text-sm text-neutral-400">{{ chart.subtitle }}</p>
+              <p class="font-semibold">{{ $t(chart.title) }}</p>
+              <p class="text-sm text-neutral-400">{{ $t(chart.subtitle) }}</p>
             </div>
             <select v-model="chart_types[chart.key]" class="ml-auto rounded-lg border border-neutral-200 px-3 py-1.5 text-sm text-neutral-600">
-              <option v-for="type in chart.types" :key="type" :value="type">{{ TYPE_LABELS[type] }}</option>
+              <option v-for="type in chart.types" :key="type" :value="type">{{ $t(TYPE_LABELS[type]) }}</option>
             </select>
           </div>
           <div class="mt-6 h-64">

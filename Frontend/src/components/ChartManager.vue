@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { dateLocale } from '@/i18n'
 import { Lock, ArrowLeft } from 'lucide-vue-next'
 import { api } from '@/api'
 import ChartInterface from './ChartInterface.vue'
@@ -30,7 +31,7 @@ function compute_pay(wt_list)
 {
   const month = summarize(in_month(wt_list))
   pay.value = {
-    month: new Date().toLocaleDateString('fr-FR', { month: 'long' }),
+    month: new Date().toLocaleDateString(dateLocale(), { month: 'long' }),
     normal: hours_to_text(month.normal),
     night: hours_to_text(month.night),
     overtime: hours_to_text(month.overtime),
@@ -126,7 +127,7 @@ async function load_clocks_data()
       const hour_decimal = d.getHours() + d.getMinutes() / 60
 
       if (!days_map[key]) {
-        const label = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })
+        const label = d.toLocaleDateString(dateLocale(), { weekday: 'short', day: 'numeric' })
         days_map[key] = { label, in: null, out: null }
       }
       if (c.status && !days_map[key].in) days_map[key].in = hour_decimal
@@ -176,7 +177,7 @@ async function load_working_times_data()
       if (isNaN(s) || isNaN(e) || e <= s) return
 
       const hours_worked = (e - s) / (1000 * 60 * 60)
-      const day_name = new Date(wt.start.replace(' ', 'T')).toLocaleDateString('fr-FR', { weekday: 'long' })
+      const day_name = new Date(wt.start.replace(' ', 'T')).toLocaleDateString(dateLocale(), { weekday: 'long' })
       const capitalized_day = day_name.charAt(0).toUpperCase() + day_name.slice(1)
 
       days_durations[capitalized_day] = (days_durations[capitalized_day] || 0) + hours_worked
@@ -247,7 +248,7 @@ watch(() => props.userId, load_all_charts)
 <template>
   <div class="space-y-8">
     <button v-if="other_agent" type="button" @click="$router.back()" class="inline-flex items-center gap-2 rounded-full border-2 border-neutral-900 bg-white px-5 py-2 text-sm font-semibold hover:bg-neutral-100">
-      <ArrowLeft class="h-4 w-4" /> Retour
+      <ArrowLeft class="h-4 w-4" /> {{ $t('Retour') }}
     </button>
     <section>
       <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
@@ -255,11 +256,11 @@ watch(() => props.userId, load_all_charts)
           <div class="card-title flex flex-wrap items-center gap-4">
             <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white"><LogoIcon name="timetable" class="h-6 w-6" /></div>
             <div>
-              <p class="font-semibold">Horaires de pointage</p>
-              <p class="text-sm text-neutral-400">Heures d'arrivée et de départ sur 7 jours</p>
+              <p class="font-semibold">{{ $t('Horaires de pointage') }}</p>
+              <p class="text-sm text-neutral-400">{{ $t('Heures d\'arrivée et de départ sur 7 jours') }}</p>
             </div>
             <select v-model="chart_types.line" class="ml-auto rounded-lg border border-neutral-200 px-3 py-1.5 text-sm text-neutral-600">
-              <option v-for="type in ['line', 'bar', 'radar']" :key="type" :value="type">{{ type_labels[type] }}</option>
+              <option v-for="type in ['line', 'bar', 'radar']" :key="type" :value="type">{{ $t(type_labels[type]) }}</option>
             </select>
           </div>
           <div class="mt-6 h-72">
@@ -271,11 +272,11 @@ watch(() => props.userId, load_all_charts)
           <div class="card-title flex flex-wrap items-center gap-4">
             <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white"><LogoIcon name="bar-chart" class="h-6 w-6" /></div>
             <div>
-              <p class="font-semibold">Fréquence des pointages</p>
-              <p class="text-sm text-neutral-400">Nombre de Clock In / Clock Out par heure</p>
+              <p class="font-semibold">{{ $t('Fréquence des pointages') }}</p>
+              <p class="text-sm text-neutral-400">{{ $t('Nombre de Clock In / Clock Out par heure') }}</p>
             </div>
             <select v-model="chart_types.clock_bar" class="ml-auto rounded-lg border border-neutral-200 px-3 py-1.5 text-sm text-neutral-600">
-              <option v-for="type in ['bar', 'line', 'radar']" :key="type" :value="type">{{ type_labels[type] }}</option>
+              <option v-for="type in ['bar', 'line', 'radar']" :key="type" :value="type">{{ $t(type_labels[type]) }}</option>
             </select>
           </div>
           <div class="mt-6 h-72">
@@ -291,11 +292,11 @@ watch(() => props.userId, load_all_charts)
           <div class="card-title flex flex-wrap items-center gap-4">
             <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white"><LogoIcon name="schedule" class="h-6 w-6" /></div>
             <div>
-              <p class="font-semibold">Durée travaillée par jour</p>
-              <p class="text-sm text-neutral-400">Heures cumulées par journée de travail</p>
+              <p class="font-semibold">{{ $t('Durée travaillée par jour') }}</p>
+              <p class="text-sm text-neutral-400">{{ $t('Heures cumulées par journée de travail') }}</p>
             </div>
             <select v-model="chart_types.wt_bar" class="ml-auto rounded-lg border border-neutral-200 px-3 py-1.5 text-sm text-neutral-600">
-              <option v-for="type in ['bar', 'line', 'radar']" :key="type" :value="type">{{ type_labels[type] }}</option>
+              <option v-for="type in ['bar', 'line', 'radar']" :key="type" :value="type">{{ $t(type_labels[type]) }}</option>
             </select>
           </div>
           <div class="mt-6 h-72">
@@ -307,11 +308,11 @@ watch(() => props.userId, load_all_charts)
           <div class="card-title flex flex-wrap items-center gap-4">
             <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white"><LogoIcon name="chart" class="h-6 w-6" /></div>
             <div>
-              <p class="font-semibold">Répartition du temps travaillé</p>
-              <p class="text-sm text-neutral-400">Proportion (%) du temps total par jour</p>
+              <p class="font-semibold">{{ $t('Répartition du temps travaillé') }}</p>
+              <p class="text-sm text-neutral-400">{{ $t('Proportion (%) du temps total par jour') }}</p>
             </div>
             <select v-model="chart_types.wt_pie" class="ml-auto rounded-lg border border-neutral-200 px-3 py-1.5 text-sm text-neutral-600">
-              <option v-for="type in ['pie', 'doughnut', 'polarArea']" :key="type" :value="type">{{ type_labels[type] }}</option>
+              <option v-for="type in ['pie', 'doughnut', 'polarArea']" :key="type" :value="type">{{ $t(type_labels[type]) }}</option>
             </select>
           </div>
           <div class="mt-6 h-72">
@@ -322,15 +323,15 @@ watch(() => props.userId, load_all_charts)
     </section>
 
     <div class="rounded-2xl bg-white p-5">
-      <p class="card-title mb-3 font-medium">Ma fiche de paie estimée · {{ pay.month }}</p>
+      <p class="card-title mb-3 font-medium">{{ $t('Ma fiche de paie estimée · {m}', { m: pay.month }) }}</p>
       <div class="grid grid-cols-2 gap-4 text-sm xl:grid-cols-4">
-        <div><p class="text-neutral-500">Heures normales</p><p class="text-xl font-semibold">{{ pay.normal }}</p></div>
-        <div><p class="text-neutral-500">Nuit (× {{ store.rules.nightRate }})</p><p class="text-xl font-semibold">{{ pay.night }}</p></div>
-        <div><p class="text-neutral-500">Heures sup (× {{ store.rules.overtimeRate }})</p><p class="text-xl font-semibold">{{ pay.overtime }}</p></div>
-        <div><p class="text-neutral-500">À récupérer</p><p class="text-xl font-semibold">{{ recovery }}</p></div>
+        <div><p class="text-neutral-500">{{ $t('Heures normales') }}</p><p class="text-xl font-semibold">{{ pay.normal }}</p></div>
+        <div><p class="text-neutral-500">{{ $t('Nuit (× {r})', { r: store.rules.nightRate }) }}</p><p class="text-xl font-semibold">{{ pay.night }}</p></div>
+        <div><p class="text-neutral-500">{{ $t('Heures sup (× {r})', { r: store.rules.overtimeRate }) }}</p><p class="text-xl font-semibold">{{ pay.overtime }}</p></div>
+        <div><p class="text-neutral-500">{{ $t('À récupérer') }}</p><p class="text-xl font-semibold">{{ recovery }}</p></div>
       </div>
       <p class="mt-4 flex items-start gap-2 text-xs text-neutral-500">
-        <Lock class="h-4 w-4 shrink-0" /> Ces chiffres sont pour toi. Aucune comparaison avec tes collègues.
+        <Lock class="h-4 w-4 shrink-0" /> {{ $t('Ces chiffres sont pour toi. Aucune comparaison avec tes collègues.') }}
       </p>
     </div>
   </div>

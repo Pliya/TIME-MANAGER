@@ -8,6 +8,7 @@ import { compute_kpi, hours_to_text, start_of_week, is_night, sort_by_time } fro
 
 const props = defineProps({ userId: { required: true } })
 
+import { t } from '@/i18n'
 const DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 
 const clocks = ref([])
@@ -76,7 +77,7 @@ const chart_data = computed(() =>
     hours[day] += (to_date(entry.end) - start) / 3600000
   })
   return {
-    labels: DAYS,
+    labels: DAYS.map(d => t(d)),
     datasets: [{ label: 'Heures travaillées', data: hours.map(h => Number(h.toFixed(1))), backgroundColor: '#262b5e', borderRadius: 6 }],
   }
 })
@@ -120,27 +121,27 @@ watch(() => props.userId, load_data)
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
       <div class="flex flex-col rounded-2xl bg-white p-6 text-center">
-        <p class="card-title text-left font-medium">Pointage</p>
+        <p class="card-title text-left font-medium">{{ $t('Pointage') }}</p>
         <div class="flex flex-1 flex-col items-center justify-center">
-        <span v-if="is_clocked_in" class="rounded-full bg-neutral-900 px-2.5 py-1 text-xs font-medium text-white">En cours</span>
-        <span v-else class="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium">Pas pointé</span>
+        <span v-if="is_clocked_in" class="rounded-full bg-neutral-900 px-2.5 py-1 text-xs font-medium text-white">{{ $t('En cours') }}</span>
+        <span v-else class="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium">{{ $t('Pas pointé') }}</span>
 
         <p class="mt-6 text-4xl font-bold">{{ is_clocked_in ? hour_text(last_clock.time) : '--:--' }}</p>
-        <p class="mt-2 text-sm text-neutral-400">{{ is_clocked_in ? 'Arrivée pointée' : "Tu n'as pas encore pointé" }}</p>
+        <p class="mt-2 text-sm text-neutral-400">{{ is_clocked_in ? $t('Arrivée pointée') : $t("Tu n'as pas encore pointé") }}</p>
 
         <router-link
           :to="`/clock/${props.userId}`"
           class="mt-6 w-full rounded-full border-2 border-neutral-900 py-3 font-semibold hover:bg-neutral-50"
         >
-          {{ is_clocked_in ? 'Pointer la sortie' : "Pointer l'arrivée" }}
+          {{ is_clocked_in ? $t('Pointer la sortie') : $t("Pointer l'arrivée") }}
         </router-link>
         </div>
       </div>
 
       <div class="rounded-2xl bg-white p-6 xl:col-span-2">
-        <p class="card-title font-medium">Heures de la semaine</p>
+        <p class="card-title font-medium">{{ $t('Heures de la semaine') }}</p>
         <p class="mt-4 text-3xl font-semibold">{{ kpi.totalHours }}</p>
-        <p class="text-sm text-neutral-400">travaillées depuis lundi</p>
+        <p class="text-sm text-neutral-400">{{ $t('travaillées depuis lundi') }}</p>
         <div class="mt-6 h-64">
           <ChartInterface type="bar" :chart-data="chart_data" :chart-options="chart_options" />
         </div>
@@ -149,17 +150,17 @@ watch(() => props.userId, load_data)
 
     <div class="rounded-2xl bg-white p-6">
       <div class="card-title mb-4 flex items-center justify-between">
-        <p class="font-medium">Dernières sessions</p>
-        <router-link :to="`/workingTimes/${props.userId}`" class="text-sm font-medium hover:underline">Voir tous les temps</router-link>
+        <p class="font-medium">{{ $t('Dernières sessions') }}</p>
+        <router-link :to="`/workingTimes/${props.userId}`" class="text-sm font-medium hover:underline">{{ $t('Voir tous les temps') }}</router-link>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full min-w-max text-sm">
           <thead>
             <tr class="bg-neutral-50 text-left text-neutral-500">
-              <th class="rounded-l-lg px-3 py-3 font-medium sm:px-4">Date</th>
-              <th class="px-3 py-3 font-medium sm:px-4">Arrivée</th>
-              <th class="px-3 py-3 font-medium sm:px-4">Sortie</th>
-              <th class="rounded-r-lg px-3 py-3 font-medium sm:px-4">Durée</th>
+              <th class="rounded-l-lg px-3 py-3 font-medium sm:px-4">{{ $t('Date') }}</th>
+              <th class="px-3 py-3 font-medium sm:px-4">{{ $t('Arrivée') }}</th>
+              <th class="px-3 py-3 font-medium sm:px-4">{{ $t('Sortie') }}</th>
+              <th class="rounded-r-lg px-3 py-3 font-medium sm:px-4">{{ $t('Durée') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -168,19 +169,19 @@ watch(() => props.userId, load_data)
               <td class="px-3 py-3 sm:px-4">{{ item.clockIn }}</td>
               <td class="px-3 py-3 sm:px-4">
                 {{ item.clockOut }}
-                <span v-if="item.night" class="ml-2 rounded-full bg-neutral-900 px-2.5 py-1 text-xs font-medium text-white">Nuit</span>
+                <span v-if="item.night" class="ml-2 rounded-full bg-neutral-900 px-2.5 py-1 text-xs font-medium text-white">{{ $t('Nuit') }}</span>
               </td>
               <td class="px-3 py-3 sm:px-4">{{ item.duration }}</td>
             </tr>
             <tr v-if="recent_sessions.length === 0">
-              <td colspan="4" class="px-4 py-8 text-center text-neutral-400">Aucune session récente.</td>
+              <td colspan="4" class="px-4 py-8 text-center text-neutral-400">{{ $t('Aucune session récente.') }}</td>
             </tr>
           </tbody>
         </table>
       </div>
       <p class="mt-4 flex items-center gap-2 text-xs text-neutral-500">
         <Lock class="h-4 w-4" />
-        Ces chiffres sont pour toi. Aucune comparaison avec tes collègues.
+        {{ $t('Ces chiffres sont pour toi. Aucune comparaison avec tes collègues.') }}
       </p>
     </div>
 
