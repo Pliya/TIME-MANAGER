@@ -455,3 +455,15 @@ addMessages({
   "{name} : plus de {max} nuits d'affilée ({day})": "{name}: more than {max} nights in a row ({day})",
   "{name} : pas de repos après la nuit de {day}": "{name}: no rest after the night of {day}"
 })
+
+addMessages({
+  "Plus": "More",
+  "Synchronisation": "Sync",
+  "Connecté": "Online",
+  "Hors ligne": "Offline",
+  "{n} modification(s) en attente d'envoi": "{n} change(s) waiting to be sent",
+  "Toutes les modifications sont envoyées": "All changes are sent",
+  "Synchroniser maintenant": "Sync now",
+  "{n} modification(s) en attente": "{n} change(s) pending",
+  "{n} modification(s) en attente de synchronisation": "{n} change(s) waiting to sync"
+})

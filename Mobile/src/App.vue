@@ -72,10 +72,10 @@ watch(() => route.path, () => { accessibilityOpen.value = false })
       </div>
       <div v-if="!online" class="flex items-center justify-center gap-2 bg-amber-600 px-4 py-1.5 text-xs font-medium text-white">
         <WifiOff class="h-3.5 w-3.5" />
-        Hors ligne<template v-if="pendingCount"> · {{ pendingCount }} modification(s) en attente</template>
+        {{ $t('Hors ligne') }}<template v-if="pendingCount"> · {{ $t('{n} modification(s) en attente', { n: pendingCount }) }}</template>
       </div>
       <div v-else-if="pendingCount" class="bg-brand px-4 py-1.5 text-center text-xs font-medium text-white">
-        {{ pendingCount }} modification(s) en attente de synchronisation
+        {{ $t('{n} modification(s) en attente de synchronisation', { n: pendingCount }) }}
       </div>
     </header>
 

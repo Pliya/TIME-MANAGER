@@ -31,7 +31,7 @@ async function disconnect() {
 <template>
   <div class="space-y-6">
     <div v-for="section in sections" :key="section.title" class="rounded-2xl bg-white p-5">
-      <p class="card-title">{{ section.title }}</p>
+      <p class="card-title">{{ $t(section.title) }}</p>
       <router-link
         v-for="item in section.links"
         :key="item.to"
@@ -40,20 +40,20 @@ async function disconnect() {
         :class="isActive(route.path, item.to) ? 'font-semibold text-brand' : 'text-neutral-900'"
       >
         <LogoIcon :name="item.logo" class="h-5 w-5" />
-        <span class="flex-1">{{ item.label }}</span>
+        <span class="flex-1">{{ $t(item.label) }}</span>
         <ChevronRight class="h-4 w-4 text-neutral-400" />
       </router-link>
     </div>
 
     <div class="rounded-2xl bg-white p-5">
-      <p class="card-title">Synchronisation</p>
+      <p class="card-title">{{ $t('Synchronisation') }}</p>
       <div class="flex items-center gap-3 text-sm">
         <Wifi v-if="online" class="h-5 w-5 shrink-0" />
         <WifiOff v-else class="h-5 w-5 shrink-0 text-amber-600" />
         <p class="flex-1">
-          {{ online ? 'Connecté' : 'Hors ligne' }}
+          {{ online ? $t('Connecté') : $t('Hors ligne') }}
           <span class="block text-neutral-500">
-            {{ pendingCount ? `${pendingCount} modification(s) en attente d'envoi` : 'Toutes les modifications sont envoyées' }}
+            {{ pendingCount ? $t('{n} modification(s) en attente d\'envoi', { n: pendingCount }) : $t('Toutes les modifications sont envoyées') }}
           </span>
         </p>
       </div>
@@ -62,7 +62,7 @@ async function disconnect() {
         :disabled="!online || !pendingCount"
         @click="syncQueue()"
       >
-        <RefreshCw class="h-4 w-4" /> Synchroniser maintenant
+        <RefreshCw class="h-4 w-4" /> {{ $t('Synchroniser maintenant') }}
       </button>
     </div>
 
@@ -70,7 +70,7 @@ async function disconnect() {
       class="flex w-full items-center justify-center gap-3 rounded-full bg-neutral-900 py-3 text-sm font-semibold tracking-wide text-white uppercase"
       @click="disconnect"
     >
-      <LogOut class="h-5 w-5" /> Se déconnecter
+      <LogOut class="h-5 w-5" /> {{ $t('Se déconnecter') }}
     </button>
   </div>
 </template>
