@@ -467,3 +467,5 @@ addMessages({
   "{n} modification(s) en attente": "{n} change(s) pending",
   "{n} modification(s) en attente de synchronisation": "{n} change(s) waiting to sync"
 })
+
+addMessages({"Sessions": "Sessions"})

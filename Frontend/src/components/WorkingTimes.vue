@@ -1,16 +1,17 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { dateLocale } from '@/i18n'
-import { useRoute } from 'vue-router'
-import { Lock, ChevronDown } from 'lucide-vue-next'
+import { useRoute, useRouter } from 'vue-router'
+import { Lock, ChevronDown, ChevronLeft } from 'lucide-vue-next'
 import { api } from '@/api'
 import StatCard from './StatCard.vue'
 import Chip from './Chip.vue'
 import { compute_kpi, hours_to_text, is_night, sort_by_time } from '@/utils/kpi'
 import { store, new_id } from '@/store'
-import { username } from '@/session'
+import { username, logged_user_id } from '@/session'
 
 const route = useRoute()
+const router = useRouter()
 const props = defineProps({ userId: { type: [Number, String], default: null } })
 
 const user_id = ref(Number(route.params.userID || props.userId))
@@ -21,6 +22,8 @@ const requests = computed(() => store.corrections.filter(c => c.userId === user_
 const pending_count = computed(() => requests.value.filter(c => c.status === 'En attente').length)
 const form = ref({ sessionId: '', type: 'Pointage oublié', time: '', reason: '' })
 const form_error = ref('')
+
+const is_owner = computed(() => user_id.value === logged_user_id.value)
 
 const stats = computed(() => compute_kpi(working_times.value))
 
@@ -110,6 +113,10 @@ defineExpose({ user_id, working_times, get_working_times })
 
 <template>
   <div class="space-y-6">
+    <button v-if="!is_owner" type="button" @click="router.back()" class="inline-flex items-center gap-2 rounded-full border-2 border-neutral-900 bg-white px-5 py-2 text-sm font-semibold hover:bg-neutral-100">
+      <ChevronLeft class="h-4 w-4" /> {{ $t('Retour') }}
+    </button>
+
     <p v-if="error_message" class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{{ error_message }}</p>
 
     <div class="stat-grid">
@@ -120,7 +127,7 @@ defineExpose({ user_id, working_times, get_working_times })
     </div>
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
-      <div class="space-y-6">
+      <div v-if="is_owner" class="space-y-6">
         <form class="rounded-2xl bg-white p-5" @submit.prevent="send_request">
           <p class="card-title mb-1 font-medium">{{ $t('Demander une correction') }}</p>
           <p class="mb-4 text-xs text-neutral-500">{{ $t('Ton manager accepte, modifie ou refuse sous 48 h.') }}</p>
@@ -167,9 +174,9 @@ defineExpose({ user_id, working_times, get_working_times })
         </div>
       </div>
 
-      <div class="rounded-2xl bg-white p-5 xl:col-span-2">
+      <div class="rounded-2xl bg-white p-5" :class="is_owner ? 'xl:col-span-2' : 'xl:col-span-3'">
         <div class="card-title mb-4 flex flex-wrap items-center justify-between gap-2">
-          <p class="font-medium">{{ $t('Mes sessions') }} <span class="text-neutral-400">({{ sessions.length }})</span></p>
+          <p class="font-medium">{{ is_owner ? $t('Mes sessions') : $t('Sessions') }} <span class="text-neutral-400">({{ sessions.length }})</span></p>
           <span class="flex items-center gap-1 text-xs text-neutral-500"><Lock class="h-4 w-4" /> {{ $t('Lecture seule') }}</span>
         </div>
 
@@ -196,7 +203,7 @@ defineExpose({ user_id, working_times, get_working_times })
                   <Chip v-else>{{ $t('Pointée') }}</Chip>
                 </td>
                 <td class="px-3 py-3 text-right">
-                  <button class="text-xs font-medium text-neutral-500 hover:text-neutral-900" @click="correct(wt)">{{ $t('Corriger') }}</button>
+                  <button v-if="is_owner" class="text-xs font-medium text-neutral-500 hover:text-neutral-900" @click="correct(wt)">{{ $t('Corriger') }}</button>
                 </td>
               </tr>
               <tr v-if="sessions.length === 0">
