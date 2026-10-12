@@ -1,6 +1,4 @@
 <script setup>
-// Version mobile de Frontend/src/App.vue : même header, mêmes couleurs,
-// même zone de contenu. La sidebar du web devient une tab bar en bas.
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Accessibility, ChevronLeft, CircleHelp, WifiOff } from 'lucide-vue-next'
@@ -13,7 +11,6 @@ import { online, pendingCount, syncMessage, syncVersion } from './services/offli
 import { spinnerMessage } from './services/spinner'
 import seal from '@web/assets/gotham-seal.png'
 
-// Écran de démarrage (comme Instagram) : logo + nom, puis l'app
 const showSplash = ref(true)
 onMounted(() => setTimeout(() => { showSplash.value = false }, 1800))
 
@@ -23,11 +20,8 @@ const accessibilityOpen = ref(false)
 
 const userId = computed(() => Number(route.params.userID || route.params.userid) || logged_user_id.value)
 
-// Sous-page (ex. temps d'un agent ouvert depuis "Équipe") : bouton retour
 const isSubPage = computed(() => !tabs.value.some((tab) => isActive(route.path, tab.to)))
 
-// Une clé par vue + version de synchro : après une synchro, la vue affichée
-// est rechargée avec les données du serveur.
 const viewKey = computed(() => `${route.matched[0]?.path}:${syncVersion.value}`)
 
 watch(() => route.path, () => { accessibilityOpen.value = false })
@@ -90,7 +84,6 @@ watch(() => route.path, () => { accessibilityOpen.value = false })
     <TabBar />
   </div>
 
-  <!-- Repli quand le plugin natif SpinnerDialog n'est pas disponible (navigateur) -->
   <div v-if="spinnerMessage" class="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-4 bg-neutral-900/60 text-white">
     <span class="h-10 w-10 animate-spin rounded-full border-4 border-white border-t-transparent"></span>
     <p class="text-sm">{{ spinnerMessage }}</p>

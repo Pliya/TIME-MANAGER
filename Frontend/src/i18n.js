@@ -1,6 +1,5 @@
 import { ref, computed } from 'vue'
 
-// Langue courante, gardée d'une visite à l'autre
 const saved = (() => { try { return localStorage.getItem('locale') } catch { return null } })()
 export const locale = ref(saved === 'en' ? 'en' : 'fr')
 
@@ -15,7 +14,6 @@ export function toggleLocale()
   setLocale(locale.value === 'fr' ? 'en' : 'fr')
 }
 
-// Dictionnaire français -> anglais. Une entrée manquante retombe sur le français.
 const en = {}
 
 export function addMessages(map)
@@ -23,7 +21,6 @@ export function addMessages(map)
   Object.assign(en, map)
 }
 
-// t('Texte français') ou t('{n} en attente', { n: 5 })
 export function t(fr, params)
 {
   let text = locale.value === 'en' ? (en[fr] ?? fr) : fr
@@ -33,7 +30,6 @@ export function t(fr, params)
   return text
 }
 
-// Pour pluvoir écrire $t dans les templates sans importer à chaque fois
 export const i18n = {
   install(app)
   {
@@ -44,7 +40,6 @@ export const i18n = {
 
 export const isEnglish = computed(() => locale.value === 'en')
 
-// Locale pour les dates (noms de mois/jours selon la langue)
 export function dateLocale()
 {
   return locale.value === 'en' ? 'en-US' : 'fr-FR'
