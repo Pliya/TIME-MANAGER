@@ -1,7 +1,7 @@
 <script setup>
 // Version mobile de Frontend/src/App.vue : même header, mêmes couleurs,
 // même zone de contenu. La sidebar du web devient une tab bar en bas.
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Accessibility, ChevronLeft, CircleHelp, WifiOff } from 'lucide-vue-next'
 import UserComponent from '@web/components/UserComponent.vue'
@@ -11,6 +11,11 @@ import { logged_user_id } from '@/session'
 import { tabs, isActive } from './navigation'
 import { online, pendingCount, syncMessage, syncVersion } from './services/offline'
 import { spinnerMessage } from './services/spinner'
+import seal from '@web/assets/gotham-seal.png'
+
+// Écran de démarrage (comme Instagram) : logo + nom, puis l'app
+const showSplash = ref(true)
+onMounted(() => setTimeout(() => { showSplash.value = false }, 1800))
 
 const route = useRoute()
 const router = useRouter()
@@ -29,6 +34,19 @@ watch(() => route.path, () => { accessibilityOpen.value = false })
 </script>
 
 <template>
+  <Transition name="splash-fade">
+    <div
+      v-if="showSplash"
+      class="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-5 bg-gradient-to-b from-[#2b3170] to-[#171b45] text-white"
+    >
+      <img :src="seal" alt="Sceau de la ville de Gotham" class="splash-logo h-32 w-32 rounded-full ring-4 ring-white/70 shadow-2xl" />
+      <div class="text-center">
+        <p class="text-3xl font-bold tracking-wide uppercase">Time Manager</p>
+        <p class="mt-1 text-sm text-white/70 uppercase tracking-widest">Ville de Gotham</p>
+      </div>
+    </div>
+  </Transition>
+
   <router-view v-if="route.meta.public" />
 
   <div v-else class="flex h-dvh flex-col bg-[#F0F0F0] font-sans text-neutral-900">
@@ -84,3 +102,18 @@ watch(() => route.path, () => { accessibilityOpen.value = false })
     {{ syncMessage }}
   </div>
 </template>
+<style scoped>
+.splash-fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+.splash-fade-leave-to {
+  opacity: 0;
+}
+.splash-logo {
+  animation: splash-pop 0.6s ease-out both;
+}
+@keyframes splash-pop {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+</style>
