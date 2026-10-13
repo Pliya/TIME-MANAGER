@@ -1,0 +1,13 @@
+.DS_Store
+Thumbs.db
+
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+</> gitignore
+.env
+
+id_rsa_travis*
+key.b64
+test_key

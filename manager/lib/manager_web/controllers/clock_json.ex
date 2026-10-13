@@ -1,5 +1,6 @@
 defmodule Time_managerWeb.ClockJSON do
   alias Time_manager.Attendance.Clock
+  alias Time_managerWeb.DateFormat
 
   @doc """
   Renders a list of clocks.
@@ -18,8 +19,9 @@ defmodule Time_managerWeb.ClockJSON do
   defp data(%Clock{} = clock) do
     %{
       id: clock.id,
-      time: clock.time,
-      status: clock.status
+      time: DateFormat.format(clock.time),
+      status: clock.status,
+      user_id: clock.user_id
     }
   end
 end

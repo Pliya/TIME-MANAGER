@@ -19,7 +19,8 @@ defmodule Time_manager.WorkDuration do
   """
 
   def list_working_times_for_user(user_id, params \\ %{}) do
-    query = from w in WorkingTime, where: w.user_id == ^user_id
+    query =
+      from w in WorkingTime, where: w.user_id == ^user_id, order_by: [asc: w.start, asc: w.id]
 
     query
     |> filter_by_start(params["start"])
@@ -58,18 +59,6 @@ defmodule Time_manager.WorkDuration do
       ** (Ecto.NoResultsError)
 
   """
-
-  # def get_working_time!(id) do
-  #   WorkingTime
-  #   |> Repo.get!(id)
-  #   |> Repo.preload(:user)
-  # end
-
-  # def get_working_time_for_user!(user_id, id) do
-  #   WorkingTime
-  #   |> Repo.get_by!([id: id, user_id: user_id])
-  #   |> Repo.preload(:user)
-  # end
 
   def get_working_time(id) do
     case Repo.get(WorkingTime, id) do

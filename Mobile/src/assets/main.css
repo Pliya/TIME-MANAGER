@@ -1,0 +1,70 @@
+/* Même feuille de style que le web (thème, couleurs, .card-title, .stat-grid...) */
+@import "../../../Frontend/src/assets/main.css";
+
+/* Tailwind doit aussi lire les classes utilisées dans les vues web partagées */
+@source "../../../Frontend/src";
+
+/* Sur petit écran, une liste déroulante peut rétrécir dans une ligne flex
+   (sinon elle pousse le bouton "Ajouter" hors de la carte) */
+select {
+  min-width: 0;
+}
+
+/* Petits écrans : chaque ligne de tableau devient une carte,
+   avec le titre de la colonne devant chaque valeur (data-label, voir services/tables.js) */
+@media (max-width: 639px) {
+  .main-content table {
+    width: 100%;
+    min-width: 0 !important;
+  }
+  .main-content thead {
+    display: none;
+  }
+  .main-content table,
+  .main-content tbody,
+  .main-content tr,
+  .main-content td {
+    display: block;
+  }
+  .main-content tbody tr {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e5e5e5 !important;
+    border-radius: 12px;
+    background: #fff;
+  }
+  .main-content tbody tr:last-child {
+    margin-bottom: 0;
+  }
+  .main-content td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.4rem 0 !important;
+    text-align: right;
+    white-space: normal;
+    word-break: break-word;
+  }
+  .main-content td[data-label]::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    margin-right: 0.75rem;
+    color: #737373;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: left;
+  }
+  /* 1re colonne (nom, date...) : titre de la carte */
+  .main-content td:first-child {
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+  .main-content td:first-child::before {
+    display: none;
+  }
+  /* Ligne "Aucun ..." */
+  .main-content td[colspan] {
+    justify-content: center;
+    text-align: center;
+  }
+}

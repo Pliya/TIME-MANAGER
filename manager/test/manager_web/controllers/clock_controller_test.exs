@@ -1,88 +1,63 @@
 defmodule Time_managerWeb.ClockControllerTest do
   use Time_managerWeb.ConnCase
 
+  import Time_manager.AccountFixtures
   import Time_manager.AttendanceFixtures
 
-  alias Time_manager.Attendance.Clock
-
-  @create_attrs %{
-    status: true,
-    time: ~U[2026-09-21 08:32:00Z]
-  }
-  @update_attrs %{
-    status: false,
-    time: ~U[2026-09-22 08:32:00Z]
-  }
-  @invalid_attrs %{status: nil, time: nil}
-
   setup %{conn: conn} do
-    {:ok, conn: put_req_header(conn, "accept", "application/json")}
+    {:ok, conn: put_req_header(conn, "accept", "application/json"), user: user_fixture()}
   end
 
   describe "index" do
-    test "lists all clocks", %{conn: conn} do
-      conn = get(conn, ~p"/api/clocks")
-      assert json_response(conn, 200)["data"] == []
+    test "lists the clocks of the user", %{conn: conn, user: user} do
+      clock = clock_fixture(user.id)
+
+      conn = get(again(conn), ~p"/api/clocks/#{user.id}")
+      user_id = user.id
+
+      assert [%{"id" => id, "status" => true, "user_id" => ^user_id}] =
+               json_response(conn, 200)["data"]
+
+      assert id == clock.id
+    end
+
+    test "renders 404 for an unknown user", %{conn: conn} do
+      conn = get(again(conn), ~p"/api/clocks/-1")
+      assert json_response(conn, 404)
     end
   end
 
   describe "create clock" do
-    test "renders clock when data is valid", %{conn: conn} do
-      conn = post(conn, ~p"/api/clocks", clock: @create_attrs)
-      assert %{"id" => id} = json_response(conn, 201)["data"]
+    test "creates a clock-in for the user", %{conn: conn, user: user} do
+      conn = post(again(conn), ~p"/api/clocks/#{user.id}")
+      user_id = user.id
 
-      conn = get(conn, ~p"/api/clocks/#{id}")
+      assert %{"status" => true, "user_id" => ^user_id, "time" => time} =
+               json_response(conn, 201)["data"]
 
-      assert %{
-               "id" => ^id,
-               "status" => true,
-               "time" => "2026-09-21T08:32:00Z"
-             } = json_response(conn, 200)["data"]
+      assert time =~ ~r/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/
     end
 
-    test "renders errors when data is invalid", %{conn: conn} do
-      conn = post(conn, ~p"/api/clocks", clock: @invalid_attrs)
-      assert json_response(conn, 422)["errors"] != %{}
-    end
-  end
+    test "clock in then clock out with the times sent by the frontend", %{conn: conn, user: user} do
+      post(again(conn), ~p"/api/clocks/#{user.id}", clock: %{status: true, time: "2026-09-29 08:30:00"})
 
-  describe "update clock" do
-    setup [:create_clock]
+      conn =
+        post(again(conn), ~p"/api/clocks/#{user.id}",
+          clock: %{status: false, time: "2026-09-29 12:00:00"}
+        )
 
-    test "renders clock when data is valid", %{conn: conn, clock: %Clock{id: id} = clock} do
-      conn = put(conn, ~p"/api/clocks/#{clock}", clock: @update_attrs)
-      assert %{"id" => ^id} = json_response(conn, 200)["data"]
+      assert %{"status" => false, "time" => "2026-09-29 12:00:00"} =
+               json_response(conn, 201)["data"]
 
-      conn = get(conn, ~p"/api/clocks/#{id}")
+      conn = get(again(conn), ~p"/api/workingtime/#{user.id}")
 
-      assert %{
-               "id" => ^id,
-               "status" => false,
-               "time" => "2026-09-22T08:32:00Z"
-             } = json_response(conn, 200)["data"]
+      assert [%{"start" => "2026-09-29 08:30:00", "end" => "2026-09-29 12:00:00"}] =
+               json_response(conn, 200)["data"]
     end
 
-    test "renders errors when data is invalid", %{conn: conn, clock: clock} do
-      conn = put(conn, ~p"/api/clocks/#{clock}", clock: @invalid_attrs)
-      assert json_response(conn, 422)["errors"] != %{}
+    test "renders 404 for an unknown user", %{conn: conn} do
+      conn = post(again(conn), ~p"/api/clocks/-1")
+      assert json_response(conn, 404)
     end
-  end
-
-  describe "delete clock" do
-    setup [:create_clock]
-
-    test "deletes chosen clock", %{conn: conn, clock: clock} do
-      conn = delete(conn, ~p"/api/clocks/#{clock}")
-      assert response(conn, 204)
-
-      assert_error_sent 404, fn ->
-        get(conn, ~p"/api/clocks/#{clock}")
-      end
-    end
-  end
-
-  defp create_clock(_) do
-    clock = clock_fixture()
-    %{clock: clock}
   end
 end

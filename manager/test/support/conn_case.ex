@@ -33,6 +33,18 @@ defmodule Time_managerWeb.ConnCase do
 
   setup tags do
     Time_manager.DataCase.setup_sandbox(tags)
-    {:ok, conn: Phoenix.ConnTest.build_conn()}
+    {:ok, conn: log_in(Phoenix.ConnTest.build_conn(), 0)}
   end
+
+  def log_in(conn, user_id, role \\ "Administrator") do
+    csrf_token = Time_manager.Auth.generate_csrf_token()
+    {:ok, jwt, _claims} = Time_manager.Auth.generate_token(user_id, role, csrf_token)
+
+    conn
+    |> Phoenix.ConnTest.put_req_cookie("time_manager_token", jwt)
+    |> Plug.Conn.put_req_header("x-xsrf-token", csrf_token)
+  end
+
+  def again(%Plug.Conn{state: :unset} = conn), do: conn
+  def again(conn), do: Phoenix.ConnTest.recycle(conn, ~w(accept x-xsrf-token))
 end

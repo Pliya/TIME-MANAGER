@@ -1,170 +1,51 @@
-<template>
-  <div class="user">
-
-    <h1>Gestion des utilisateurs</h1>
-
-    <!-- MESSAGES -->
-    <div v-if="loading" class="message loading">
-      Chargement...
-    </div>
-
-    <div v-if="error" class="message error">
-      <strong>Erreur :</strong>
-      <ul v-if="Array.isArray(error)">
-        <li v-for="(message, index) in error" :key="index">
-          {{ message }}
-        </li>
-      </ul>
-      <p v-else>
-        {{ error }}
-      </p>
-    </div>
-
-    <div v-if="success" class="message success">
-      {{ success }}
-    </div>
-
-    <!-- UTILISATEUR ACTUEL -->
-    <div v-if="user && !loading" class="user-info">
-      <h2>Utilisateur actuel</h2>
-      <div class="info-row">
-        <strong>ID :</strong>
-        <span>{{ user.id }}</span>
-      </div>
-      <div class="info-row">
-        <strong>Username :</strong>
-        <span>{{ user.username }}</span>
-      </div>
-      <div class="info-row">
-        <strong>Email :</strong>
-        <span>{{ user.email }}</span>
-      </div>
-    </div>
-
-    <hr />
-
-    <!-- CREER UN UTILISATEUR -->
-    <div class="section">
-      <h2>Créer un utilisateur</h2>
-      <form @submit.prevent="createUser">
-        <div class="form-group">
-          <label for="new-username">Username</label>
-          <input
-            id="new-username"
-            v-model.trim="newUsername"
-            type="text"
-            placeholder="Entrez le username"
-            required
-            minlength="1"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="new-email">Email</label>
-          <input
-            id="new-email"
-            v-model.trim="newEmail"
-            type="email"
-            placeholder="exemple@email.com"
-            required
-          />
-        </div>
-
-        <button type="submit" :disabled="loading">
-          {{ loading ? 'Création...' : 'Créer' }}
-        </button>
-      </form>
-    </div>
-
-    <!-- MODIFIER UN UTILISATEUR -->
-    <div v-if="user" class="section">
-      <hr />
-      <h2>Modifier l'utilisateur</h2>
-      <form @submit.prevent="updateUser">
-        <div class="form-group">
-          <label for="update-username">Username</label>
-          <input
-            id="update-username"
-            v-model.trim="editUsername"
-            type="text"
-            required
-            minlength="1"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="update-email">Email</label>
-          <input
-            id="update-email"
-            v-model.trim="editEmail"
-            type="email"
-            required
-          />
-        </div>
-
-        <button type="submit" :disabled="loading">
-          {{ loading ? 'Modification...' : 'Modifier' }}
-        </button>
-      </form>
-    </div>
-
-    <!-- SUPPRIMER UN UTILISATEUR -->
-    <div v-if="user" class="section">
-      <hr />
-      <h2>Supprimer l'utilisateur</h2>
-      <button
-        type="button"
-        class="delete-button"
-        :disabled="loading"
-        @click="deleteUser"
-      >
-        {{ loading ? 'Suppression...' : 'Supprimer' }}
-      </button>
-    </div>
-
-  </div>
-</template>
-
 <script setup>
-import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import { ref, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { ChevronDown } from 'lucide-vue-next'
+import { api } from '@/api'
+import { logged_user_id, is_manager, is_admin, clear_session } from '@/session'
+
+const props = defineProps({ userId: { type: Number, default: null } })
 
 const emit = defineEmits(['user-updated'])
 
-/* API */
-const API_URL = 'http://localhost:4000/api/users'
+const router = useRouter()
 
-/* ETAT DE L'APPLICATION */
 const user = ref(null)
-const userId = ref(1)
+const user_id = ref(props.userId)
+const open = ref(false)
+const creating = ref(false)
 const loading = ref(false)
 const error = ref(null)
 const success = ref(null)
 
-/* FORMULAIRE CREATE */
-const newUsername = ref('')
-const newEmail = ref('')
+const new_username = ref('')
+const new_email = ref('')
+const new_password = ref('')
 
-/* FORMULAIRE UPDATE */
-const editUsername = ref('')
-const editEmail = ref('')
+const edit_username = ref('')
+const edit_email = ref('')
 
-function clearMessages() {
+function clear_messages()
+{
   error.value = null
   success.value = null
 }
 
-function formatFieldName(field) {
+function format_field_name(field)
+{
   const names = {
     username: 'Username',
     email: 'Email',
+    password: 'Mot de passe',
     user_id: 'Utilisateur',
     id: 'ID'
   }
   return names[field] || field
 }
 
-function getApiErrors(err) {
+function get_api_errors(err)
+{
   if (!err.response) {
     return "Impossible de contacter le serveur. Vérifiez que l'API Phoenix est démarrée."
   }
@@ -178,13 +59,15 @@ function getApiErrors(err) {
     const errors = err.response?.data?.errors
     if (!errors) return "Les informations fournies sont invalides."
     const messages = []
-    Object.entries(errors).forEach(([field, fieldErrors]) => {
-      if (Array.isArray(fieldErrors)) {
-        fieldErrors.forEach((message) => {
-          messages.push(`${formatFieldName(field)} : ${message}`)
+    Object.entries(errors).forEach(([field, field_errors]) =>
+    {
+      if (Array.isArray(field_errors)) {
+        field_errors.forEach((message) =>
+        {
+          messages.push(`${format_field_name(field)} : ${message}`)
         })
       } else {
-        messages.push(`${formatFieldName(field)} : ${fieldErrors}`)
+        messages.push(`${format_field_name(field)} : ${field_errors}`)
       }
     })
     return messages.length === 0 ? "Les informations fournies sont invalides." : messages
@@ -194,26 +77,29 @@ function getApiErrors(err) {
   return `Une erreur est survenue (HTTP ${status}).`
 }
 
-function getUserFromResponse(response) {
+function get_user_from_response(response)
+{
   if (!response?.data?.data) {
     throw new Error("Réponse invalide reçue du serveur.")
   }
   return response.data.data
 }
 
-async function getUser() {
-  if (!userId.value) {
+async function get_user()
+{
+  if (!user_id.value) {
     user.value = null
     return
   }
   loading.value = true
-  clearMessages()
+  clear_messages()
   try {
-    const response = await axios.get(`${API_URL}/${userId.value}`)
-    const fetchedUser = getUserFromResponse(response)
-    user.value = fetchedUser
-    editUsername.value = user.value.username
-    editEmail.value = user.value.email
+    const path = user_id.value === logged_user_id.value ? '/users/me' : `/users/${user_id.value}`
+    const response = await api.get(path)
+    const fetched_user = get_user_from_response(response)
+    user.value = fetched_user
+    edit_username.value = user.value.username
+    edit_email.value = user.value.email
     emit('user-updated', user.value)
   } catch (err) {
     console.error('GET USER ERROR:', err)
@@ -221,98 +107,99 @@ async function getUser() {
     if (err instanceof Error && !err.response) {
       error.value = "La réponse du serveur est invalide."
     } else {
-      error.value = getApiErrors(err)
+      error.value = get_api_errors(err)
     }
   } finally {
     loading.value = false
   }
 }
 
-async function createUser() {
+async function create_user()
+{
   loading.value = true
-  clearMessages()
-  if (!newUsername.value) {
+  clear_messages()
+  if (!new_username.value) {
     error.value = "Le username est obligatoire."
     loading.value = false
     return
   }
-  if (!newEmail.value) {
+  if (!new_email.value) {
     error.value = "L'email est obligatoire."
     loading.value = false
     return
   }
   try {
-    const response = await axios.post(API_URL, {
+    const response = await api.post('/users', {
       user: {
-        username: newUsername.value,
-        email: newEmail.value
+        username: new_username.value,
+        email: new_email.value,
+        password: new_password.value
       }
     })
-    const createdUser = getUserFromResponse(response)
-    user.value = createdUser
-    userId.value = createdUser.id
-    editUsername.value = createdUser.username
-    editEmail.value = createdUser.email
-    newUsername.value = ''
-    newEmail.value = ''
+    get_user_from_response(response)
+    new_username.value = ''
+    new_email.value = ''
+    new_password.value = ''
     success.value = "Utilisateur créé avec succès."
-    emit('user-updated', createdUser)
+    creating.value = false
   } catch (err) {
     console.error('CREATE USER ERROR:', err)
     if (err instanceof Error && !err.response) {
       error.value = "La réponse du serveur est invalide."
     } else {
-      error.value = getApiErrors(err)
+      error.value = get_api_errors(err)
     }
   } finally {
     loading.value = false
   }
 }
 
-async function updateUser() {
-  if (!user.value || !userId.value) {
+async function update_user()
+{
+  if (!user.value || !user_id.value) {
     error.value = "Aucun utilisateur à modifier."
     return
   }
   loading.value = true
-  clearMessages()
-  if (!editUsername.value) {
+  clear_messages()
+  if (!edit_username.value) {
     error.value = "Le username est obligatoire."
     loading.value = false
     return
   }
-  if (!editEmail.value) {
+  if (!edit_email.value) {
     error.value = "L'email est obligatoire."
     loading.value = false
     return
   }
   try {
-    const response = await axios.put(`${API_URL}/${userId.value}`, {
+    const response = await api.put(`/users/${user_id.value}`, {
       user: {
-        username: editUsername.value,
-        email: editEmail.value
+        username: edit_username.value,
+        email: edit_email.value
       }
     })
-    const updatedUser = getUserFromResponse(response)
-    user.value = updatedUser
-    editUsername.value = updatedUser.username
-    editEmail.value = updatedUser.email
+    const updated_user = get_user_from_response(response)
+    user.value = updated_user
+    edit_username.value = updated_user.username
+    edit_email.value = updated_user.email
     success.value = "Utilisateur modifié avec succès."
-    emit('user-updated', updatedUser)
+    emit('user-updated', updated_user)
   } catch (err) {
     console.error('UPDATE USER ERROR:', err)
     if (err instanceof Error && !err.response) {
       error.value = "La réponse du serveur est invalide."
     } else {
-      error.value = getApiErrors(err)
+      error.value = get_api_errors(err)
     }
   } finally {
     loading.value = false
   }
 }
 
-async function deleteUser() {
-  if (!user.value || !userId.value) {
+async function delete_user()
+{
+  if (!user.value || !user_id.value) {
     error.value = "Aucun utilisateur à supprimer."
     return
   }
@@ -320,57 +207,103 @@ async function deleteUser() {
   if (!confirmed) return
 
   loading.value = true
-  clearMessages()
+  clear_messages()
   try {
-    await axios.delete(`${API_URL}/${userId.value}`)
+    await api.delete(`/users/${user_id.value}`)
+    if (user_id.value === logged_user_id.value) {
+      clear_session()
+      router.push('/sign_in')
+    }
     user.value = null
-    userId.value = null
-    editUsername.value = ''
-    editEmail.value = ''
+    user_id.value = null
+    edit_username.value = ''
+    edit_email.value = ''
     success.value = "Utilisateur supprimé avec succès."
     emit('user-updated', null)
   } catch (err) {
     console.error('DELETE USER ERROR:', err)
-    error.value = getApiErrors(err)
+    error.value = get_api_errors(err)
   } finally {
     loading.value = false
   }
 }
 
-onMounted(() => {
-  getUser()
+onMounted(() =>
+{
+  get_user()
+})
+
+watch(() => props.userId, (new_id) =>
+{
+  user_id.value = new_id
+  get_user()
 })
 </script>
 
-<style scoped>
-.user {
-  max-width: 650px;
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 32px;
-  box-shadow: 0 2px 8px rgba(30,42,74,0.04);
-  border: 1px solid #f1f5f9;
-  margin: 0 auto;
-}
-h1 { font-size: 22px; font-weight: 700; color: #1e293b; margin-bottom: 24px; }
-h2 { font-size: 16px; font-weight: 700; color: #334155; margin-bottom: 16px; }
-.user-info { padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 20px; }
-.info-row { display: flex; gap: 10px; margin-bottom: 8px; font-size: 14px; color: #334155; }
-.section { margin: 24px 0; }
-form { display: flex; flex-direction: column; gap: 16px; }
-.form-group { display: flex; flex-direction: column; gap: 6px; }
-label { font-size: 13px; font-weight: 600; color: #475569; }
-input { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
-input:focus { outline: none; border-color: #2563eb; }
-button { width: fit-content; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; background: #2563eb; color: white; transition: background 0.15s; }
-button:hover { background: #1d4ed8; }
-button:disabled { opacity: 0.6; cursor: not-allowed; }
-.delete-button { background: #ef4444; color: white; }
-.delete-button:hover { background: #dc2626; }
-.message { padding: 12px 16px; margin-bottom: 20px; border-radius: 8px; font-size: 14px; }
-.loading { background: #f1f5f9; color: #475569; }
-.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
-.success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
-.error ul { margin-top: 8px; margin-bottom: 0; padding-left: 20px; }
-hr { margin: 24px 0; border: none; border-top: 1px solid #e2e8f0; }
-</style>
+<template>
+  <div class="relative">
+    <button class="flex items-center gap-2 rounded-xl bg-neutral-900 px-3 py-2 text-white hover:bg-neutral-700" @click="open = !open">
+      <span class="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm font-semibold text-neutral-900">
+        {{ user ? user.username.charAt(0).toUpperCase() : '?' }}
+      </span>
+      <span class="hidden text-sm font-medium sm:inline">{{ user ? user.username : 'Aucun utilisateur' }}</span>
+      <ChevronDown class="h-4 w-4 text-neutral-400" />
+    </button>
+
+    <div v-if="open" class="fixed inset-0 z-40" @click="open = false"></div>
+
+    <div v-if="open" class="absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl bg-white p-5 text-neutral-900 shadow-xl ring-1 ring-neutral-200">
+      <div v-if="user && !loading" class="mb-5 flex items-center gap-3">
+        <span class="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-200 text-lg font-semibold">
+          {{ user.username.charAt(0).toUpperCase() }}
+        </span>
+        <div class="min-w-0">
+          <p class="truncate font-semibold">{{ user.username }}</p>
+          <p class="truncate text-sm text-neutral-400">{{ user.email }}</p>
+          <p v-if="user.role" class="mt-1 inline-block rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium">{{ user.role }}</p>
+        </div>
+      </div>
+
+      <button class="mb-4 flex w-full items-center justify-center gap-2 rounded-full border-2 border-neutral-900 py-2 text-sm font-semibold hover:bg-neutral-100" @click="open = false; router.push('/profil')">
+        {{ $t('Mon profil') }}
+      </button>
+
+      <p v-if="loading" class="mb-4 text-sm text-neutral-400">{{ $t('Chargement...') }}</p>
+
+      <div v-if="error" class="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+        <ul v-if="Array.isArray(error)">
+          <li v-for="(message, index) in error" :key="index">{{ message }}</li>
+        </ul>
+        <p v-else>{{ error }}</p>
+      </div>
+      <p v-if="success" class="mb-4 rounded-xl bg-green-50 px-3 py-2 text-sm text-green-600">{{ success }}</p>
+
+      <form v-if="is_manager() && user && !creating" class="space-y-3" @submit.prevent="update_user">
+        <input v-model.trim="edit_username" type="text" required placeholder="Username" class="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none" />
+        <input v-model.trim="edit_email" type="email" required placeholder="Email" class="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none" />
+        <div class="flex gap-2">
+          <button type="submit" :disabled="loading" class="flex-1 rounded-full bg-neutral-900 py-2 text-sm font-semibold text-white hover:bg-neutral-700 disabled:opacity-50">
+            {{ loading ? 'Modification...' : 'Modifier' }}
+          </button>
+          <button type="button" :disabled="loading" class="rounded-full bg-red-50 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-100 disabled:opacity-50" @click="delete_user">
+            {{ $t('Supprimer') }}
+          </button>
+        </div>
+      </form>
+
+      <form v-if="creating" class="space-y-3" @submit.prevent="create_user">
+        <p class="text-sm font-medium">{{ $t('Créer un utilisateur') }}</p>
+        <input v-model.trim="new_username" type="text" required placeholder="Entrez le username" class="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none" />
+        <input v-model.trim="new_email" type="email" required placeholder="exemple@email.com" class="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none" />
+        <input v-model="new_password" type="password" required minlength="8" autocomplete="new-password" placeholder="Mot de passe (8 caractères minimum)" class="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none" />
+        <button type="submit" :disabled="loading" class="w-full rounded-full bg-neutral-900 py-2 text-sm font-semibold text-white hover:bg-neutral-700 disabled:opacity-50">
+          {{ loading ? 'Création...' : 'Créer' }}
+        </button>
+      </form>
+
+      <button v-if="is_admin()" class="mt-4 w-full text-center text-sm text-neutral-500 hover:text-neutral-900" @click="creating = !creating; clear_messages()">
+        {{ creating ? 'Retour à mon profil' : 'Créer un autre utilisateur' }}
+      </button>
+    </div>
+  </div>
+</template>

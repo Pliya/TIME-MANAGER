@@ -10,6 +10,7 @@ defmodule Time_managerWeb.ClockController do
 
   defmodule ClockResponse do
     require OpenApiSpex
+
     OpenApiSpex.schema(%{
       title: "Clock",
       description: "A user clock-in / clock-out entry",
@@ -17,38 +18,43 @@ defmodule Time_managerWeb.ClockController do
       properties: %{
         id: %OpenApiSpex.Schema{type: :integer},
         time: %OpenApiSpex.Schema{type: :string, format: :"date-time"},
-        status: %OpenApiSpex.Schema{type: :boolean, description: "true = clock-in, false = clock-out"},
+        status: %OpenApiSpex.Schema{
+          type: :boolean,
+          description: "true = clock-in, false = clock-out"
+        },
         user_id: %OpenApiSpex.Schema{type: :integer}
       },
       required: [:id, :time, :status, :user_id]
     })
   end
 
-  tags ["Clocks"]
+  tags(["Clocks"])
 
-  operation :index,
+  operation(:index,
     summary: "List clock entries for a user",
     parameters: [
       userID: [in: :path, description: "User ID", type: :integer, required: true]
     ],
     responses: [
-      ok: {"List of clock entries", "application/json", %OpenApiSpex.Schema{type: :array, items: ClockResponse}},
+      ok:
+        {"List of clock entries", "application/json",
+         %OpenApiSpex.Schema{type: :array, items: ClockResponse}},
       not_found: {"User not found", "application/json", %OpenApiSpex.Schema{type: :object}}
     ]
+  )
 
-  def index(conn, params) do
-    user_id = params["userID"] |> String.to_integer()
-
-    case Account.get_user!(user_id) do
+  def index(conn, %{"userID" => user_id}) do
+    case Account.get_user(user_id) do
       nil ->
         {:error, :not_found}
-      _user ->
-        clocks = Attendance.list_clocks(user_id)
+
+      user ->
+        clocks = Attendance.list_clocks(user.id)
         render(conn, :index, clocks: clocks)
     end
   end
 
-  operation :create,
+  operation(:create,
     summary: "Create a clock entry for a user",
     parameters: [
       userID: [in: :path, description: "User ID", type: :integer, required: true]
@@ -57,18 +63,18 @@ defmodule Time_managerWeb.ClockController do
       created: {"Clock entry created", "application/json", ClockResponse},
       not_found: {"User not found", "application/json", %OpenApiSpex.Schema{type: :object}}
     ]
+  )
 
-  def create(conn, %{"userID" => user_id}) do
-    user_id = String.to_integer(user_id)
-
-    with %{} <- Account.get_user(user_id),
-         {:ok, %Clock{} = clock} <- Attendance.create_clock(user_id) do
+  def create(conn, %{"userID" => user_id} = params) do
+    with %{} = user <- Account.get_user(user_id),
+         {:ok, %Clock{} = clock} <- Attendance.create_clock(user.id, params["clock"] || %{}) do
       conn
       |> put_status(:created)
       |> put_resp_header("location", ~p"/api/clocks/#{clock.user_id}")
       |> render(:show, clock: clock)
     else
       nil -> {:error, :not_found}
+      {:error, _} = error -> error
     end
   end
 end

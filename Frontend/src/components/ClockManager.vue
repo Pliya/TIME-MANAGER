@@ -1,235 +1,359 @@
 <script setup>
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
-import axios from 'axios'
-import ChartManager from './ChartManager.vue'
+    import { ref, computed, watch, onActivated, onMounted, onUnmounted } from 'vue';
+    import { Coffee, Footprints, TriangleAlert, CalendarCheck, WifiOff } from 'lucide-vue-next';
+    import { api } from '@/api';
+    import Chip from './Chip.vue';
+    import { is_night, date_key, sort_by_time } from '@/utils/kpi';
+    import { t } from '@/i18n';
+    import { store, new_id } from '@/store';
+    import { username } from '@/session';
+    import { SHIFTS, shift_of, shift_times } from '@/utils/planning';
 
-const props = defineProps({ userId: { required: true } })
+    const props = defineProps({
+        userId: {
+            required: true
+        }
+    });
 
-const clocks = ref([])
-const clockIn = ref(false)
-const startDateTime = ref(null)
-const elapsed = ref('0h 00min')
+    const DAILY_GOAL_HOURS = 7;
 
-let timer = null
-const pad = (n) => String(n).padStart(2, '0')
+    const start_date_time = ref(null);
+    const clock_in = ref(false);
+    const error = ref("");
+    const clocks = ref([]);
+    const loaded = ref(false);
+    const now = ref(new Date());
+    const notice = ref("");
+    let timer = null;
 
-function updateElapsed() {
-  if (!clockIn.value || !startDateTime.value) {
-    elapsed.value = '0h 00min'
-    return
-  }
-  const start = new Date(startDateTime.value.replace(' ', 'T'))
-  const diff = new Date() - start
-  if (isNaN(diff) || diff < 0) {
-    elapsed.value = '0h 00min'
-    return
-  }
-  const hrs = Math.floor(diff / 3600000)
-  const mins = Math.floor((diff % 3600000) / 60000)
-  elapsed.value = `${hrs}h ${pad(mins)}min`
-}
-
-async function refresh() {
-  try {
-    const { data } = await axios.get(`http://localhost:4000/api/clocks/${props.userId}`)
-    clocks.value = data.data || []
-    const last = clocks.value[clocks.value.length - 1]
-    clockIn.value = last?.status || false
-    startDateTime.value = last?.status ? last.time : null
-
-    updateElapsed()
-  } catch (err) {
-    console.error('Erreur chargement clocks:', err)
-  }
-}
-
-async function toggleClock() {
-  try {
-    const now = new Date()
-    const time = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
-    await axios.post(`http://localhost:4000/api/clocks/${props.userId}`, {
-      clock: { status: !clockIn.value, time }
-    })
-    await refresh()
-  } catch (err) {
-    console.error('Erreur pointage:', err)
-  }
-}
-
-onMounted(() => { refresh(); timer = setInterval(updateElapsed, 60000) })
-onUnmounted(() => clearInterval(timer))
-watch(() => props.userId, refresh)
-
-const formattedStartTime = computed(() => {
-  if (!startDateTime.value) return '--:--'
-  const d = new Date(startDateTime.value.replace(' ', 'T'))
-  return isNaN(d) ? '--:--' : `${pad(d.getHours())}:${pad(d.getMinutes())}`
-})
-
-const formattedStartDate = computed(() => {
-  if (!startDateTime.value) return '-'
-  const d = new Date(startDateTime.value.replace(' ', 'T'))
-  return isNaN(d) ? '-' : d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
-})
-
-const recentClocks = computed(() => {
-  return [...clocks.value].reverse().slice(0, 5).map(c => {
-    const d = new Date(c.time.replace(' ', 'T'))
-    const isToday = d.toDateString() === new Date().toDateString()
-    return {
-      id: c.id,
-      status: c.status,
-      timeLabel: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
-      dateLabel: isToday ? "Aujourd'hui" : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }),
-      textLabel: c.status ? 'Arrivée' : 'Départ'
+    async function refresh()
+    {
+        error.value = "";
+        try {
+            const reponse = await api.get(`/clocks/${props.userId}`);
+            const clocks_array = sort_by_time(reponse.data.data, 'time');
+            clocks.value = clocks_array;
+            if (clocks_array && clocks_array.length > 0) {
+                const last_clock = clocks_array[clocks_array.length - 1];
+                if (last_clock.status) {
+                    start_date_time.value = last_clock.time;
+                    clock_in.value = true;
+                } else {
+                    start_date_time.value = null;
+                    clock_in.value = false;
+                }
+            } else {
+                start_date_time.value = null;
+                clock_in.value = false;
+            }
+        } catch (err) {
+            error.value = "Erreur lors de la récupération des clocks : " + err.message;
+        }
+        loaded.value = true;
     }
-  })
-})
+
+    async function clock()
+    {
+        error.value = "";
+        try {
+            const date = new Date();
+            const pad = (n) => n.toString().padStart(2, '0');
+            const formatted_time = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+
+            const payload = {
+                clock: {
+                    status: !clock_in.value,
+                    time: formatted_time
+                }
+            };
+            const reponse = await api.post(`/clocks/${props.userId}`, payload);
+            const new_clock = reponse.data.data;
+            clocks.value.push(new_clock);
+
+            if (new_clock.status) {
+                start_date_time.value = new_clock.time;
+                clock_in.value = true;
+            } else {
+                start_date_time.value = null;
+                clock_in.value = false;
+                store.pauses[props.userId] = null;
+            }
+        } catch (err) {
+            error.value = "Erreur lors du clocking : " + err.message;
+        }
+    }
+
+    function to_date(time)
+    {
+        return new Date(time.replace(' ', 'T'));
+    }
+
+    function format_duration(ms)
+    {
+        const minutes = Math.floor(ms / 60000);
+        return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}m`;
+    }
+
+    // Pause de la session en cours : { session, since (début de la pause en cours ou null), total (ms déjà en pause) }
+    const pause_state = computed(() =>
+    {
+        const p = store.pauses[props.userId];
+        return p && typeof p === 'object' && p.session === start_date_time.value ? p : null;
+    });
+
+    const paused = computed(() => Boolean(pause_state.value?.since));
+
+    const paused_ms = computed(() =>
+    {
+        const p = pause_state.value;
+        if (!p) return 0;
+        return p.total + (p.since ? now.value - p.since : 0);
+    });
+
+    const elapsed = computed(() =>
+    {
+        if (!start_date_time.value) return '00:00:00';
+        const seconds = Math.max(0, Math.floor((now.value - to_date(start_date_time.value) - paused_ms.value) / 1000));
+        const pad = (n) => n.toString().padStart(2, '0');
+        return `${pad(Math.floor(seconds / 3600))}:${pad(Math.floor((seconds % 3600) / 60))}:${pad(seconds % 60)}`;
+    });
+
+    const sessions = computed(() =>
+    {
+        const result = [];
+        let clock_in_time = null;
+        clocks.value.forEach(c =>
+        {
+            if (c.status) {
+                clock_in_time = c.time;
+            } else if (clock_in_time) {
+                result.push({ id: c.id, start: clock_in_time, end: c.time });
+                clock_in_time = null;
+            }
+        });
+        return result;
+    });
+
+    const last_sessions = computed(() => sessions.value.slice(-8).reverse());
+
+    const today_ms = computed(() =>
+    {
+        const today = to_date(`${now.value.getFullYear()}-${String(now.value.getMonth() + 1).padStart(2, '0')}-${String(now.value.getDate()).padStart(2, '0')} 00:00:00`);
+        let total = 0;
+        sessions.value.forEach(s =>
+        {
+            if (to_date(s.start) >= today) total += to_date(s.end) - to_date(s.start);
+        });
+        if (start_date_time.value) total += now.value - to_date(start_date_time.value) - paused_ms.value;
+        return total;
+    });
+
+    const goal_percent = computed(() => Math.min(100, Math.round(today_ms.value / (DAILY_GOAL_HOURS * 3600000) * 100)));
+
+    const goal_message = computed(() =>
+    {
+        const remaining = DAILY_GOAL_HOURS * 3600000 - today_ms.value;
+        if (remaining <= 0) return t('Objectif atteint, bravo !');
+        if (clock_in.value) {
+            const leave_at = new Date(now.value.getTime() + remaining);
+            return t('Tu peux partir à {time}', { time: `${String(leave_at.getHours()).padStart(2, '0')}:${String(leave_at.getMinutes()).padStart(2, '0')}` });
+        }
+        return t('Encore {d} à faire aujourd\'hui', { d: format_duration(remaining) });
+    });
+
+    // La pause ne pointe pas : la session reste ouverte et le minuteur se fige jusqu'à la reprise
+    function pause()
+    {
+        if (!clock_in.value) {
+            notice.value = t("Pointe ton arrivée avant de prendre une pause.");
+            return;
+        }
+        const p = pause_state.value || { session: start_date_time.value, since: null, total: 0 };
+        if (p.since) {
+            store.pauses[props.userId] = { ...p, since: null, total: p.total + (Date.now() - p.since) };
+            notice.value = t('Pause terminée, le minuteur reprend.');
+        } else {
+            store.pauses[props.userId] = { ...p, since: Date.now() };
+            notice.value = t('Bonne pause ! Reviens ici pour reprendre.');
+        }
+    }
+
+    const incident_open = ref(false);
+    const incident_text = ref('');
+
+    function add_justification(type, text)
+    {
+        store.justifications.unshift({
+            id: new_id(),
+            userId: Number(props.userId),
+            userName: username.value,
+            type,
+            text,
+            date: date_key(),
+            time: new Date().toTimeString().slice(0, 5),
+        });
+    }
+
+    function travel()
+    {
+        add_justification('Trajet', 'Trajet entre deux sites, compté comme temps de travail.');
+        notice.value = t('Trajet déclaré à ton manager.');
+    }
+
+    function send_incident()
+    {
+        if (!incident_text.value) return;
+        add_justification('Incident', incident_text.value);
+        incident_text.value = '';
+        incident_open.value = false;
+        notice.value = t('Incident envoyé à ton manager.');
+    }
+
+    const today_shift = computed(() => SHIFTS[shift_of(props.userId, new Date())]);
+
+    async function conform_day()
+    {
+        const shift = shift_of(props.userId, new Date());
+        if (!shift || shift === 'R') {
+            notice.value = t("Aucun créneau de travail n'est prévu aujourd'hui dans ton planning.");
+            return;
+        }
+        try {
+            await api.post(`/workingtime/${props.userId}`, { working_time: shift_times(shift, new Date()) });
+            notice.value = t('Journée enregistrée selon le planning.');
+        } catch {
+            notice.value = t("Impossible d'enregistrer la journée.");
+        }
+    }
+
+    onMounted(() =>
+    {
+        timer = setInterval(() =>
+        {
+          now.value = new Date();
+        }, 1000);
+    });
+
+    onUnmounted(() =>
+    {
+        clearInterval(timer);
+    });
+
+    onActivated(() =>
+    {
+        refresh();
+    });
+
+    watch(() => props.userId, () =>
+    {
+        refresh();
+    });
 </script>
 
 <template>
-  <div class="clock-page">
-    <p class="subtitle">Déclarez vos heures de travail en un clic.</p>
+  <div class="space-y-6">
+    <p v-if="error" class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{{ error }}</p>
 
-    <!-- Cartes Statut & Historique -->
-    <div class="clock-manager-layout">
-      <!-- STATUT ACTUEL -->
-      <div class="status-card">
-        <div class="status-header">
-          <div class="status-ring" :class="{ active: clockIn }">
-            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" :stroke="clockIn ? '#10b981' : '#94a3b8'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </div>
-          <div>
-            <div class="status-title" :class="clockIn ? 'text-green' : 'text-gray'">
-              <span class="status-dot" :class="clockIn ? 'bg-green' : 'bg-gray'"></span>
-              {{ clockIn ? 'Actuellement en service' : 'Hors service' }}
-            </div>
-            <p class="status-desc">{{ clockIn ? 'Vous avez pointé votre arrivée.' : "Vous n'êtes pas en cours d'activité." }}</p>
-          </div>
-        </div>
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+      <div class="space-y-6">
+        <div class="flex flex-col items-center rounded-2xl bg-white p-6 xl:p-8">
+          <Chip v-if="paused" color="outline">{{ $t('En pause') }}</Chip>
+          <Chip v-else :color="clock_in ? 'dark' : 'gray'">{{ clock_in ? $t('En cours') : $t('Pas pointé') }}</Chip>
+          <p class="mt-6 text-5xl font-bold tracking-tight tabular-nums xl:text-6xl">{{ elapsed }}</p>
+          <p class="mt-2 text-sm text-neutral-400">{{ clock_in ? $t('Depuis {t}', { t: start_date_time.slice(11, 16) }) : $t("Tu n'as pas encore pointé") }}</p>
 
-        <div class="status-details">
-          <div class="detail-box">
-            <div class="detail-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            </div>
-            <div>
-              <div class="detail-label">Heure de début</div>
-              <div class="detail-val">{{ formattedStartTime }}</div>
-              <div class="detail-sub">{{ formattedStartDate }}</div>
-            </div>
-          </div>
-
-          <div class="detail-box">
-            <div class="detail-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            </div>
-            <div>
-              <div class="detail-label">Durée actuelle</div>
-              <div class="detail-val">{{ clockIn ? elapsed : '--' }}</div>
-              <div class="detail-sub">{{ clockIn ? '(en cours)' : '-' }}</div>
-            </div>
-          </div>
-
-          <button class="clock-btn" :class="clockIn ? 'btn-red' : 'btn-green'" @click="toggleClock">
-            <span v-if="clockIn" style="display: flex; align-items: center; gap: 8px;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg> Clock Out
-            </span>
-            <span v-else style="display: flex; align-items: center; gap: 8px;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Clock In
-            </span>
+          <button v-if="!loaded" disabled class="mt-6 w-full rounded-full bg-neutral-100 py-3 font-semibold text-neutral-400">
+            {{ $t('Chargement...') }}
           </button>
+          <button
+            v-else
+            class="mt-6 w-full rounded-full border-2 border-neutral-900 py-3 text-base font-semibold"
+            :class="clock_in ? 'bg-white hover:bg-neutral-50' : 'bg-neutral-900 text-white hover:bg-neutral-700'"
+            @click="paused ? pause() : clock()"
+          >
+            {{ paused ? $t('Reprendre le travail') : clock_in ? $t('Pointer la sortie') : $t("Pointer l'arrivée") }}
+          </button>
+
+          <div class="mt-3 grid w-full grid-cols-3 gap-2 text-xs">
+            <button class="flex flex-col items-center gap-1 rounded-xl py-2" :class="paused ? 'bg-neutral-900 text-white' : 'bg-neutral-100 hover:bg-neutral-200'" @click="pause">
+              <Coffee class="h-4 w-4" /> {{ paused ? $t('Reprendre') : $t('Pause') }}
+            </button>
+            <button class="flex flex-col items-center gap-1 rounded-xl bg-neutral-100 py-2 hover:bg-neutral-200" @click="travel">
+              <Footprints class="h-4 w-4" /> {{ $t('Trajet') }}
+            </button>
+            <button class="flex flex-col items-center gap-1 rounded-xl bg-neutral-100 py-2 hover:bg-neutral-200" @click="incident_open = !incident_open">
+              <TriangleAlert class="h-4 w-4" /> {{ $t('Incident') }}
+            </button>
+          </div>
+
+          <form v-if="incident_open" class="mt-3 w-full" @submit.prevent="send_incident">
+            <textarea v-model.trim="incident_text" rows="2" required placeholder="Ex. : route bloquée après une intervention de Batman" class="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"></textarea>
+            <button type="submit" class="mt-2 w-full rounded-full bg-neutral-900 py-2 text-sm font-semibold text-white">{{ $t('Envoyer au manager') }}</button>
+          </form>
+
+          <button
+            class="mt-3 flex w-full items-center justify-center gap-1 rounded-lg bg-neutral-100 px-3 py-2.5 text-xs font-medium hover:bg-neutral-200"
+            @click="conform_day"
+          >
+            <CalendarCheck class="h-4 w-4" />
+            {{ $t('Journée conforme au planning') }}
+            <template v-if="today_shift && today_shift.start">({{ today_shift.start }} – {{ today_shift.end }})</template>
+          </button>
+          <p v-if="notice" class="mt-3 text-center text-xs text-neutral-500">{{ notice }}</p>
+        </div>
+
+        <div v-if="loaded" class="rounded-2xl bg-white p-5">
+          <div class="card-title flex items-center justify-between">
+            <p class="font-medium">{{ $t('Objectif du jour') }}</p>
+            <span class="text-sm text-neutral-400">{{ goal_percent }}%</span>
+          </div>
+          <p class="mt-4 text-3xl font-semibold">
+            {{ format_duration(today_ms) }}
+            <span class="text-base font-normal text-neutral-400">/ {{ DAILY_GOAL_HOURS }}h</span>
+          </p>
+          <div class="mt-4 h-2 rounded-full bg-neutral-100">
+            <div class="h-2 rounded-full bg-neutral-900" :style="{ width: `${goal_percent}%` }"></div>
+          </div>
+          <p class="mt-3 text-sm text-neutral-500">{{ goal_message }}</p>
         </div>
       </div>
 
-      <!-- DERNIERS POINTAGES -->
-      <div class="history-card">
-        <div class="card-title">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Derniers pointages
+      <div class="space-y-6 xl:col-span-2">
+        <div class="rounded-2xl bg-white p-5">
+          <p class="card-title mb-4 font-medium">{{ $t('Dernières sessions') }}</p>
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-max text-sm">
+              <thead>
+                <tr class="bg-neutral-50 text-left text-neutral-500">
+                  <th class="rounded-l-lg px-3 py-3 font-medium">{{ $t('Date') }}</th>
+                  <th class="px-3 py-3 font-medium">{{ $t('Arrivée') }}</th>
+                  <th class="px-3 py-3 font-medium">{{ $t('Sortie') }}</th>
+                  <th class="rounded-r-lg px-3 py-3 font-medium">{{ $t('Durée') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="session in last_sessions" :key="session.id" class="border-b border-neutral-100 last:border-0">
+                  <td class="px-3 py-3 font-medium">{{ session.start.slice(0, 10) }}</td>
+                  <td class="px-3 py-3">{{ session.start.slice(11, 16) }}</td>
+                  <td class="px-3 py-3">
+                    {{ session.end.slice(11, 16) }}
+                    <Chip v-if="is_night(session.start)" color="dark">{{ $t('Nuit') }}</Chip>
+                  </td>
+                  <td class="px-3 py-3">{{ format_duration(to_date(session.end) - to_date(session.start)) }}</td>
+                </tr>
+                <tr v-if="last_sessions.length === 0">
+                  <td colspan="4" class="px-4 py-8 text-center text-neutral-400">{{ $t('Aucune session enregistrée.') }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-        <ul class="history-list">
-          <li v-for="c in recentClocks" :key="c.id">
-            <span class="history-dot" :class="c.status ? 'bg-green' : 'bg-red'"></span>
-            <span class="history-time">{{ c.timeLabel }}</span>
-            <span class="history-label" :class="c.status ? 'text-green' : 'text-red'">{{ c.textLabel }}</span>
-            <span class="history-date">{{ c.dateLabel }}</span>
-          </li>
-          <li v-if="recentClocks.length === 0" class="empty">Aucun pointage récent.</li>
-        </ul>
-        <a href="#" class="view-all">Voir tout l'historique →</a>
-      </div>
-    </div>
 
-    <!-- STATISTIQUES CHARTS -->
-    <div class="chart-section">
-      <h3>Mes statistiques</h3>
-      <p class="chart-subtitle">Suivez votre activité et vos heures de travail.</p>
-      <ChartManager :userId="props.userId" />
+        <div class="flex items-center gap-3 rounded-2xl bg-white p-5 text-sm text-neutral-500">
+          <WifiOff class="h-4 w-4 shrink-0" />
+          {{ $t('Pas de réseau ? Le pointage est gardé sur l\'appareil et envoyé au retour de la connexion.') }}
+        </div>
+      </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.clock-page { display: flex; flex-direction: column; gap: 24px; }
-.subtitle { color: #8a97b5; font-size: 15px; margin-top: -8px; margin-bottom: 4px; }
-.clock-manager-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-.status-card, .history-card {
-  background: #ffffff; border-radius: 14px; padding: 28px 32px;
-  box-shadow: 0 2px 8px rgba(30,42,74,0.04); border: 1px solid #f1f5f9;
-}
-.status-header { display: flex; gap: 24px; align-items: center; margin-bottom: 40px; }
-.status-ring {
-  width: 80px; height: 80px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  background: #f1f5f9; border: 6px solid #e2e8f0; transition: 0.3s;
-}
-.status-ring.active {
-  background: #ecfdf5; border-color: #d1fae5; box-shadow: 0 0 20px rgba(16,185,129,0.15);
-}
-.status-title {
-  display: flex; align-items: center; gap: 8px; font-size: 19px; font-weight: 700; margin-bottom: 6px;
-}
-.status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-.bg-green { background: #10b981; } .text-green { color: #10b981; }
-.bg-red { background: #ef4444; }   .text-red { color: #ef4444; }
-.bg-gray { background: #94a3b8; }  .text-gray { color: #64748b; }
-.status-desc { font-size: 14px; color: #64748b; margin-left: 18px; }
-
-.status-details { display: flex; gap: 16px; align-items: center; }
-.detail-box {
-  background: #f8fafc; border-radius: 12px; padding: 18px 20px;
-  display: flex; gap: 16px; align-items: flex-start; flex: 1; border: 1px solid #f1f5f9;
-}
-.detail-icon { color: #94a3b8; margin-top: 2px; }
-.detail-label { font-size: 13px; color: #64748b; font-weight: 500; margin-bottom: 4px; }
-.detail-val { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 2px; }
-.detail-sub { font-size: 12px; color: #94a3b8; text-transform: capitalize; }
-
-.clock-btn {
-  padding: 0 28px; height: 75px; border-radius: 12px;
-  border: none; color: #fff; font-size: 16px; font-weight: 700;
-  cursor: pointer; display: flex; align-items: center; gap: 8px; justify-content: center;
-  transition: opacity 0.2s, transform 0.1s; white-space: nowrap; box-shadow: 0 4px 12px rgba(239,68,68,0.2);
-}
-.clock-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-.clock-btn:active { transform: translateY(1px); }
-.btn-red { background: #ef4444; box-shadow: 0 4px 12px rgba(239,68,68,0.25); }
-.btn-green { background: #10b981; box-shadow: 0 4px 12px rgba(16,185,129,0.25); color: #fff; }
-
-.card-title {
-  display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 24px;
-}
-.history-list { list-style: none; padding: 0; margin: 0 0 24px 0; display: flex; flex-direction: column; gap: 18px; }
-.history-list li { display: flex; align-items: center; gap: 14px; font-size: 14px; }
-.history-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-.history-time { font-weight: 700; color: #334155; width: 45px; }
-.history-label { font-weight: 600; flex: 1; }
-.history-date { color: #94a3b8; font-size: 13px; text-transform: capitalize; }
-.view-all { color: #2563eb; font-size: 13.5px; font-weight: 600; text-decoration: none; }
-.empty { color: #94a3b8; }
-
-.chart-section { margin-top: 12px; }
-.chart-section h3 { font-size: 18px; font-weight: 700; color: #1e2a4a; margin-bottom: 4px; }
-.chart-subtitle { color: #8a97b5; font-size: 14px; margin-bottom: 20px; }
-</style>

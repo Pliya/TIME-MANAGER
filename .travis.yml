@@ -1,0 +1,49 @@
+language: generic
+
+services:
+  - docker
+
+env:
+  global:
+    - VITE_API_URL=https://gotham-manager.duckdns.org/api
+
+stages:
+  - name: "Test"
+  - name: "Build and Push Image"
+  - name: "Deploy"
+
+jobs:
+  include:
+    - stage: "Test"
+      name: "Backend tests"
+      script:
+        - docker network create ci
+        - docker run -d --name db --network ci -e POSTGRES_PASSWORD=postgres postgres:16
+        - until docker exec db pg_isready -U postgres; do sleep 1; done
+        - docker run --rm --network ci -v "$PWD/manager:/app" -w /app -e MIX_ENV=test -e DB_HOST=db elixir:1.17.3-otp-27 sh -c "mix local.hex --force && mix local.rebar --force && mix deps.get && mix test"
+
+    - stage: "Test"
+      name: "Frontend build and tests"
+      script:
+        - docker run --rm -v "$PWD/Frontend:/app" -w /app node:22-alpine sh -c "npm ci && npm run build"
+
+
+    - stage: "Build and Push Image"
+      script:
+        - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+        
+        - docker build -t $DOCKER_USERNAME/time-manager-backend:latest ./manager
+        - docker push $DOCKER_USERNAME/time-manager-backend:latest
+        
+        - docker build --build-arg VITE_API_URL="$VITE_API_URL" -t $DOCKER_USERNAME/time-manager-frontend:latest ./Frontend
+        - docker push $DOCKER_USERNAME/time-manager-frontend:latest
+    
+    - stage: "Deploy"
+      script:
+        - mkdir -p ~/.ssh
+        - echo "$SSH_PRIVATE_KEY" | base64 -d > ~/.ssh/id_rsa
+        - echo "" >> ~/.ssh/id_rsa
+        - chmod 600 ~/.ssh/id_rsa
+        - echo -e "Host *\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+        - scp docker-compose.prod.yml $SERVER_USER@$SERVER_HOST:~/time-manager/docker-compose.yml
+        - ssh $SERVER_USER@$SERVER_HOST "cd ~/time-manager && docker compose pull && docker compose up -d"
