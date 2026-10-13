@@ -1,0 +1,24 @@
+name: Mirror to org private repo
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    if: ${{ github.repository == 'Pliya/TIME-MANAGER' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Push mirror
+        env:
+          MIRROR_TOKEN: ${{ secrets.TIME_TIME }}
+        run: |
+          git remote add mirror "https://x-access-token:${MIRROR_TOKEN}@github.com/Epitech2026-2027/I-DEV-700-INT-7-1-timemanager-19.git"
+          git push mirror refs/heads/main:refs/heads/main --force
