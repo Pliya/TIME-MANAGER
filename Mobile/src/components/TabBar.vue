@@ -20,7 +20,7 @@ const route = useRoute()
     >
       <Menu v-if="tab.more" class="h-5 w-5" />
       <LogoIcon v-else :name="tab.logo" class="h-5 w-5 invert" />
-      <span class="w-full truncate text-center">{{ tab.label }}</span>
+      <span class="w-full truncate text-center">{{ $t(tab.label) }}</span>
       <span
         v-if="tab.more && pendingCount"
         class="absolute top-1.5 left-1/2 ml-2 rounded-full bg-amber-500 px-1.5 text-[10px] leading-4 text-white"

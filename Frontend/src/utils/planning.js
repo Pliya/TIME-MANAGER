@@ -8,6 +8,8 @@ export const SHIFTS = {
   R: { label: 'Repos', hours: 0 },
 }
 
+import { t } from '../i18n'
+
 export const DAY_NAMES = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 
 export function shift_of(user_id, date)
@@ -42,10 +44,10 @@ export function planning_warnings(user_id, monday, name)
     const shift = shift_of(user_id, day)
     run = shift === 'N' ? run + 1 : 0
     if (run === max_consecutive_nights + 1) {
-      warnings.push(`${name} : plus de ${max_consecutive_nights} nuits d'affilée (${DAY_NAMES[i]})`)
+      warnings.push(t('{name} : plus de {max} nuits d\'affilée ({day})', { name, max: max_consecutive_nights, day: t(DAY_NAMES[i]) }))
     }
     if (rest_after_night && i > 0 && shift_of(user_id, add_days(day, -1)) === 'N' && shift && shift !== 'N' && shift !== 'R') {
-      warnings.push(`${name} : pas de repos après la nuit de ${DAY_NAMES[i - 1]}`)
+      warnings.push(t('{name} : pas de repos après la nuit de {day}', { name, day: t(DAY_NAMES[i - 1]) }))
     }
   })
 

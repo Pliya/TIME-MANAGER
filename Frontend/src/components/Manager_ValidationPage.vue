@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { dateLocale } from '@/i18n'
 import { useRouter } from 'vue-router'
 import { CheckCheck, Users, Plus, Pencil } from 'lucide-vue-next'
 import { api } from '@/api'
@@ -13,7 +14,7 @@ import { period_text, length_text, status_color } from '@/utils/absences'
 
 const router = useRouter()
 const month = month_key()
-const month_name = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+const month_name = new Date().toLocaleDateString(dateLocale(), { month: 'long', year: 'numeric' })
 
 const members = ref([])
 const message = ref('')
@@ -171,7 +172,7 @@ const pending_absences = computed(() => team_absences.value.filter(a => a.status
       <div>
         <p class="font-medium first-letter:uppercase">{{ month_name }} · {{ members.length }} agent{{ members.length > 1 ? 's' : '' }}</p>
         <p class="text-sm text-neutral-500">
-          {{ ready_sheets.length }} feuilles prêtes, {{ to_fix }} à corriger, {{ pending_corrections.length }} demandes en attente
+          {{ $t('{ready} feuilles prêtes, {fix} à corriger, {pending} demandes en attente', { ready: ready_sheets.length, fix: to_fix, pending: pending_corrections.length }) }}
         </p>
       </div>
       <div class="flex flex-col gap-2 xl:flex-row">
@@ -180,18 +181,18 @@ const pending_absences = computed(() => team_absences.value.filter(a => a.status
           :disabled="ready_sheets.length === 0"
           @click="validate_all"
         >
-          <CheckCheck class="h-4 w-4" /> Tout valider ({{ ready_sheets.length }})
+          <CheckCheck class="h-4 w-4" /> {{ $t('Tout valider ({n})', { n: ready_sheets.length }) }}
         </button>
         <button class="inline-flex items-center justify-center gap-2 rounded-full border-2 border-neutral-900 bg-white px-5 py-2.5 text-sm font-semibold" @click="team_clock">
-          <Users class="h-4 w-4" /> {{ all_present ? "Sortie d'équipe" : "Pointage d'équipe" }}
+          <Users class="h-4 w-4" /> {{ all_present ? $t("Sortie d'équipe") : $t("Pointage d'équipe") }}
         </button>
         <div class="flex gap-2">
           <select v-model="add_for" class="rounded-full border-2 border-neutral-900 bg-white px-3 text-sm">
-            <option value="" disabled>Agent</option>
+            <option value="" disabled>{{ $t('Agent') }}</option>
             <option v-for="m in members" :key="m.id" :value="m.id">{{ m.name }}</option>
           </select>
           <button class="inline-flex items-center justify-center gap-2 rounded-full border-2 border-neutral-900 bg-white px-5 py-2.5 text-sm font-semibold" @click="add_time">
-            <Plus class="h-4 w-4" /> Ajouter un temps
+            <Plus class="h-4 w-4" /> {{ $t('Ajouter un temps') }}
           </button>
         </div>
       </div>
@@ -201,16 +202,16 @@ const pending_absences = computed(() => team_absences.value.filter(a => a.status
 
     <div class="rounded-2xl bg-white p-5">
       <div class="card-title mb-4 flex flex-wrap items-center justify-between gap-2">
-        <p class="font-medium">Demandes de correction <span class="text-neutral-400">({{ pending_corrections.length }})</span></p>
+        <p class="font-medium">{{ $t('Demandes de correction') }} <span class="text-neutral-400">({{ pending_corrections.length }})</span></p>
         <button v-if="pending_corrections.length" class="rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-medium" @click="accept_all">
           Accepter les {{ pending_corrections.length }}
         </button>
       </div>
-      <p v-if="pending_corrections.length === 0" class="text-sm text-neutral-400">Aucune demande en attente.</p>
+      <p v-if="pending_corrections.length === 0" class="text-sm text-neutral-400">{{ $t('Aucune demande en attente.') }}</p>
       <div class="space-y-4">
         <div v-for="c in pending_corrections" :key="c.id" class="flex flex-col gap-3 rounded-xl bg-neutral-50 p-4 xl:flex-row xl:items-start xl:justify-between">
           <div class="text-sm">
-            <p class="font-medium">{{ c.userName }} · {{ c.day }} · {{ c.type }}</p>
+            <p class="font-medium">{{ c.userName }} · {{ c.day }} · {{ $t(c.type) }}</p>
             <p class="mt-1 text-neutral-600">
               Arrivée {{ c.start.slice(11, 16) }}, sortie proposée <b>{{ correction_info(c).end.slice(11, 16) }}</b> ({{ correction_info(c).duration }})
             </p>
@@ -218,25 +219,25 @@ const pending_absences = computed(() => team_absences.value.filter(a => a.status
             <p class="mt-2 text-xs" :class="correction_info(c).gap ? 'text-red-600' : 'text-neutral-500'">{{ correction_info(c).planning }}</p>
           </div>
           <div class="flex flex-wrap gap-2">
-            <button class="rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white" @click="accept(c)">Accepter</button>
-            <button class="rounded-full border-2 border-neutral-900 bg-white px-5 py-2.5 text-sm font-semibold" @click="change_time(c)">Modifier l'heure</button>
-            <button class="rounded-full border-2 border-neutral-900 bg-white px-5 py-2.5 text-sm font-semibold" @click="refuse(c)">Refuser</button>
+            <button class="rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white" @click="accept(c)">{{ $t('Accepter') }}</button>
+            <button class="rounded-full border-2 border-neutral-900 bg-white px-5 py-2.5 text-sm font-semibold" @click="change_time(c)">{{ $t('Modifier l\'heure') }}</button>
+            <button class="rounded-full border-2 border-neutral-900 bg-white px-5 py-2.5 text-sm font-semibold" @click="refuse(c)">{{ $t('Refuser') }}</button>
           </div>
         </div>
       </div>
     </div>
 
     <div class="rounded-2xl bg-white p-5">
-      <p class="card-title mb-1 font-medium">Heures supplémentaires à décider</p>
-      <p class="mb-4 text-xs text-neutral-500">Elles sont payées ou récupérées. Elles ne peuvent pas être effacées, et l'agent voit la décision.</p>
-      <p v-if="overtime_rows.length === 0" class="text-sm text-neutral-400">Aucune heure sup ce mois-ci.</p>
+      <p class="card-title mb-1 font-medium">{{ $t('Heures supplémentaires à décider') }}</p>
+      <p class="mb-4 text-xs text-neutral-500">{{ $t('Elles sont payées ou récupérées. Elles ne peuvent pas être effacées, et l\'agent voit la décision.') }}</p>
+      <p v-if="overtime_rows.length === 0" class="text-sm text-neutral-400">{{ $t('Aucune heure sup ce mois-ci.') }}</p>
       <div v-else class="overflow-x-auto">
         <table class="w-full min-w-max text-sm">
           <thead>
             <tr class="bg-neutral-50 text-left text-neutral-500">
-              <th class="rounded-l-lg px-3 py-3 font-medium">Agent</th>
-              <th class="px-3 py-3 font-medium">Heures sup</th>
-              <th class="px-3 py-3 font-medium">Décision</th>
+              <th class="rounded-l-lg px-3 py-3 font-medium">{{ $t('Agent') }}</th>
+              <th class="px-3 py-3 font-medium">{{ $t('Heures sup') }}</th>
+              <th class="px-3 py-3 font-medium">{{ $t('Décision') }}</th>
               <th class="rounded-r-lg px-3 py-3"></th>
             </tr>
           </thead>
@@ -247,14 +248,14 @@ const pending_absences = computed(() => team_absences.value.filter(a => a.status
               <td class="px-3 py-3">
                 <label class="mr-4 inline-flex items-center gap-2">
                   <input type="radio" class="accent-neutral-900" :checked="decision(row.member) === 'paid'" @change="decide(row.member, row.hours, 'paid')" />
-                  Payées (× {{ store.rules.overtimeRate }})
+                  {{ $t('Payées (× {r})', { r: store.rules.overtimeRate }) }}
                 </label>
                 <label class="inline-flex items-center gap-2">
                   <input type="radio" class="accent-neutral-900" :checked="decision(row.member) === 'recover'" @change="decide(row.member, row.hours, 'recover')" />
-                  À récupérer
+                  {{ $t('À récupérer') }}
                 </label>
               </td>
-              <td class="px-3 py-3"><Chip v-if="!decision(row.member)" color="red">À décider</Chip></td>
+              <td class="px-3 py-3"><Chip v-if="!decision(row.member)" color="red">{{ $t('À décider') }}</Chip></td>
             </tr>
           </tbody>
         </table>
@@ -262,28 +263,28 @@ const pending_absences = computed(() => team_absences.value.filter(a => a.status
     </div>
 
     <div class="rounded-2xl bg-white p-5">
-      <p class="card-title mb-4 font-medium">Demandes d'absence de l'équipe ({{ team_absences.length }}<span v-if="pending_absences"> · {{ pending_absences }} en attente</span>)</p>
-      <p class="mb-4 -mt-2 text-xs text-neutral-400">Les demandes sont validées par l'administrateur RH.</p>
-      <p v-if="team_absences.length === 0" class="text-sm text-neutral-400">Aucune demande d'absence dans l'équipe.</p>
+      <p class="card-title mb-4 font-medium">{{ $t("Demandes d'absence de l'équipe") }} ({{ team_absences.length }}<span v-if="pending_absences"> · {{ pending_absences }} {{ $t('en attente') }}</span>)</p>
+      <p class="mb-4 -mt-2 text-xs text-neutral-400">{{ $t('Les demandes sont validées par l\'administrateur RH.') }}</p>
+      <p v-if="team_absences.length === 0" class="text-sm text-neutral-400">{{ $t('Aucune demande d\'absence dans l\'équipe.') }}</p>
       <div v-else class="overflow-x-auto">
         <table class="w-full min-w-max text-sm">
           <thead>
             <tr class="bg-neutral-50 text-left text-neutral-500">
-              <th class="rounded-l-lg px-3 py-3 font-medium">Agent</th>
-              <th class="px-3 py-3 font-medium">Type</th>
-              <th class="px-3 py-3 font-medium">Période</th>
-              <th class="px-3 py-3 font-medium">Durée</th>
-              <th class="rounded-r-lg px-3 py-3 font-medium">Statut</th>
+              <th class="rounded-l-lg px-3 py-3 font-medium">{{ $t('Agent') }}</th>
+              <th class="px-3 py-3 font-medium">{{ $t('Type') }}</th>
+              <th class="px-3 py-3 font-medium">{{ $t('Période') }}</th>
+              <th class="px-3 py-3 font-medium">{{ $t('Durée') }}</th>
+              <th class="rounded-r-lg px-3 py-3 font-medium">{{ $t('Statut') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="a in team_absences" :key="a.id" class="border-b border-neutral-100 last:border-0">
               <td class="px-3 py-3 font-medium">{{ a.userName }}</td>
-              <td class="px-3 py-3">{{ a.type }}</td>
+              <td class="px-3 py-3">{{ $t(a.type) }}</td>
               <td class="px-3 py-3">{{ period_text(a) }}</td>
               <td class="px-3 py-3">{{ length_text(a) }}</td>
               <td class="px-3 py-3">
-                <Chip :color="status_color(a.status)">{{ a.status }}</Chip>
+                <Chip :color="status_color(a.status)">{{ $t(a.status) }}</Chip>
               </td>
             </tr>
           </tbody>
@@ -292,17 +293,17 @@ const pending_absences = computed(() => team_absences.value.filter(a => a.status
     </div>
 
     <div class="rounded-2xl bg-white p-5">
-      <p class="card-title mb-4 font-medium">Feuilles du mois</p>
+      <p class="card-title mb-4 font-medium">{{ $t('Feuilles du mois') }}</p>
       <div class="overflow-x-auto">
         <table class="w-full min-w-max text-sm">
           <thead>
             <tr class="bg-neutral-50 text-left text-neutral-500">
-              <th class="rounded-l-lg px-3 py-3 font-medium">Agent</th>
-              <th class="px-3 py-3 font-medium">Normales</th>
-              <th class="px-3 py-3 font-medium">Nuit</th>
-              <th class="px-3 py-3 font-medium">Heures sup</th>
-              <th class="px-3 py-3 font-medium">Astreinte</th>
-              <th class="px-3 py-3 font-medium">Statut</th>
+              <th class="rounded-l-lg px-3 py-3 font-medium">{{ $t('Agent') }}</th>
+              <th class="px-3 py-3 font-medium">{{ $t('Normales') }}</th>
+              <th class="px-3 py-3 font-medium">{{ $t('Nuit') }}</th>
+              <th class="px-3 py-3 font-medium">{{ $t('Heures sup') }}</th>
+              <th class="px-3 py-3 font-medium">{{ $t('Astreinte') }}</th>
+              <th class="px-3 py-3 font-medium">{{ $t('Statut') }}</th>
               <th class="rounded-r-lg px-3 py-3"></th>
             </tr>
           </thead>
@@ -314,18 +315,18 @@ const pending_absences = computed(() => team_absences.value.filter(a => a.status
               <td class="px-3 py-3">{{ s.sup }}</td>
               <td class="px-3 py-3">{{ s.duty }}</td>
               <td class="px-3 py-3">
-                <Chip :color="s.status === 'Validé' ? 'dark' : s.status === 'Prêt' ? 'green' : 'red'">{{ s.status }}</Chip>
+                <Chip :color="s.status === 'Validé' ? 'dark' : s.status === 'Prêt' ? 'green' : 'red'">{{ $t(s.status) }}</Chip>
               </td>
               <td class="px-3 py-3">
                 <span class="inline-flex items-center gap-2">
-                  <button v-if="s.status === 'Prêt'" @click="validate(s)"><Chip>Valider</Chip></button>
-                  <router-link v-else-if="s.status !== 'Validé'" :to="`/workingTimes/${s.member.id}`"><Chip>Corriger</Chip></router-link>
+                  <button v-if="s.status === 'Prêt'" @click="validate(s)"><Chip>{{ $t('Valider') }}</Chip></button>
+                  <router-link v-else-if="s.status !== 'Validé'" :to="`/workingTimes/${s.member.id}`"><Chip>{{ $t('Corriger') }}</Chip></router-link>
                   <router-link :to="`/workingTimes/${s.member.id}`" title="Voir ses temps"><Pencil class="h-4 w-4" /></router-link>
                 </span>
               </td>
             </tr>
             <tr v-if="sheets.length === 0">
-              <td colspan="7" class="px-4 py-8 text-center text-neutral-400">Aucun agent dans les équipes.</td>
+              <td colspan="7" class="px-4 py-8 text-center text-neutral-400">{{ $t('Aucun agent dans les équipes.') }}</td>
             </tr>
           </tbody>
         </table>

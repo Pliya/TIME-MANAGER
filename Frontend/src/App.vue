@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Accessibility, CircleHelp, LogOut, Menu, X } from 'lucide-vue-next'
 import UserComponent from './components/UserComponent.vue'
@@ -14,6 +14,9 @@ const router = useRouter()
 const menu_open = ref(false)
 const accessibility_open = ref(false)
 
+const show_splash = ref(true)
+onMounted(() => setTimeout(() => { show_splash.value = false }, 1800))
+
 const user_id = computed(() => Number(route.params.userID || route.params.userid) || logged_user_id.value)
 
 const all_sections = computed(() => [
@@ -27,6 +30,14 @@ const all_sections = computed(() => [
       { to: '/planning', label: 'Planning', logo: 'schedule' },
       { to: '/absences', label: 'Absences', logo: 'list-interface-symbol' },
       { to: `/chartManager/${user_id.value}`, label: 'Statistiques', logo: 'bar-chart' },
+    ],
+  },
+  {
+    title: 'Mon espace',
+    roles: ['Manager', 'Administrator'],
+    links: [
+      { to: '/', label: 'Dashboard', logo: 'dashboard' },
+      { to: `/clock/${logged_user_id}`, label: 'Pointage', logo: 'timetable' },
     ],
   },
   {
@@ -75,6 +86,19 @@ watch(() => route.path, () =>
 </script>
 
 <template>
+  <Transition name="splash-fade">
+    <div
+      v-if="show_splash"
+      class="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-5 bg-gradient-to-b from-[#2b3170] to-[#171b45] text-white"
+    >
+      <img :src="seal" alt="Sceau de la ville de Gotham" class="splash-logo h-32 w-32 rounded-full ring-4 ring-white/70 shadow-2xl" />
+      <div class="text-center">
+        <p class="text-3xl font-bold tracking-wide uppercase">Time Manager</p>
+        <p class="mt-1 text-sm tracking-widest text-white/70 uppercase">Ville de Gotham</p>
+      </div>
+    </div>
+  </Transition>
+
   <router-view v-if="route.meta.public" />
 
   <div v-else class="flex h-dvh bg-[#F0F0F0] font-sans text-neutral-900">
@@ -98,7 +122,7 @@ watch(() => route.path, () =>
 
       <nav class="flex-1 overflow-y-auto pt-8 pb-6">
         <div v-for="section in navigation" :key="section.title" class="mb-5">
-          <p class="mb-3 px-6 text-xs font-semibold tracking-widest text-[#a7abcf] uppercase">{{ section.title }}</p>
+          <p class="mb-3 px-6 text-xs font-semibold tracking-widest text-[#a7abcf] uppercase">{{ $t(section.title) }}</p>
           <router-link
             v-for="item in section.links"
             :key="item.to"
@@ -107,7 +131,7 @@ watch(() => route.path, () =>
             :class="is_active(item.to) ? 'bg-brand font-semibold text-white' : 'text-white/85 hover:bg-white/10'"
           >
             <LogoIcon :name="item.logo" class="h-5 w-5 invert" />
-            {{ item.label }}
+            {{ $t(item.label) }}
           </router-link>
         </div>
       </nav>
@@ -118,7 +142,7 @@ watch(() => route.path, () =>
         @click="disconnect"
       >
         <LogOut class="h-5 w-5" />
-        Se déconnecter
+        {{ $t('Se déconnecter') }}
       </button>
     </aside>
 
@@ -128,7 +152,7 @@ watch(() => route.path, () =>
           <button class="text-neutral-900 lg:hidden" @click="menu_open = true">
             <Menu class="h-6 w-6" />
           </button>
-          <h1 class="text-lg font-bold tracking-wide uppercase lg:text-xl">{{ route.meta.title }}</h1>
+          <h1 class="text-lg font-bold tracking-wide uppercase lg:text-xl">{{ $t(route.meta.title) }}</h1>
         </div>
         <div class="flex items-center gap-3 text-neutral-900">
           <div class="relative">
@@ -153,3 +177,19 @@ watch(() => route.path, () =>
     </div>
   </div>
 </template>
+
+<style scoped>
+.splash-fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+.splash-fade-leave-to {
+  opacity: 0;
+}
+.splash-logo {
+  animation: splash-pop 0.6s ease-out both;
+}
+@keyframes splash-pop {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+</style>

@@ -15,8 +15,9 @@ const EMPLOYEE_AND_MANAGER = ['Employee', 'Manager', 'Administrator']
 const routes = [
   { path: '/sign_in', component: () => import('@web/components/Authentication.vue'), meta: { title: 'Connexion', public: true } },
   { path: '/', redirect: () => homePath() },
+  { path: '/profil', component: () => import('@web/components/ProfilePage.vue'), meta: { title: 'Mon profil' } },
 
-  { path: '/clock/:userid', component: () => import('@web/components/ClockManager.vue'), meta: { title: 'Pointage', roles: EMPLOYEE } },
+  { path: '/clock/:userid', component: () => import('@web/components/ClockManager.vue'), meta: { title: 'Pointage', roles: EMPLOYEE_AND_MANAGER } },
   { path: '/workingTimes/:userID', component: () => import('@web/components/WorkingTimes.vue'), meta: { title: 'Mes temps', roles: EMPLOYEE_AND_MANAGER } },
   { path: '/planning', component: () => import('@web/components/PlanningPage.vue'), meta: { title: 'Planning', roles: EMPLOYEE } },
   { path: '/absences', component: () => import('@web/components/AbsencesPage.vue'), meta: { title: 'Absences', roles: EMPLOYEE } },

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { dateLocale } from '@/i18n'
 import { CalendarCheck, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import StatCard from '@/components/StatCard.vue'
 import Chip from '@/components/Chip.vue'
@@ -33,9 +34,9 @@ watch(upcoming_weeks, weeks =>
   monday.value = weeks[0]
 }, { immediate: true })
 
-const week_label = week => week.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+const week_label = week => week.toLocaleDateString(dateLocale(), { day: 'numeric', month: 'long' })
 
-const week_title = computed(() => monday.value.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }))
+const week_title = computed(() => monday.value.toLocaleDateString(dateLocale(), { day: 'numeric', month: 'long' }))
 
 function card(day, i)
 {
@@ -78,14 +79,14 @@ const hours_this_week = computed(() => planned_hours(user_id.value, monday.value
         <button class="rounded-lg p-1 hover:bg-neutral-100" @click="go_to(add_days(monday, -7))"><ChevronLeft class="h-4 w-4" /></button>
         <button class="rounded-lg p-1 hover:bg-neutral-100" @click="go_to(add_days(monday, 7))"><ChevronRight class="h-4 w-4" /></button>
         <CalendarCheck class="h-4 w-4 shrink-0" />
-        Semaine du {{ week_title }} ·
-        <template v-if="published_on">publié le {{ new Date(published_on).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) }}</template>
-        <template v-else>pas encore publié</template>
+        {{ $t('Semaine du {w}', { w: week_title }) }} ·
+        <template v-if="published_on">{{ $t('publié le {d}', { d: new Date(published_on).toLocaleDateString(dateLocale(), { day: 'numeric', month: 'long' }) }) }}</template>
+        <template v-else>{{ $t('pas encore publié') }}</template>
       </div>
       <div class="flex gap-2">
-        <Chip>Jour</Chip>
-        <Chip color="dark">Nuit</Chip>
-        <Chip color="outline">Astreinte</Chip>
+        <Chip>{{ $t('Jour') }}</Chip>
+        <Chip color="dark">{{ $t('Nuit') }}</Chip>
+        <Chip color="outline">{{ $t('Astreinte') }}</Chip>
       </div>
     </div>
 
@@ -104,16 +105,16 @@ const hours_this_week = computed(() => planned_hours(user_id.value, monday.value
       </div>
     </div>
     <div v-else class="rounded-2xl bg-white p-5 text-sm text-neutral-500">
-      <p>Ton manager n'a pas encore publié le planning de cette semaine. Il est publié au moins {{ store.rules.planningNoticeDays }} jours à l'avance.</p>
+      <p>{{ $t("Ton manager n'a pas encore publié le planning de cette semaine. Il est publié au moins {n} jours à l'avance.", { n: store.rules.planningNoticeDays }) }}</p>
       <div v-if="upcoming_weeks.length" class="mt-3 flex flex-wrap items-center gap-2">
-        <span>Plannings publiés :</span>
+        <span>{{ $t('Plannings publiés :') }}</span>
         <button
           v-for="week in upcoming_weeks"
           :key="date_key(week)"
           class="rounded-full bg-neutral-900 px-3 py-1 text-xs font-semibold text-white"
           @click="go_to(week)"
         >
-          Semaine du {{ week_label(week) }}
+          {{ $t('Semaine du {w}', { w: week_label(week) }) }}
         </button>
       </div>
     </div>

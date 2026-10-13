@@ -47,6 +47,8 @@ defmodule Time_managerWeb.Router do
 
       post "/sign_out", UserController, :sign_out
       get "/me", UserController, :me
+      put "/me", UserController, :me_update
+      delete "/me", UserController, :me_delete
 
       # Routes accessibles aux Managers et Administrators
       scope "/" do

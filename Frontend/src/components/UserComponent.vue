@@ -264,7 +264,11 @@ watch(() => props.userId, (new_id) =>
         </div>
       </div>
 
-      <p v-if="loading" class="mb-4 text-sm text-neutral-400">Chargement...</p>
+      <button class="mb-4 flex w-full items-center justify-center gap-2 rounded-full border-2 border-neutral-900 py-2 text-sm font-semibold hover:bg-neutral-100" @click="open = false; router.push('/profil')">
+        {{ $t('Mon profil') }}
+      </button>
+
+      <p v-if="loading" class="mb-4 text-sm text-neutral-400">{{ $t('Chargement...') }}</p>
 
       <div v-if="error" class="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
         <ul v-if="Array.isArray(error)">
@@ -282,13 +286,13 @@ watch(() => props.userId, (new_id) =>
             {{ loading ? 'Modification...' : 'Modifier' }}
           </button>
           <button type="button" :disabled="loading" class="rounded-full bg-red-50 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-100 disabled:opacity-50" @click="delete_user">
-            Supprimer
+            {{ $t('Supprimer') }}
           </button>
         </div>
       </form>
 
       <form v-if="creating" class="space-y-3" @submit.prevent="create_user">
-        <p class="text-sm font-medium">Créer un utilisateur</p>
+        <p class="text-sm font-medium">{{ $t('Créer un utilisateur') }}</p>
         <input v-model.trim="new_username" type="text" required placeholder="Entrez le username" class="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none" />
         <input v-model.trim="new_email" type="email" required placeholder="exemple@email.com" class="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none" />
         <input v-model="new_password" type="password" required minlength="8" autocomplete="new-password" placeholder="Mot de passe (8 caractères minimum)" class="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none" />

@@ -1,11 +1,12 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/api'
-import { X } from 'lucide-vue-next'
+import { X, ChevronLeft } from 'lucide-vue-next'
 import { hours_to_text } from '@/utils/kpi'
 
 const route = useRoute()
+const router = useRouter()
 
 const props = defineProps({
   userId: {
@@ -270,7 +271,11 @@ defineExpose({
 </script>
 
 <template>
-  <div class="w-full max-w-xl rounded-2xl bg-white p-6">
+  <div class="w-full max-w-xl space-y-4">
+    <button type="button" @click="router.back()" class="inline-flex items-center gap-2 rounded-full border-2 border-neutral-900 bg-white px-5 py-2 text-sm font-semibold hover:bg-neutral-100">
+      <ChevronLeft class="h-4 w-4" /> {{ $t('Retour') }}
+    </button>
+  <div class="w-full rounded-2xl bg-white p-6">
     <div class="card-title mb-6 flex items-center justify-between">
       <p class="font-medium">{{ is_edit_mode ? `Modifier la plage #${working_time_id}` : 'Create a Working Time' }}</p>
       <button v-if="is_edit_mode" type="button" class="text-neutral-400 hover:text-neutral-600" title="Annuler le mode édition" @click="cancel_edit">
@@ -289,12 +294,12 @@ defineExpose({
 
     <form class="space-y-4" @submit.prevent="on_submit">
       <label class="block">
-        <span class="text-sm text-neutral-500">Date & Heure de début</span>
+        <span class="text-sm text-neutral-500">{{ $t('Date & Heure de début') }}</span>
         <input v-model="start" type="datetime-local" required class="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 focus:border-neutral-900 focus:outline-none" @focus="clear_messages" />
       </label>
 
       <label class="block">
-        <span class="text-sm text-neutral-500">Date & Heure de fin</span>
+        <span class="text-sm text-neutral-500">{{ $t('Date & Heure de fin') }}</span>
         <input v-model="end" type="datetime-local" required class="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 focus:border-neutral-900 focus:outline-none" @focus="clear_messages" />
       </label>
 
@@ -303,9 +308,9 @@ defineExpose({
       </p>
 
       <div class="flex flex-wrap items-center gap-2">
-        <span class="text-sm text-neutral-400">Raccourcis :</span>
-        <button type="button" class="rounded-lg bg-neutral-100 px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-200" @click="set_preset_today(9, 17)">Aujourd'hui 8h (9h-17h)</button>
-        <button type="button" class="rounded-lg bg-neutral-100 px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-200" @click="set_preset_today(8, 16.5)">8h30 (8h-16h30)</button>
+        <span class="text-sm text-neutral-400">{{ $t('Raccourcis :') }}</span>
+        <button type="button" class="rounded-lg bg-neutral-100 px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-200" @click="set_preset_today(9, 17)">{{ $t('Aujourd\'hui 8h (9h-17h)') }}</button>
+        <button type="button" class="rounded-lg bg-neutral-100 px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-200" @click="set_preset_today(8, 16.5)">{{ $t('8h30 (8h-16h30)') }}</button>
       </div>
 
       <button type="submit" class="w-full rounded-full bg-neutral-900 py-2.5 font-semibold text-white hover:bg-neutral-700">
@@ -313,9 +318,10 @@ defineExpose({
       </button>
 
       <div v-if="is_edit_mode" class="flex gap-2">
-        <button type="button" class="flex-1 rounded-full border border-neutral-200 py-2.5 text-sm font-medium hover:bg-neutral-50" @click="cancel_edit">Annuler</button>
-        <button type="button" class="flex-1 rounded-full bg-red-50 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100" @click="on_delete">Supprimer</button>
+        <button type="button" class="flex-1 rounded-full border border-neutral-200 py-2.5 text-sm font-medium hover:bg-neutral-50" @click="cancel_edit">{{ $t('Annuler') }}</button>
+        <button type="button" class="flex-1 rounded-full bg-red-50 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100" @click="on_delete">{{ $t('Supprimer') }}</button>
       </div>
     </form>
+    </div>
   </div>
 </template>

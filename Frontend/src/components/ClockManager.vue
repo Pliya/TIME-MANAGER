@@ -4,6 +4,7 @@
     import { api } from '@/api';
     import Chip from './Chip.vue';
     import { is_night, date_key, sort_by_time } from '@/utils/kpi';
+    import { t } from '@/i18n';
     import { store, new_id } from '@/store';
     import { username } from '@/session';
     import { SHIFTS, shift_of, shift_times } from '@/utils/planning';
@@ -152,28 +153,28 @@
     const goal_message = computed(() =>
     {
         const remaining = DAILY_GOAL_HOURS * 3600000 - today_ms.value;
-        if (remaining <= 0) return 'Objectif atteint, bravo !';
+        if (remaining <= 0) return t('Objectif atteint, bravo !');
         if (clock_in.value) {
             const leave_at = new Date(now.value.getTime() + remaining);
-            return `Tu peux partir à ${String(leave_at.getHours()).padStart(2, '0')}:${String(leave_at.getMinutes()).padStart(2, '0')}`;
+            return t('Tu peux partir à {time}', { time: `${String(leave_at.getHours()).padStart(2, '0')}:${String(leave_at.getMinutes()).padStart(2, '0')}` });
         }
-        return `Encore ${format_duration(remaining)} à faire aujourd'hui`;
+        return t('Encore {d} à faire aujourd\'hui', { d: format_duration(remaining) });
     });
 
     // La pause ne pointe pas : la session reste ouverte et le minuteur se fige jusqu'à la reprise
     function pause()
     {
         if (!clock_in.value) {
-            notice.value = "Pointe ton arrivée avant de prendre une pause.";
+            notice.value = t("Pointe ton arrivée avant de prendre une pause.");
             return;
         }
         const p = pause_state.value || { session: start_date_time.value, since: null, total: 0 };
         if (p.since) {
             store.pauses[props.userId] = { ...p, since: null, total: p.total + (Date.now() - p.since) };
-            notice.value = 'Pause terminée, le minuteur reprend.';
+            notice.value = t('Pause terminée, le minuteur reprend.');
         } else {
             store.pauses[props.userId] = { ...p, since: Date.now() };
-            notice.value = 'Bonne pause ! Reviens ici pour reprendre.';
+            notice.value = t('Bonne pause ! Reviens ici pour reprendre.');
         }
     }
 
@@ -196,7 +197,7 @@
     function travel()
     {
         add_justification('Trajet', 'Trajet entre deux sites, compté comme temps de travail.');
-        notice.value = 'Trajet déclaré à ton manager.';
+        notice.value = t('Trajet déclaré à ton manager.');
     }
 
     function send_incident()
@@ -205,7 +206,7 @@
         add_justification('Incident', incident_text.value);
         incident_text.value = '';
         incident_open.value = false;
-        notice.value = 'Incident envoyé à ton manager.';
+        notice.value = t('Incident envoyé à ton manager.');
     }
 
     const today_shift = computed(() => SHIFTS[shift_of(props.userId, new Date())]);
@@ -214,14 +215,14 @@
     {
         const shift = shift_of(props.userId, new Date());
         if (!shift || shift === 'R') {
-            notice.value = "Aucun créneau de travail n'est prévu aujourd'hui dans ton planning.";
+            notice.value = t("Aucun créneau de travail n'est prévu aujourd'hui dans ton planning.");
             return;
         }
         try {
             await api.post(`/workingtime/${props.userId}`, { working_time: shift_times(shift, new Date()) });
-            notice.value = 'Journée enregistrée selon le planning.';
+            notice.value = t('Journée enregistrée selon le planning.');
         } catch {
-            notice.value = "Impossible d'enregistrer la journée.";
+            notice.value = t("Impossible d'enregistrer la journée.");
         }
     }
 
@@ -256,13 +257,13 @@
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
       <div class="space-y-6">
         <div class="flex flex-col items-center rounded-2xl bg-white p-6 xl:p-8">
-          <Chip v-if="paused" color="outline">En pause</Chip>
-          <Chip v-else :color="clock_in ? 'dark' : 'gray'">{{ clock_in ? 'En cours' : 'Pas pointé' }}</Chip>
+          <Chip v-if="paused" color="outline">{{ $t('En pause') }}</Chip>
+          <Chip v-else :color="clock_in ? 'dark' : 'gray'">{{ clock_in ? $t('En cours') : $t('Pas pointé') }}</Chip>
           <p class="mt-6 text-5xl font-bold tracking-tight tabular-nums xl:text-6xl">{{ elapsed }}</p>
-          <p class="mt-2 text-sm text-neutral-400">{{ clock_in ? `Depuis ${start_date_time.slice(11, 16)}` : "Tu n'as pas encore pointé" }}</p>
+          <p class="mt-2 text-sm text-neutral-400">{{ clock_in ? $t('Depuis {t}', { t: start_date_time.slice(11, 16) }) : $t("Tu n'as pas encore pointé") }}</p>
 
           <button v-if="!loaded" disabled class="mt-6 w-full rounded-full bg-neutral-100 py-3 font-semibold text-neutral-400">
-            Chargement...
+            {{ $t('Chargement...') }}
           </button>
           <button
             v-else
@@ -270,24 +271,24 @@
             :class="clock_in ? 'bg-white hover:bg-neutral-50' : 'bg-neutral-900 text-white hover:bg-neutral-700'"
             @click="paused ? pause() : clock()"
           >
-            {{ paused ? 'Reprendre le travail' : clock_in ? 'Pointer la sortie' : "Pointer l'arrivée" }}
+            {{ paused ? $t('Reprendre le travail') : clock_in ? $t('Pointer la sortie') : $t("Pointer l'arrivée") }}
           </button>
 
           <div class="mt-3 grid w-full grid-cols-3 gap-2 text-xs">
             <button class="flex flex-col items-center gap-1 rounded-xl py-2" :class="paused ? 'bg-neutral-900 text-white' : 'bg-neutral-100 hover:bg-neutral-200'" @click="pause">
-              <Coffee class="h-4 w-4" /> {{ paused ? 'Reprendre' : 'Pause' }}
+              <Coffee class="h-4 w-4" /> {{ paused ? $t('Reprendre') : $t('Pause') }}
             </button>
             <button class="flex flex-col items-center gap-1 rounded-xl bg-neutral-100 py-2 hover:bg-neutral-200" @click="travel">
-              <Footprints class="h-4 w-4" /> Trajet
+              <Footprints class="h-4 w-4" /> {{ $t('Trajet') }}
             </button>
             <button class="flex flex-col items-center gap-1 rounded-xl bg-neutral-100 py-2 hover:bg-neutral-200" @click="incident_open = !incident_open">
-              <TriangleAlert class="h-4 w-4" /> Incident
+              <TriangleAlert class="h-4 w-4" /> {{ $t('Incident') }}
             </button>
           </div>
 
           <form v-if="incident_open" class="mt-3 w-full" @submit.prevent="send_incident">
             <textarea v-model.trim="incident_text" rows="2" required placeholder="Ex. : route bloquée après une intervention de Batman" class="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"></textarea>
-            <button type="submit" class="mt-2 w-full rounded-full bg-neutral-900 py-2 text-sm font-semibold text-white">Envoyer au manager</button>
+            <button type="submit" class="mt-2 w-full rounded-full bg-neutral-900 py-2 text-sm font-semibold text-white">{{ $t('Envoyer au manager') }}</button>
           </form>
 
           <button
@@ -295,7 +296,7 @@
             @click="conform_day"
           >
             <CalendarCheck class="h-4 w-4" />
-            Journée conforme au planning
+            {{ $t('Journée conforme au planning') }}
             <template v-if="today_shift && today_shift.start">({{ today_shift.start }} – {{ today_shift.end }})</template>
           </button>
           <p v-if="notice" class="mt-3 text-center text-xs text-neutral-500">{{ notice }}</p>
@@ -303,7 +304,7 @@
 
         <div v-if="loaded" class="rounded-2xl bg-white p-5">
           <div class="card-title flex items-center justify-between">
-            <p class="font-medium">Objectif du jour</p>
+            <p class="font-medium">{{ $t('Objectif du jour') }}</p>
             <span class="text-sm text-neutral-400">{{ goal_percent }}%</span>
           </div>
           <p class="mt-4 text-3xl font-semibold">
@@ -319,15 +320,15 @@
 
       <div class="space-y-6 xl:col-span-2">
         <div class="rounded-2xl bg-white p-5">
-          <p class="card-title mb-4 font-medium">Dernières sessions</p>
+          <p class="card-title mb-4 font-medium">{{ $t('Dernières sessions') }}</p>
           <div class="overflow-x-auto">
             <table class="w-full min-w-max text-sm">
               <thead>
                 <tr class="bg-neutral-50 text-left text-neutral-500">
-                  <th class="rounded-l-lg px-3 py-3 font-medium">Date</th>
-                  <th class="px-3 py-3 font-medium">Arrivée</th>
-                  <th class="px-3 py-3 font-medium">Sortie</th>
-                  <th class="rounded-r-lg px-3 py-3 font-medium">Durée</th>
+                  <th class="rounded-l-lg px-3 py-3 font-medium">{{ $t('Date') }}</th>
+                  <th class="px-3 py-3 font-medium">{{ $t('Arrivée') }}</th>
+                  <th class="px-3 py-3 font-medium">{{ $t('Sortie') }}</th>
+                  <th class="rounded-r-lg px-3 py-3 font-medium">{{ $t('Durée') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -336,12 +337,12 @@
                   <td class="px-3 py-3">{{ session.start.slice(11, 16) }}</td>
                   <td class="px-3 py-3">
                     {{ session.end.slice(11, 16) }}
-                    <Chip v-if="is_night(session.start)" color="dark">Nuit</Chip>
+                    <Chip v-if="is_night(session.start)" color="dark">{{ $t('Nuit') }}</Chip>
                   </td>
                   <td class="px-3 py-3">{{ format_duration(to_date(session.end) - to_date(session.start)) }}</td>
                 </tr>
                 <tr v-if="last_sessions.length === 0">
-                  <td colspan="4" class="px-4 py-8 text-center text-neutral-400">Aucune session enregistrée.</td>
+                  <td colspan="4" class="px-4 py-8 text-center text-neutral-400">{{ $t('Aucune session enregistrée.') }}</td>
                 </tr>
               </tbody>
             </table>
@@ -350,7 +351,7 @@
 
         <div class="flex items-center gap-3 rounded-2xl bg-white p-5 text-sm text-neutral-500">
           <WifiOff class="h-4 w-4 shrink-0" />
-          Pas de réseau ? Le pointage est gardé sur l'appareil et envoyé au retour de la connexion.
+          {{ $t('Pas de réseau ? Le pointage est gardé sur l\'appareil et envoyé au retour de la connexion.') }}
         </div>
       </div>
     </div>

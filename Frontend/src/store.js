@@ -64,7 +64,8 @@ export async function load_shared_data()
     const { data } = await api.get('/data')
     KEYS.forEach(key =>
     {
-      if (key in data.data && !pending[key]) assign(key, data.data[key])
+      // On ne remplace que si la valeur a changé (évite de tout re-rendre à chaque rafraîchissement)
+      if (key in data.data && !pending[key] && JSON.stringify(data.data[key]) !== synced[key]) assign(key, data.data[key])
     })
   } catch {
     return
@@ -95,7 +96,8 @@ KEYS.forEach(key =>
 
 watch(logged_user_id, id => (id ? load_shared_data() : KEYS.forEach(key => assign(key, copy(defaults[key])))), { immediate: true })
 
-setInterval(load_shared_data, 15000)
+// Rafraîchit souvent pour que les changements d'un autre appareil arrivent vite
+setInterval(load_shared_data, 4000)
 
 export function new_id()
 {

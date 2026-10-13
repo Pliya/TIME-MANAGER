@@ -51,21 +51,21 @@ const sections = [
 <template>
   <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
     <div v-for="section in sections" :key="section.title" class="rounded-2xl bg-white p-5">
-      <p class="card-title mb-2 font-medium">{{ section.title }}</p>
+      <p class="card-title mb-2 font-medium">{{ $t(section.title) }}</p>
       <div
         v-for="[key, name, text, unit] in section.rules"
         :key="key"
         class="flex items-center justify-between gap-4 border-b border-neutral-100 py-3 last:border-0"
       >
         <div>
-          <p class="text-sm font-medium">{{ name }}</p>
-          <p class="text-xs text-neutral-500">{{ text }}</p>
+          <p class="text-sm font-medium">{{ $t(name) }}</p>
+          <p class="text-xs text-neutral-500">{{ $t(text) }}</p>
         </div>
         <Toggle v-if="typeof store.rules[key] === 'boolean'" v-model="store.rules[key]" />
         <label v-else class="flex items-center gap-1 rounded-lg border border-neutral-200 px-3 py-1.5 text-sm font-semibold whitespace-nowrap">
-          <span v-if="unit === 'x'">x</span>
+          <span v-if="unit === 'x'">{{ $t('x') }}</span>
           <input v-model.number="store.rules[key]" type="number" min="0" step="any" class="w-12 text-right outline-none" />
-          <span v-if="unit && unit !== 'x'">{{ unit }}</span>
+          <span v-if="unit && unit !== 'x'">{{ $t(unit) }}</span>
         </label>
       </div>
     </div>

@@ -5,6 +5,8 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 import { setup_accessibility } from '@/accessibility'
+import { i18n } from '@web/i18n'
+import '@web/translations'
 import { initDb } from './services/db'
 import { startNetworkWatch, syncQueue, isOnline } from './services/offline'
 import { prefetch } from './api'
@@ -30,7 +32,7 @@ async function start() {
   await initDb()
   setup_accessibility()
   nativeFeatures()
-  createApp(App).use(router).mount('#app')
+  createApp(App).use(router).use(i18n).mount('#app')
   startTableLabels(document.getElementById('app'))
   startNetworkWatch()
   // À l'ouverture avec réseau : on envoie d'abord ce qui attend, puis on met

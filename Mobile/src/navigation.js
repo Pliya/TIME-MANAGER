@@ -29,6 +29,7 @@ const SECTIONS = (id) => [
     title: 'Manager',
     roles: ['Manager', 'Administrator'],
     links: [
+      { to: `/clock/${id}`, label: 'Pointage', logo: 'timetable' },
       { to: '/equipe', label: 'Équipe', logo: 'monitor' },
       { to: '/alertes', label: 'Alertes', logo: 'increase' },
       { to: '/validation', label: 'Validation', logo: 'planning' },

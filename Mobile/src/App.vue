@@ -1,7 +1,5 @@
 <script setup>
-// Version mobile de Frontend/src/App.vue : même header, mêmes couleurs,
-// même zone de contenu. La sidebar du web devient une tab bar en bas.
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Accessibility, ChevronLeft, CircleHelp, WifiOff } from 'lucide-vue-next'
 import UserComponent from '@web/components/UserComponent.vue'
@@ -11,6 +9,10 @@ import { logged_user_id } from '@/session'
 import { tabs, isActive } from './navigation'
 import { online, pendingCount, syncMessage, syncVersion } from './services/offline'
 import { spinnerMessage } from './services/spinner'
+import seal from '@web/assets/gotham-seal.png'
+
+const showSplash = ref(true)
+onMounted(() => setTimeout(() => { showSplash.value = false }, 1800))
 
 const route = useRoute()
 const router = useRouter()
@@ -18,22 +20,32 @@ const accessibilityOpen = ref(false)
 
 const userId = computed(() => Number(route.params.userID || route.params.userid) || logged_user_id.value)
 
-// Sous-page (ex. temps d'un agent ouvert depuis "Équipe") : bouton retour
 const isSubPage = computed(() => !tabs.value.some((tab) => isActive(route.path, tab.to)))
 
-// Une clé par vue + version de synchro : après une synchro, la vue affichée
-// est rechargée avec les données du serveur.
 const viewKey = computed(() => `${route.matched[0]?.path}:${syncVersion.value}`)
 
 watch(() => route.path, () => { accessibilityOpen.value = false })
 </script>
 
 <template>
+  <Transition name="splash-fade">
+    <div
+      v-if="showSplash"
+      class="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-5 bg-gradient-to-b from-[#2b3170] to-[#171b45] text-white"
+    >
+      <img :src="seal" alt="Sceau de la ville de Gotham" class="splash-logo h-32 w-32 rounded-full ring-4 ring-white/70 shadow-2xl" />
+      <div class="text-center">
+        <p class="text-3xl font-bold tracking-wide uppercase">Time Manager</p>
+        <p class="mt-1 text-sm text-white/70 uppercase tracking-widest">Ville de Gotham</p>
+      </div>
+    </div>
+  </Transition>
+
   <router-view v-if="route.meta.public" />
 
   <div v-else class="flex h-dvh flex-col bg-[#F0F0F0] font-sans text-neutral-900">
-    <header class="shrink-0 bg-[#aec0cc] pt-[env(safe-area-inset-top)] text-neutral-900">
-      <div class="flex h-16 items-center justify-between gap-3 px-4">
+    <header class="shrink-0 bg-[#aec0cc] text-neutral-900">
+      <div class="flex h-14 items-center justify-between gap-3 px-4">
         <div class="flex min-w-0 items-center gap-2">
           <button v-if="isSubPage" class="-ml-1 p-1" aria-label="Retour" @click="router.back()">
             <ChevronLeft class="h-6 w-6" />
@@ -54,10 +66,10 @@ watch(() => route.path, () => { accessibilityOpen.value = false })
       </div>
       <div v-if="!online" class="flex items-center justify-center gap-2 bg-amber-600 px-4 py-1.5 text-xs font-medium text-white">
         <WifiOff class="h-3.5 w-3.5" />
-        Hors ligne<template v-if="pendingCount"> · {{ pendingCount }} modification(s) en attente</template>
+        {{ $t('Hors ligne') }}<template v-if="pendingCount"> · {{ $t('{n} modification(s) en attente', { n: pendingCount }) }}</template>
       </div>
       <div v-else-if="pendingCount" class="bg-brand px-4 py-1.5 text-center text-xs font-medium text-white">
-        {{ pendingCount }} modification(s) en attente de synchronisation
+        {{ $t('{n} modification(s) en attente de synchronisation', { n: pendingCount }) }}
       </div>
     </header>
 
@@ -72,7 +84,6 @@ watch(() => route.path, () => { accessibilityOpen.value = false })
     <TabBar />
   </div>
 
-  <!-- Repli quand le plugin natif SpinnerDialog n'est pas disponible (navigateur) -->
   <div v-if="spinnerMessage" class="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-4 bg-neutral-900/60 text-white">
     <span class="h-10 w-10 animate-spin rounded-full border-4 border-white border-t-transparent"></span>
     <p class="text-sm">{{ spinnerMessage }}</p>
@@ -84,3 +95,18 @@ watch(() => route.path, () => { accessibilityOpen.value = false })
     {{ syncMessage }}
   </div>
 </template>
+<style scoped>
+.splash-fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+.splash-fade-leave-to {
+  opacity: 0;
+}
+.splash-logo {
+  animation: splash-pop 0.6s ease-out both;
+}
+@keyframes splash-pop {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+</style>

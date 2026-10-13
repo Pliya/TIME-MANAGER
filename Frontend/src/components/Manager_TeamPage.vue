@@ -111,21 +111,21 @@ onMounted(load)
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
       <div class="rounded-2xl bg-white p-5 xl:col-span-2">
-        <p class="card-title mb-4 font-medium">Mon équipe</p>
+        <p class="card-title mb-4 font-medium">{{ $t('Mon équipe') }}</p>
 
-        <p v-if="loading" class="text-sm text-neutral-400">Chargement...</p>
+        <p v-if="loading" class="text-sm text-neutral-400">{{ $t('Chargement...') }}</p>
         <p v-else-if="error" class="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{{ error }}</p>
-        <p v-else-if="rows.length === 0" class="text-sm text-neutral-400">Aucun agent dans les équipes.</p>
+        <p v-else-if="rows.length === 0" class="text-sm text-neutral-400">{{ $t('Aucun agent dans les équipes.') }}</p>
 
         <div v-else class="overflow-x-auto">
           <table class="w-full min-w-max text-sm">
             <thead>
               <tr class="bg-neutral-50 text-left text-neutral-500">
-                <th class="rounded-l-lg px-3 py-3 font-medium">Agent</th>
-                <th class="px-3 py-3 font-medium">Statut</th>
-                <th class="px-3 py-3 font-medium">Semaine</th>
-                <th class="px-3 py-3 font-medium">Heures sup</th>
-                <th class="rounded-r-lg px-3 py-3 font-medium">Nuits (mois)</th>
+                <th class="rounded-l-lg px-3 py-3 font-medium">{{ $t('Agent') }}</th>
+                <th class="px-3 py-3 font-medium">{{ $t('Statut') }}</th>
+                <th class="px-3 py-3 font-medium">{{ $t('Semaine') }}</th>
+                <th class="px-3 py-3 font-medium">{{ $t('Heures sup') }}</th>
+                <th class="rounded-r-lg px-3 py-3 font-medium">{{ $t('Nuits (mois)') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -134,8 +134,8 @@ onMounted(load)
                   <router-link :to="`/workingTimes/${m.id}`" class="hover:underline">{{ m.name }}</router-link>
                 </td>
                 <td class="px-3 py-3">
-                  <Chip v-if="m.present && store.pauses[m.id]?.since" color="outline">En pause</Chip>
-                  <Chip v-else :color="m.present ? 'dark' : 'gray'">{{ m.present ? 'Pointé' : 'Sorti' }}</Chip>
+                  <Chip v-if="m.present && store.pauses[m.id]?.since" color="outline">{{ $t('En pause') }}</Chip>
+                  <Chip v-else :color="m.present ? 'dark' : 'gray'">{{ m.present ? $t('Pointé') : $t('Sorti') }}</Chip>
                 </td>
                 <td class="px-3 py-3">{{ hours_to_text(m.week) }}</td>
                 <td class="px-3 py-3">{{ hours_to_text(m.overtime) }}</td>
@@ -150,27 +150,27 @@ onMounted(load)
       </div>
 
       <div class="rounded-2xl bg-white p-5">
-        <p class="card-title mb-4 font-medium">Justifications reçues</p>
+        <p class="card-title mb-4 font-medium">{{ $t('Justifications reçues') }}</p>
         <div class="space-y-3 text-sm">
           <div v-for="j in justifications" :key="j.id" class="rounded-xl bg-neutral-50 p-3">
             <p class="font-medium">{{ j.userName }} · {{ j.type }}</p>
             <p class="text-xs text-neutral-500">« {{ j.text }} » Le {{ j.date }} à {{ j.time }}.</p>
-            <p class="mt-2 text-xs text-neutral-400">Vu par : manager, chef d'équipe</p>
+            <p class="mt-2 text-xs text-neutral-400">{{ $t('Vu par : manager, chef d\'équipe') }}</p>
           </div>
-          <p v-if="justifications.length === 0" class="text-neutral-400">Aucune justification pour l'instant.</p>
+          <p v-if="justifications.length === 0" class="text-neutral-400">{{ $t('Aucune justification pour l\'instant.') }}</p>
         </div>
       </div>
     </div>
     <div class="rounded-2xl bg-white p-5">
-      <p class="card-title font-medium">Gérer les équipes</p>
+      <p class="card-title font-medium">{{ $t('Gérer les équipes') }}</p>
 
       <form class="flex flex-col gap-2 xl:flex-row" @submit.prevent="create_team">
         <input v-model.trim="new_team.name" required placeholder="Nom de la nouvelle équipe" class="flex-1 rounded-xl border border-neutral-200 px-3 py-2 text-sm" />
         <select v-if="is_admin()" v-model="new_team.managerId" required class="rounded-xl border border-neutral-200 px-3 py-2 text-sm">
-          <option value="" disabled>Manager de l'équipe</option>
+          <option value="" disabled>{{ $t('Manager de l\'équipe') }}</option>
           <option v-for="u in managers" :key="u.id" :value="u.id">{{ u.username }}</option>
         </select>
-        <button type="submit" class="rounded-full bg-neutral-900 px-5 py-2 text-sm font-semibold text-white">Créer l'équipe</button>
+        <button type="submit" class="rounded-full bg-neutral-900 px-5 py-2 text-sm font-semibold text-white">{{ $t('Créer l\'équipe') }}</button>
       </form>
 
       <p v-if="message" class="mt-3 rounded-xl bg-neutral-100 px-3 py-2 text-sm">{{ message }}</p>
@@ -179,7 +179,7 @@ onMounted(load)
         <div v-for="team in teams" :key="team.id" class="rounded-xl border border-neutral-200 p-4">
           <div class="flex items-center justify-between gap-2">
             <p class="font-semibold">{{ team.name }} <span class="text-sm font-normal text-neutral-400">({{ team.users.length }})</span></p>
-            <button class="text-xs font-medium text-red-600 hover:underline" @click="delete_team(team)">Supprimer</button>
+            <button class="text-xs font-medium text-red-600 hover:underline" @click="delete_team(team)">{{ $t('Supprimer') }}</button>
           </div>
 
           <div class="mt-3 flex flex-wrap gap-2">
@@ -187,18 +187,18 @@ onMounted(load)
               {{ u.username }}
               <button class="rounded-full p-0.5 hover:bg-neutral-200" :aria-label="`Retirer ${u.username}`" @click="remove_member(team, u)"><X class="h-3 w-3" /></button>
             </span>
-            <span v-if="team.users.length === 0" class="text-xs text-neutral-400">Aucun agent pour l'instant.</span>
+            <span v-if="team.users.length === 0" class="text-xs text-neutral-400">{{ $t('Aucun agent pour l\'instant.') }}</span>
           </div>
 
           <div class="mt-3 flex gap-2">
             <select v-model="to_add[team.id]" class="flex-1 rounded-xl border border-neutral-200 px-3 py-2 text-sm">
-              <option value="">Ajouter un agent…</option>
+              <option value="">{{ $t('Ajouter un agent…') }}</option>
               <option v-for="u in candidates(team)" :key="u.id" :value="u.id">{{ u.username }}</option>
             </select>
-            <button class="rounded-full border-2 border-neutral-900 px-4 text-sm font-semibold" @click="add_member(team)">Ajouter</button>
+            <button class="rounded-full border-2 border-neutral-900 px-4 text-sm font-semibold" @click="add_member(team)">{{ $t('Ajouter') }}</button>
           </div>
         </div>
-        <p v-if="teams.length === 0 && !loading" class="text-sm text-neutral-400">Aucune équipe : crée la première ci-dessus.</p>
+        <p v-if="teams.length === 0 && !loading" class="text-sm text-neutral-400">{{ $t('Aucune équipe : crée la première ci-dessus.') }}</p>
       </div>
     </div>
   </div>

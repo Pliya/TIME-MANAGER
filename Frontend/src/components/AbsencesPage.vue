@@ -67,13 +67,13 @@ function send()
 
     <div class="flex flex-col gap-3 xl:flex-row">
       <button class="inline-flex items-center justify-center gap-2 rounded-full bg-neutral-900 px-5 py-3 text-sm font-semibold text-white" @click="open('Congé')">
-        <Plane class="h-4 w-4" /> Demander un congé
+        <Plane class="h-4 w-4" /> {{ $t('Demander un congé') }}
       </button>
       <button class="inline-flex items-center justify-center gap-2 rounded-full border-2 border-neutral-900 bg-white px-5 py-3 text-sm font-semibold" @click="open('Arrêt maladie')">
-        <Thermometer class="h-4 w-4" /> Déclarer un arrêt maladie
+        <Thermometer class="h-4 w-4" /> {{ $t('Déclarer un arrêt maladie') }}
       </button>
       <button class="inline-flex items-center justify-center gap-2 rounded-full border-2 border-neutral-900 bg-white px-5 py-3 text-sm font-semibold" @click="open('Récupération')">
-        <Hourglass class="h-4 w-4" /> Poser une récupération
+        <Hourglass class="h-4 w-4" /> {{ $t('Poser une récupération') }}
       </button>
     </div>
 
@@ -85,42 +85,42 @@ function send()
           <input v-model="form.start" type="date" required class="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm text-neutral-900" />
         </label>
         <label v-if="form_type === 'Récupération'" class="text-sm text-neutral-500">
-          Nombre d'heures
+          {{ $t('Nombre d\'heures') }}
           <input v-model.number="form.hours" type="number" min="0.5" step="0.5" required class="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm text-neutral-900" />
         </label>
         <label v-else class="text-sm text-neutral-500">
-          Au
+          {{ $t('Au') }}
           <input v-model="form.end" type="date" required class="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm text-neutral-900" />
         </label>
         <div class="flex items-end gap-2">
-          <button type="submit" class="flex-1 rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white">Envoyer</button>
-          <button type="button" class="rounded-full border-2 border-neutral-900 px-5 py-2 text-sm font-semibold" @click="form_type = ''">Annuler</button>
+          <button type="submit" class="flex-1 rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white">{{ $t('Envoyer') }}</button>
+          <button type="button" class="rounded-full border-2 border-neutral-900 px-5 py-2 text-sm font-semibold" @click="form_type = ''">{{ $t('Annuler') }}</button>
         </div>
       </div>
       <p v-if="error" class="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{{ error }}</p>
     </form>
 
     <div class="rounded-2xl bg-white p-5">
-      <p class="card-title mb-4 font-medium">Mes demandes</p>
+      <p class="card-title mb-4 font-medium">{{ $t('Mes demandes') }}</p>
       <div class="overflow-x-auto">
         <table class="w-full min-w-max text-sm">
           <thead>
             <tr class="bg-neutral-50 text-left text-neutral-500">
-              <th class="rounded-l-lg px-3 py-3 font-medium">Période</th>
-              <th class="px-3 py-3 font-medium">Type</th>
-              <th class="px-3 py-3 font-medium">Durée</th>
-              <th class="rounded-r-lg px-3 py-3 font-medium">Statut</th>
+              <th class="rounded-l-lg px-3 py-3 font-medium">{{ $t('Période') }}</th>
+              <th class="px-3 py-3 font-medium">{{ $t('Type') }}</th>
+              <th class="px-3 py-3 font-medium">{{ $t('Durée') }}</th>
+              <th class="rounded-r-lg px-3 py-3 font-medium">{{ $t('Statut') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="a in my_absences" :key="a.id" class="border-b border-neutral-100 last:border-0">
               <td class="px-3 py-3 font-medium">{{ period_text(a) }}</td>
-              <td class="px-3 py-3">{{ a.type }}</td>
+              <td class="px-3 py-3">{{ $t(a.type) }}</td>
               <td class="px-3 py-3">{{ length_text(a) }}</td>
-              <td class="px-3 py-3"><Chip :color="status_color(a.status)">{{ a.status }}</Chip></td>
+              <td class="px-3 py-3"><Chip :color="status_color(a.status)">{{ $t(a.status) }}</Chip></td>
             </tr>
             <tr v-if="my_absences.length === 0">
-              <td colspan="4" class="px-4 py-8 text-center text-neutral-400">Aucune demande pour l'instant.</td>
+              <td colspan="4" class="px-4 py-8 text-center text-neutral-400">{{ $t('Aucune demande pour l\'instant.') }}</td>
             </tr>
           </tbody>
         </table>
