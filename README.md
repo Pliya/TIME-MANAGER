@@ -1,101 +1,101 @@
-# Time Manager · Ville de Gotham
+# Time Manager · City of Gotham
 
-> Gestion du temps de travail pour l'administration de Gotham City : pointage, planning (nuits & astreintes), absences, validation, paie et statistiques — web **et** mobile.
+> Working-time management for the Gotham City administration: clock-in, scheduling (night shifts & on-call), leave, validation, payroll and statistics — web **and** mobile.
 
-Application full-stack développée dans le cadre du projet **Piscine (Master 1, Epitech)**. Le thème « Gotham » habille un vrai outil RH : pointer en un geste, suivre ses heures, gérer les plannings de nuit, valider les feuilles du mois et exporter la paie.
+A full-stack application built as part of the Piscine project (Master 1, Epitech). The "Gotham" theme wraps a real HR tool: clock in with one gesture, track your hours, manage night schedules, validate the monthly sheets and export payroll.
 
-**Stack :** Vue 3 (Vite) · Phoenix / Elixir · PostgreSQL · Cordova (Android) · Docker · nginx
+**Stack:** Vue 3 (Vite) · Phoenix / Elixir · PostgreSQL · Cordova (Android) · Docker · nginx
 
 ---
 
-## Sommaire
+## Table of contents
 
-- [Fonctionnalités](#fonctionnalités)
+- [Features](#features)
 - [Architecture](#architecture)
-- [Structure du dépôt](#structure-du-dépôt)
-- [Démarrage rapide (Docker)](#démarrage-rapide-docker)
-- [Développement sans Docker](#développement-sans-docker)
-- [Variables d'environnement](#variables-denvironnement)
-- [Application mobile](#application-mobile)
-- [Sécurité](#sécurité)
+- [Repository structure](#repository-structure)
+- [Quick start (Docker)](#quick-start-docker)
+- [Development without Docker](#development-without-docker)
+- [Environment variables](#environment-variables)
+- [Mobile application](#mobile-application)
+- [Security](#security)
 - [API & documentation](#api--documentation)
 - [Tests](#tests)
-- [Production & déploiement](#production--déploiement)
-- [Documentation du projet](#documentation-du-projet)
+- [Production & deployment](#production--deployment)
+- [Project documentation](#project-documentation)
 
 ---
 
-## Fonctionnalités
+## Features
 
-Trois rôles, chacun avec son espace. L'**administrateur** peut tout faire (il accède aussi aux pages manager).
+Three roles, each with its own space. The **administrator** can do everything (they also have access to the manager pages).
 
-### 👷 Employé
-- **Pointage** en un geste (arrivée / sortie), avec pause, trajet et bouton « Incident ». Fonctionne hors-ligne (le pointage est gardé sur l'appareil). Mode borne : « Journée conforme au planning » en un clic.
-- **Dashboard** : heures de la semaine, jours travaillés, dernières sessions.
-- **Mes temps** : consultation en lecture seule + **demande de correction** (le manager décide sous 48 h, refus motivé).
-- **Planning** publié à l'avance (nuits, astreintes, repos), compteur de nuits avec plafond.
-- **Absences** : congés, arrêts maladie, récupérations — zéro papier.
-- **Statistiques** personnelles + fiche de paie estimée. *Aucune comparaison entre collègues.*
-- **Accessibilité** : contraste élevé, texte agrandi, lecture vocale, bilingue FR/EN — dès la connexion.
+### Employee
+- **Clock-in** with one gesture (in / out), with break, travel and an "Incident" button. Works offline (the clock-in is kept on the device). Kiosk mode: "Day matches the schedule" in one click.
+- **Dashboard**: hours this week, days worked, latest sessions.
+- **My times**: read-only view + **correction request** (the manager decides within 48 h, a refusal must be justified).
+- **Schedule** published in advance (nights, on-call, rest), with a night counter and a cap.
+- **Leave**: paid leave, sick leave, time-off in lieu — paperless.
+- **Statistics**: personal, plus an estimated payslip. *No comparison between colleagues.*
+- **Accessibility**: high contrast, enlarged text, voice readout, bilingual FR/EN — from the login screen.
 
-### 👔 Manager / Chef de service
-- **Équipe** : vue d'ensemble (présents, heures, heures sup, nuits), gestion des équipes.
-- **Alertes** : pointage oublié, trop de nuits, durée inhabituelle, heures sup élevées.
-- **Validation** : corrections, décisions sur les heures sup (payées ou récupérées), feuilles du mois.
-- **Planning d'équipe** : grille éditable, répartition des nuits, publication, Bat-signal (astreinte).
-- **Statistiques d'équipe** (par équipe ou globales).
+### Manager / Team lead
+- **Team**: overview (present, hours, overtime, nights), team management.
+- **Alerts**: missed clock-out, too many nights, unusual duration, high overtime.
+- **Validation**: corrections, overtime decisions (paid or recovered), monthly sheets.
+- **Team schedule**: editable grid, night distribution, publishing, Bat-signal (on-call).
+- **Team statistics** (per team or global).
 
-### 🛡️ Administrateur / RH
-- **Utilisateurs** : rôles, permissions fines, suppression, historique des droits.
-- **Règles** : seuils heures sup, plage de nuit, pauses/trajets, préavis planning…
-- **Paie** : heures normales / nuit ×1,5 / sup ×2 / récupération, **export CSV** pour la comptabilité.
-- **Absences (RH)** : validation des demandes, calendrier global d'équipe.
+### Administrator / HR
+- **Users**: roles, fine-grained permissions, deletion, rights history.
+- **Rules**: overtime thresholds, night window, breaks/travel, schedule notice period, etc.
+- **Payroll**: regular hours / night x1.5 / overtime x2 / time-off in lieu, **CSV export** for accounting.
+- **Leave (HR)**: approval of requests, global team calendar.
 
 ---
 
 ## Architecture
 
 ```
-  Navigateur / APK                nginx (prod)              Phoenix API            PostgreSQL
+  Browser / APK                  nginx (prod)              Phoenix API            PostgreSQL
  ┌───────────────┐   HTTPS   ┌──────────────────┐   /api   ┌──────────────┐   SQL   ┌──────────┐
- │  Vue 3 (SPA)  │ ────────▶ │  sert le build + │ ───────▶ │  Elixir /    │ ──────▶ │  Postgres│
- │  Vite build   │           │  proxy /api      │          │  Ecto        │         │          │
+ │  Vue 3 (SPA)  │ ────────▶ │  serves build +  │ ───────▶ │  Elixir /    │ ──────▶ │  Postgres│
+ │  Vite build   │           │  proxies /api    │          │  Ecto        │         │          │
  └───────────────┘           └──────────────────┘          └──────────────┘         └──────────┘
 ```
 
-- Le frontend appelle l'API en **chemin relatif** `/api` → suit le domaine courant (le proxy nginx renvoie vers le back).
-- Authentification par **JWT** en **cookie HttpOnly** + **token XSRF** en en-tête (voir [Sécurité](#sécurité)).
-- État partagé synchronisé via `/api/data` (règles, planning, absences, corrections…).
+- The frontend calls the API via a **relative path** `/api` → it follows the current domain (the nginx proxy forwards to the back end).
+- Authentication with a **JWT** in an **HttpOnly cookie** + an **XSRF token** in a header (see [Security](#security)).
+- Shared state is synchronized through `/api/data` (rules, schedule, leave, corrections, etc.).
 
 ---
 
-## Structure du dépôt
+## Repository structure
 
 ```
 TIME-MANAGER/
-├── Frontend/            Application web — Vue 3 + Vite + Tailwind v4
+├── Frontend/            Web application — Vue 3 + Vite + Tailwind v4
 │   └── src/             components/, router/, store.js, api.js, session.js, i18n.js, utils/
 ├── manager/             API — Phoenix / Elixir + Ecto (PostgreSQL)
-│   ├── lib/             contrôleurs, plugs (Auth, Role, RateLimit), schémas
+│   ├── lib/             controllers, plugs (Auth, Role, RateLimit), schemas
 │   ├── config/          dev.exs, prod.exs, runtime.exs, test.exs
 │   └── Dockerfile
-├── Mobile/              Application mobile — Cordova (Android) qui embarque le front
-│   └── releases/        time-manager.apk (build prêt à installer)
-├── maquettes/           Maquettes (web + mobile) et visuel PNG
-├── docs/                Rapports & documentation (voir plus bas)
-├── docker-compose.yml           Environnement de dev (db + back + front)
-├── docker-compose.prod.yml      Environnement de production
-├── .travis.yml          CI/CD (build images + déploiement)
+├── Mobile/              Mobile application — Cordova (Android) embedding the front end
+│   └── releases/        time-manager.apk (ready-to-install build)
+├── maquettes/           Mockups (web + mobile) and PNG preview
+├── docs/                Reports & documentation (see below)
+├── docker-compose.yml           Dev environment (db + back + front)
+├── docker-compose.prod.yml      Production environment
+├── .travis.yml          CI/CD (build images + deploy)
 └── README.md
 ```
 
 ---
 
-## Démarrage rapide (Docker)
+## Quick start (Docker)
 
-Pré-requis : **Docker** + **Docker Compose**.
+Requirements: **Docker** + **Docker Compose**.
 
-1. Crée un fichier `.env` à la racine :
+1. Create a `.env` file at the root:
 
    ```env
    PGHOST=db
@@ -105,98 +105,98 @@ Pré-requis : **Docker** + **Docker Compose**.
    PGDATABASE=manager_dev
    ```
 
-2. Lance tout :
+2. Start everything:
 
    ```bash
    docker compose up --build
    ```
 
-3. Accès :
+3. Access:
    - **Frontend** → http://localhost:5174
    - **API** → http://localhost:4000/api
    - **Swagger** → http://localhost:4000/swagger/swaggerui
 
-La base PostgreSQL 16 est lancée automatiquement (volume `postgres_data` persistant), le backend attend qu'elle soit saine avant de démarrer.
+PostgreSQL 16 is started automatically (persistent `postgres_data` volume); the back end waits until the database is healthy before starting.
 
 ---
 
-## Développement sans Docker
+## Development without Docker
 
-### Backend (Phoenix / Elixir)
+### Back end (Phoenix / Elixir)
 
-Pré-requis : **Elixir / Erlang** + **PostgreSQL**.
+Requirements: **Elixir / Erlang** + **PostgreSQL**.
 
 ```bash
 cd manager
 mix deps.get
-mix ecto.setup        # crée la base + migrations + seeds
-mix phx.server        # API sur http://localhost:4000
+mix ecto.setup        # creates the database + migrations + seeds
+mix phx.server        # API on http://localhost:4000
 ```
 
-### Frontend (Vue 3 / Vite)
+### Front end (Vue 3 / Vite)
 
-Pré-requis : **Node ≥ 22.18**.
+Requirements: **Node >= 22.18**.
 
 ```bash
 cd Frontend
 npm install
-npm run dev           # http://localhost:5173, proxy /api → :4000
+npm run dev           # http://localhost:5173, proxies /api -> :4000
 ```
 
-Scripts : `npm run dev` (dev), `npm run build` (génère `dist/`), `npm run preview`.
+Scripts: `npm run dev` (dev), `npm run build` (generates `dist/`), `npm run preview`.
 
 ---
 
-## Variables d'environnement
+## Environment variables
 
-| Variable          | Rôle                                                     | Dev            |
+| Variable          | Role                                                     | Dev            |
 |-------------------|----------------------------------------------------------|----------------|
-| `PGHOST`          | Hôte PostgreSQL                                          | `db`           |
-| `PGPORT`          | Port PostgreSQL                                         | `5432`         |
-| `PGUSER`          | Utilisateur DB                                          | `postgres`     |
-| `PGPASSWORD`      | Mot de passe DB                                        | `postgres`     |
-| `PGDATABASE`      | Nom de la base                                          | `manager_dev`  |
-| `DATABASE_URL`    | (prod) prioritaire sur les `PG*`                        | —              |
-| `SECRET_KEY_BASE` | (prod) secret Phoenix — `mix phx.gen.secret`            | —              |
-| `PHX_HOST`        | (prod) hôte pour les URL générées (Swagger)             | —              |
-| `COOKIE_SECURE`   | (prod) `true` pour forcer le cookie JWT en HTTPS        | —              |
-| `VITE_API_URL`    | URL de l'API fixée **au build** du front (via CI)       | voir `.env.example` |
+| `PGHOST`          | PostgreSQL host                                          | `db`           |
+| `PGPORT`          | PostgreSQL port                                          | `5432`         |
+| `PGUSER`          | DB user                                                  | `postgres`     |
+| `PGPASSWORD`      | DB password                                              | `postgres`     |
+| `PGDATABASE`      | Database name                                            | `manager_dev`  |
+| `DATABASE_URL`    | (prod) takes precedence over the `PG*` variables         | —              |
+| `SECRET_KEY_BASE` | (prod) Phoenix secret — `mix phx.gen.secret`             | —              |
+| `PHX_HOST`        | (prod) host used for generated URLs (Swagger)            | —              |
+| `COOKIE_SECURE`   | (prod) `true` to force the JWT cookie over HTTPS         | —              |
+| `VITE_API_URL`    | API URL fixed **at build time** of the front (via CI)    | see `.env.example` |
 
 ---
 
-## Application mobile
+## Mobile application
 
-L'app mobile (dossier `Mobile/`) est une **application Cordova (Android)** qui embarque la même interface Vue, adaptée au téléphone (navigation par **tab-bar** + écran « Plus »), avec gestion **hors-ligne** du pointage.
+The mobile app (`Mobile/` folder) is a **Cordova (Android) application** that embeds the same Vue interface, adapted for phones (bottom **tab-bar** navigation + a "More" screen), with **offline** clock-in handling.
 
-- **APK prête à installer** : [`Mobile/releases/time-manager.apk`](Mobile/releases/time-manager.apk)
-- Build : `cd Mobile && npm install && npm run build` puis `cordova build android`.
+- **Ready-to-install APK**: [`Mobile/releases/time-manager.apk`](Mobile/releases/time-manager.apk)
+- Build: `cd Mobile && npm install && npm run build` then `cordova build android`.
 
-> Sur le téléphone, autoriser l'installation depuis une source inconnue, puis ouvrir l'APK. L'app pointe vers l'API de production.
+> On the phone, allow installation from an unknown source, then open the APK. The app points to the production API.
 
 ---
 
-## Sécurité
+## Security
 
-L'app a fait l'objet d'un audit (pentest) — voir [`docs/RAPPORT_SECURITE.pdf`](docs/RAPPORT_SECURITE.pdf). Mesures en place :
+The app underwent a security audit (pentest) — see [`docs/RAPPORT_SECURITE.pdf`](docs/RAPPORT_SECURITE.pdf). Measures in place:
 
-- **JWT** signé (Joken) stocké dans un **cookie HttpOnly** → inaccessible au JavaScript.
-- **Protection XSRF** : un token renvoyé à la connexion est envoyé dans l'en-tête `x-xsrf-token` à chaque requête ; le back vérifie la correspondance cookie ↔ en-tête.
-- **Mots de passe** hachés avec **bcrypt** (`bcrypt_elixir`).
-- **Rate-limiting** sur la connexion (anti-force-brute) → réponse **429** au-delà du seuil.
-- **Contrôle d'accès par rôle** côté serveur (`AuthPlug` / `RolePlug`) — le garde `beforeEach` du front n'est qu'une première barrière UX.
-- **HTTPS** en production (cookie `Secure` via `COOKIE_SECURE`).
-- **CORS** maîtrisé (`corsica`).
+- **JWT** signed (Joken), stored in an **HttpOnly cookie** → not readable by JavaScript.
+- **XSRF protection**: a token returned at login is sent in the `x-xsrf-token` header on every request; the back end checks the cookie / header match.
+- **Passwords** hashed with **bcrypt** (`bcrypt_elixir`).
+- **Rate-limiting** on login (anti brute-force) → **429** response past the threshold.
+- **Role-based access control** on the server (`AuthPlug` / `RolePlug`) — the front-end `beforeEach` guard is only a first UX barrier.
+- **HTTPS** in production (`Secure` cookie via `COOKIE_SECURE`).
+- **CORS** controlled (`corsica`).
 
-> ⚠️ Pense à changer les mots de passe de démonstration avant toute mise en ligne.
+> Note: remember to change the demo passwords before going live.
 
 ---
 
 ## API & documentation
 
-- Spécification **OpenAPI** via `open_api_spex`.
-- **Swagger UI** : http://localhost:4000/swagger/swaggerui (en dev).
+- **OpenAPI** specification via `open_api_spex`.
+- **Swagger UI**: http://localhost:4000/swagger/swaggerui (in dev).
 
-Principales routes (`/api`) : `/users/sign_in`, `/users/me`, `/users/:id`, `/users/:id/role`, `/teams`, `/clocks/:userID`, `/workingtime/:userID`, `/data`.
+Main routes (`/api`): `/users/sign_in`, `/users/me`, `/users/:id`, `/users/:id/role`, `/teams`, `/clocks/:userID`, `/workingtime/:userID`, `/data`.
 
 ---
 
@@ -207,34 +207,34 @@ cd manager
 mix test
 ```
 
-Le détail du stage de test et des cas couverts est dans [`docs/GUIDE_TEST.md`](docs/GUIDE_TEST.md).
+Details of the test stage and the covered cases are in [`docs/GUIDE_TEST.md`](docs/GUIDE_TEST.md).
 
 ---
 
-## Production & déploiement
+## Production & deployment
 
-- `docker-compose.prod.yml` utilise les images publiées par **Travis CI** (backend en `MIX_ENV=prod`, frontend compilé et servi par **nginx** en HTTPS).
-- Le `.env` du serveur doit contenir, en plus des `PG*` : `SECRET_KEY_BASE`, `PHX_HOST`, `COOKIE_SECURE=true`.
-- L'URL de l'API utilisée par le front est fixée **au build** via `VITE_API_URL` (définie dans `.travis.yml`).
+- `docker-compose.prod.yml` uses the images published by **Travis CI** (back end in `MIX_ENV=prod`, front end built and served by **nginx** over HTTPS).
+- The server `.env` must contain, in addition to the `PG*` variables: `SECRET_KEY_BASE`, `PHX_HOST`, `COOKIE_SECURE=true`.
+- The API URL used by the front end is fixed **at build time** via `VITE_API_URL` (defined in `.travis.yml`).
 
-Déploiement (schéma) : push → Travis build + tests → images Docker → déploiement sur le serveur → `docker compose -f docker-compose.prod.yml up -d`.
+Deployment (overview): push → Travis build + tests → Docker images → deploy to the server → `docker compose -f docker-compose.prod.yml up -d`.
 
-> En cas d'erreur « no space left on device » au déploiement : `docker system prune -af` sur le serveur (conserve les volumes/DB nommés), puis relancer.
+> Note: if deployment fails with "no space left on device", run `docker system prune -af` on the server (keeps named volumes/DB), then restart.
 
 ---
 
-## Documentation du projet
+## Project documentation
 
-| Document | Contenu |
+| Document | Content |
 |---|---|
-| [`docs/FRONTEND_DETAIL.md`](docs/FRONTEND_DETAIL.md) | Explication du frontend **ligne par ligne, fichier par fichier** |
-| [`docs/FRONTEND.md`](docs/FRONTEND.md) | Vue d'ensemble du frontend (tableaux récap) |
-| [`docs/RAPPORT_SECURITE.pdf`](docs/RAPPORT_SECURITE.pdf) | Rapport de sécurité / pentest |
-| [`docs/GUIDE_TEST.md`](docs/GUIDE_TEST.md) | Guide des tests backend |
-| [`docs/CHANGE_RESISTANCE.pdf`](docs/CHANGE_RESISTANCE.pdf) | Cartographie des parties prenantes & besoins |
-| [`docs/TESTS_MOBILE.md`](docs/TESTS_MOBILE.md) | Tests de l'application mobile |
-| [`maquettes/`](maquettes/) | Maquettes web + mobile |
+| [`docs/FRONTEND_DETAIL.md`](docs/FRONTEND_DETAIL.md) | Frontend explained **line by line, file by file** |
+| [`docs/FRONTEND.md`](docs/FRONTEND.md) | Frontend overview (summary tables) |
+| [`docs/RAPPORT_SECURITE.pdf`](docs/RAPPORT_SECURITE.pdf) | Security / pentest report |
+| [`docs/GUIDE_TEST.md`](docs/GUIDE_TEST.md) | Back-end test guide |
+| [`docs/CHANGE_RESISTANCE.pdf`](docs/CHANGE_RESISTANCE.pdf) | Stakeholder mapping & needs |
+| [`docs/TESTS_MOBILE.md`](docs/TESTS_MOBILE.md) | Mobile application tests |
+| [`maquettes/`](maquettes/) | Web + mobile mockups |
 
 ---
 
-<p align="center"><sub>Time Manager · Ville de Gotham — Projet Master 1 (Epitech)</sub></p>
+<p align="center"><sub>Time Manager · City of Gotham — Master 1 project (Epitech)</sub></p>
